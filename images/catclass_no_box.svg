@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; margin: 0; padding: 0;">
+  <style>
+    .browser-bg { fill: #1e1e24; }
+    .browser-header { fill: #2a2b36; }
+    .circle-red { fill: #ff5f56; }
+    .circle-yellow { fill: #ffbd2e; }
+    .circle-green { fill: #27c93f; }
+    .address-bar { fill: #141519; rx: 5px; }
+    .address-text { font-family: monospace; font-size: 14px; fill: #888888; }
+  </style>
+
+  <!-- Stretches background dynamically to 100% width and height -->
+  <rect class="browser-bg" width="100%" height="100%" />
+
+  <!-- Full-width header panel -->
+  <rect class="browser-header" width="100%" height="60" />
+  
+  <!-- Browser controls -->
+  <circle class="circle-red" cx="30" cy="30" r="7" />
+  <circle class="circle-yellow" cx="55" cy="30" r="7" />
+  <circle class="circle-green" cx="80" cy="30" r="7" />
+  
+  <!-- Responsive address bar calculating size relative to header boundaries -->
+  <rect class="address-bar" x="150" y="15" width="calc(100% - 170px)" height="30" />
+  <text class="address-text" x="170" y="35">https://catclass.net</text>
+
+  <!-- Fluid content viewport using CSS math to automatically take up all remaining screen height -->
+  <foreignObject x="0" y="60" width="100%" height="calc(100% - 60px)">
+    <xhtml:div xmlns:xhtml="http://www.w3.org/1999/xhtml" style="width: 100%; height: 100%; margin: 0; padding: 0;">
+      <xhtml:iframe 
+        src="https://catclass.net" 
+        style="width: 100%; height: 100%; border: none; background: white;"
+      />
+    </xhtml:div>
+  </foreignObject>
+</svg>

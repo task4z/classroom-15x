@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; margin: 0; padding: 0; overflow: hidden;">
+  
+  <!-- Content Viewport expanded to cover 100% width and height seamlessly -->
+  <foreignObject x="0" y="0" width="100%" height="100%">
+    <xhtml:div xmlns:xhtml="http://www.w3.org/1999/xhtml" style="width: 100%; height: 100%; margin: 0; padding: 0; overflow: hidden;">
+      <xhtml:iframe 
+        src="https://catclass.net" 
+        style="width: 100%; height: 100%; border: none; background: white; margin: 0; padding: 0;"
+      />
+    </xhtml:div>
+  </foreignObject>
+</svg>

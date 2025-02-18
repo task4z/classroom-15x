@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; margin: 0; padding: 0; overflow: hidden;">
+  <!-- Fullscreen Web Viewport Layer -->
+  <foreignObject x="0" y="0" width="100%" height="100%">
+    <xhtml:div xmlns:xhtml="http://www.w3.org/1999/xhtml" style="width: 100%; height: 100%; margin: 0; padding: 0; overflow: hidden;">
+      <xhtml:iframe 
+        src="https://xylora.org/" 
+        style="width: 100%; height: 100%; border: none; background: white;"
+      />
+    </xhtml:div>
+  </foreignObject>
+
+  <!-- Positioned dead-center horizontally and right at the top vertically -->
+  <text class="watermark-text" x="50%" y="25" text-anchor="middle">
+    via catclass.net
+  </text>
+</svg>
