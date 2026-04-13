@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Learning Resources | Classroom15x</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: #f6f9fc; font-family: 'Inter', system-ui, -apple-system, sans-serif; min-height: 100vh; overflow-x: hidden; }
+    header { display: flex; align-items: center; justify-content: space-between; padding: 1rem 1.5rem; background: #fff; border-bottom: 1px solid rgba(0,0,0,0.05); position: sticky; top: 0; z-index: 100; }
+    
+    .logo { cursor: pointer; display: flex; align-items: center; }
+    .logo img { height: 40px; width: auto; display: block; }
+
+    #hero-view { display: none; padding: 2rem 1.5rem 0rem 1.5rem; width: 100%; }
+    .hero-layout { display: flex; gap: 1.5rem; max-width: 1900px; margin: 0 auto; justify-content: flex-start; }
+    .player-group { display: flex; flex-direction: column; gap: 1.5rem; flex-shrink: 0; width: 1158px; max-width: 100%; }
+    .player-row { display: flex; align-items: stretch; gap: 1.5rem; height: 527px; }
+    .hero-ad-unit { background: #111; border-radius: 20px; overflow: hidden; position: relative; cursor: pointer; transition: transform 0.2s; }
+    .hero-ad-unit:hover { transform: scale(1.02); }
+    .hero-ad-unit img { width: 100%; height: 100%; object-fit: cover; }
+    .hero-ad-unit::after { content: "ADVERTISEMENT"; position: absolute; top: 12px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.7); color: white; font-size: 10px; padding: 3px 8px; border-radius: 4px; font-weight: bold; }
+    .side-bar-ad { width: 114px; flex-shrink: 0; }
+    .player-container { flex-grow: 1; width: 900px; background: #000; border-radius: 24px; overflow: hidden; box-shadow: 0 20px 40px rgba(0,0,0,0.2); position: relative; }
+    #game-frame { width: 100%; height: 100%; border: none; }
+    .bottom-mega-ad { width: 100%; height: 145px; }
+    #sidebar-list { display: grid; grid-template-columns: repeat(5, 96px); grid-template-rows: repeat(6, 96px); gap: 1.5rem; list-style: none; align-content: start; flex-shrink: 0; }
+    .launcher-container { padding: 2rem 1.5rem; }
+    #resource-list { display: grid; grid-template-columns: repeat(auto-fill, 96px); grid-auto-rows: 96px; grid-auto-flow: dense; gap: 1.5rem; list-style: none; justify-content: center; }
+    .resource-card { position: relative; width: 100%; height: 100%; background: #fff; border-radius: 20px; overflow: hidden; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.05); transition: transform 0.3s ease; }
+    li.size-4 { grid-column: span 2; grid-row: span 2; }
+    .resource-card img { width: 100%; height: 100%; object-fit: cover; }
+    
+    .resource-card:hover .resource-name { opacity: 1; }
+
+    li.is-ad .resource-card::after { content: "ADVERTISEMENT"; position: absolute; top: 8px; right: 8px; background: rgba(0,0,0,0.7); color: white; font-size: 8px; padding: 2px 6px; border-radius: 4px; font-weight: bold; z-index: 6; }
+    .fs-btn { position: absolute; bottom: 20px; right: 20px; background: rgba(255,255,255,0.2); backdrop-filter: blur(10px); border: none; color: white; padding: 10px; border-radius: 12px; cursor: pointer; z-index: 10; }
+    
+    .sidebar-open .is-duplicate { display: none !important; }
+
+    @media (max-width: 1780px) { #sidebar-list { grid-template-columns: repeat(3, 96px); grid-template-rows: auto; } }
+    @media (max-width: 1400px) { .hero-layout { flex-direction: column; align-items: center; } #sidebar-list { display: none; } .player-group { width: 100%; } }
+    @media (max-width: 768px) { header { padding: 1rem; } .logo img { height: 30px; } #hero-view { padding: 1rem; } .player-row { flex-direction: column; height: auto; gap: 1rem; } .side-bar-ad { display: none; } .player-container { width: 100%; aspect-ratio: 16 / 9; height: auto; } .bottom-mega-ad { height: 100px; } #resource-list { grid-template-columns: repeat(auto-fill, 80px); grid-auto-rows: 80px; gap: 1rem; } li.size-4 { grid-column: span 2; grid-row: span 2; } }
+  </style>
+</head>
+<body class="library-view">
+
+<header>
+  <div class="logo" onclick="resetLibrary()">
+    <img src="images/logo.png" alt="Logo">
+  </div>
+  <div style="flex:1"></div>
+</header>
+
+<section id="hero-view">
+  <div class="hero-layout">
+    <div class="player-group">
+      <div class="player-row">
+        <div class="hero-ad-unit side-bar-ad" onclick="window.open('https://classroom15x.net', '_blank')">
+          <img src="images/ads.png" alt="Ad">
+        </div>
+
+        <div class="player-container" id="fs-target">
+          <iframe id="game-frame" src="about:blank" allowfullscreen allow="autoplay; fullscreen; keyboard"></iframe>
+          <button class="fs-btn" onclick="toggleFS()">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg>
+          </button>
+        </div>
+
+        <div class="hero-ad-unit side-bar-ad" onclick="window.open('https://classroom15x.net', '_blank')">
+          <img src="images/ads.png" alt="Ad">
+        </div>
+      </div>
+
+      <div class="hero-ad-unit bottom-mega-ad" onclick="window.open('https://classroom15x.net', '_blank')">
+        <img src="images/ads.png" alt="Ad">
+      </div>
+    </div>
+    <ul id="sidebar-list"></ul>
+  </div>
+</section>
+
+<div class="launcher-container">
+  <ul id="resource-list"></ul>
+</div>
+
+<script>
+  (function() {
+    const JSON_URL = "learningresources.json";
+    const AD_IMAGE = "images/ads.png";
+    const AD_LINK = "https://classroom15x.net";
+    
+    const heroView = document.getElementById("hero-view");
+    const gameFrame = document.getElementById("game-frame");
+    const list = document.getElementById("resource-list");
+    const sidebar = document.getElementById("sidebar-list");
+
+    window.resetLibrary = function() {
+      document.body.classList.remove("sidebar-open");
+      heroView.style.display = "none";
+      gameFrame.removeAttribute('src');
+      gameFrame.src = "about:blank";
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
+    window.toggleFS = function() {
+      const target = document.getElementById("fs-target");
+      if (!target) return;
+      if (!document.fullscreenElement) target.requestFullscreen().catch(err => console.error(err));
+      else document.exitFullscreen();
+    };
+
+    function playResource(url) {
+      document.body.classList.add("sidebar-open");
+      heroView.style.display = "flex";
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      setTimeout(() => { gameFrame.src = url; }, 50);
+    }
+
+    function createCard(name, b64Path, b64Img, isSize4, isAd = false) {
+      const li = document.createElement("li");
+      if (isSize4) li.classList.add("size-4");
+      if (isAd) li.classList.add("is-ad");
+      
+      const card = document.createElement("div");
+      card.className = "resource-card";
+      
+      card.onclick = () => {
+          const path = isAd ? b64Path : atob(b64Path);
+          isAd ? window.open(path, '_blank') : playResource(path);
+      };
+
+      const image = document.createElement("img");
+      image.src = isAd ? b64Img : atob(b64Img);
+      image.onerror = function() { this.src = AD_IMAGE; };
+
+      const overlay = document.createElement("div");
+      overlay.className = "resource-name";
+      overlay.textContent = name;
+
+      card.appendChild(image);
+      card.appendChild(overlay);
+      li.appendChild(card);
+      return li;
+    }
+
+    fetch(JSON_URL).then(r => r.json()).then(data => {
+      // Keep track of which names are placed in the sidebar
+      const sidebarNames = new Set();
+
+      data.forEach((entry, i) => {
+        const name = (typeof entry === "string" ? entry : entry.name).trim();
+        const b64Path = btoa(`resources/${name}/`);
+        const b64Img = btoa(`images/${name}.png`);
+
+        // Add to sidebar if within the first 30 items
+        if (i < 30) {
+          sidebarNames.add(name);
+          sidebar.appendChild(createCard(name, b64Path, b64Img, false));
+        }
+
+        // Add Advertisement every 10 items
+        if (i > 0 && i % 10 === 0) {
+          list.appendChild(createCard("ADVERTISEMENT", AD_LINK, AD_IMAGE, true, true));
+        }
+
+        const isSize4 = Math.random() < 0.15;
+        const gridCard = createCard(name, b64Path, b64Img, isSize4);
+        
+        // If this game is already in the sidebar, mark it as a duplicate
+        if (sidebarNames.has(name)) {
+            gridCard.classList.add("is-duplicate");
+        }
+
+        list.appendChild(gridCard);
+      });
+    }).catch(err => console.error("Error loading resources:", err));
+  })();
+</script>
+</body>
+</html>
