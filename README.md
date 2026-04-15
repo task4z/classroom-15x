@@ -4,6 +4,8 @@
 
 Welcome to the **classroom-15x** repository. This project serves as a centralized hub for browser-based interactive modules, designed to test hardware acceleration, input latency, and UI/UX responsiveness in educational environments.
 
+[![Buy Me a Coffee](https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png)](https://www.buymeacoffee.com/task4z)
+
 ## 📚 Project Overview
 This repository contains a collection of **169 interactive lessons** and resource modules. These assets are structured to assist educators and students in understanding web-based logic and interactive media performance through browser-based simulations.
 
