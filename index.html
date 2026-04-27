@@ -113,7 +113,7 @@
     .hero-ad-unit::after { content: "ADVERTISEMENT"; position: absolute; top: 12px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.7); color: white; font-size: 10px; padding: 3px 8px; border-radius: 4px; font-weight: bold; }
     
     .side-bar-ad { width: 114px; flex-shrink: 0; }
-    .player-container { flex-grow: 1; width: 900px; background: #000; border-radius: 24px; overflow: hidden; box-shadow: 0 20px 40px rgba(0,0,0,0.2); position: relative; }
+    .player-container { flex-grow: 1; height:100%;width: 900px; background: #000; border-radius: 24px; overflow: hidden; box-shadow: 0 20px 40px rgba(0,0,0,0.2); position: relative; }
     #game-frame { width: 100%; height: 100%; border: none; }
     .bottom-mega-ad { width: 100%; height: 145px; }
 
@@ -198,8 +198,7 @@
         <div class="hero-ad-unit side-bar-ad" onclick="window.open('https://classroom15x.net', '_blank')">
           <img src="images/ads.png" alt="Ad">
         </div>
-      </div>
-
+        </div>
       <div class="hero-ad-unit bottom-mega-ad" onclick="window.open('https://classroom15x.net', '_blank')">
         <img src="images/ads.png" alt="Ad">
       </div>
@@ -268,17 +267,22 @@
       else document.exitFullscreen();
     }
 
-    function createCard(name, b64Path, b64Img, isSize4, isAd = false) {
+    function createCard(name, b64Path, b64Img, isSize4, isAd = false, adType = "") {
       const li = document.createElement("li");
       if (isSize4) li.classList.add("size-4");
       if (isAd) li.classList.add("is-ad");
-      
+      if (adType) li.classList.add(adType);
+  
       const card = document.createElement("div");
       card.className = "resource-card";
-      
+  
       card.onclick = () => {
           const path = isAd ? b64Path : atob(b64Path);
-          openCloakedResource(path);
+          if (isAd && adType === "ad-popup") {
+            window.open(path, '_blank');
+          } else {
+            openCloakedResource(path);
+          }
       };
 
       const image = document.createElement("img");
@@ -298,18 +302,39 @@
     fetch(JSON_URL).then(r => r.json()).then(data => {
       const sidebarNames = new Set();
 
+      // Add more sidebar ads at the top
+      for (let s = 0; s < 6; s++) {
+        const adSidebar = createCard("ADVERTISEMENT", AD_LINK, AD_IMAGE, false, true, "ad-sidebar");
+        sidebar.appendChild(adSidebar);
+      }
+
       data.forEach((entry, i) => {
         const name = (typeof entry === "string" ? entry : entry.name).trim();
         const b64Path = btoa(`resources/${name}`);
         const b64Img = btoa(`images/${name}.png`);
 
-        if (i < 30) {
+        // Add more sidebar resources, interleaved with ads
+        if (i < 20) {
           sidebarNames.add(name);
           sidebar.appendChild(createCard(name, b64Path, b64Img, false));
+          if (i % 5 === 4) {
+            sidebar.appendChild(createCard("ADVERTISEMENT", AD_LINK, AD_IMAGE, false, true, "ad-sidebar"));
+          }
         }
 
-        if (i > 0 && i % 10 === 0) {
-          list.appendChild(createCard("ADVERTISEMENT", AD_LINK, AD_IMAGE, true, true));
+        // Insert more frequent ads in the grid
+        if (i > 0 && i % 5 === 0) {
+          // Big ad
+          list.appendChild(createCard("ADVERTISEMENT", AD_LINK, AD_IMAGE, true, true, "ad-big"));
+        }
+        if (i > 0 && i % 3 === 0) {
+          // Small ad
+          list.appendChild(createCard("ADVERTISEMENT", AD_LINK, AD_IMAGE, false, true, "ad-small"));
+        }
+
+        // Randomly insert popup ad
+        if (Math.random() < 0.07) {
+          list.appendChild(createCard("ADVERTISEMENT", AD_LINK, AD_IMAGE, false, true, "ad-popup"));
         }
 
         const isSize4 = Math.random() < 0.15;
@@ -321,6 +346,15 @@
 
         list.appendChild(gridCard);
       });
+
+      // Add a few more big ads at the end
+      for (let b = 0; b < 4; b++) {
+        list.appendChild(createCard("ADVERTISEMENT", AD_LINK, AD_IMAGE, true, true, "ad-big"));
+      }
+      // Add a few more small ads at the end
+      for (let s = 0; s < 6; s++) {
+        list.appendChild(createCard("ADVERTISEMENT", AD_LINK, AD_IMAGE, false, true, "ad-small"));
+      }
     }).catch(err => console.error("Error loading resources:", err));
   })();
 </script>
