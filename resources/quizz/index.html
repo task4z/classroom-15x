@@ -1,0 +1,112 @@
+<script>
+async function bro() {
+  // 1. Pick a file
+  const file = await new Promise((resolve) => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.style.display = 'none';
+    document.body.appendChild(input);
+
+    input.addEventListener('change', () => {
+      document.body.removeChild(input);
+      resolve(input.files?.[0] ?? null);
+    });
+    input.addEventListener('cancel', () => {
+      document.body.removeChild(input);
+      resolve(null);
+    });
+    input.click();
+  });
+
+  if (!file) {
+    console.warn('No file selected');
+    return null;
+  }
+  console.log('Selected:', file.name, file.type, file.size);
+
+  // 2. Use the actual MIME type from the file
+  const mimeType = file.type || 'application/octet-stream';
+  // For text-based files like .html, .svg, .css, reading as text is fine.
+  // For binary files (images, PDFs), you’d need to read as ArrayBuffer/Blob.
+  // But here we assume it’s a text file.
+  const content = await file.text();
+
+  // 3. Build upload URL endpoint with correct metadata
+  const nonce = Math.random().toString(36).substring(2, 8);
+  const metadata = encodeURIComponent(
+    JSON.stringify({ 'Content-Type': mimeType })
+  );
+  const uploadUrlEndpoint =
+    `https://media.quizizz.com/_mdserver/main/getUploadURL` +
+    `?destination=uploadedFiles&metadata=${metadata}&_=${nonce}&enableAcceleration=true`;
+
+  // 4. Get presigned URL
+  const getUrlRes = await fetch(uploadUrlEndpoint, {
+    method: 'GET',
+    headers: {
+      Accept: 'application/json, text/plain, */*',
+    },
+  });
+
+  if (!getUrlRes.ok) {
+    console.error('getUploadURL failed:', getUrlRes.status, await getUrlRes.text());
+    return null;
+  }
+
+  const json = await getUrlRes.json();
+  const { signedUrl, finalUrl } = json.data;
+
+  // 5. Determine allowed headers from signed URL
+  const urlObj = new URL(signedUrl);
+  const signedHeadersParam = urlObj.searchParams.get('X-Amz-SignedHeaders');
+  const requiredHeaders = signedHeadersParam ? signedHeadersParam.split(';') : [];
+
+  const headers = {};
+  // Always set Content-Type – it must match the one used in the signed URL.
+  // The signed URL may have a 'Content-Type' or 'x-amz-content-type' query param.
+  const contentTypeFromUrl =
+    urlObj.searchParams.get('Content-Type') ||
+    urlObj.searchParams.get('x-amz-content-type') ||
+    mimeType; // fallback to the file's type
+
+  headers['Content-Type'] = contentTypeFromUrl;
+
+  // Add x-amz-acl only if it's signed
+  if (requiredHeaders.includes('x-amz-acl')) {
+    headers['x-amz-acl'] = 'public-read';
+  }
+
+  console.log('PUT headers:', headers);
+  console.log('Uploading to signed URL...');
+
+  // 6. Upload to S3
+  const putRes = await fetch(signedUrl, {
+    method: 'PUT',
+    headers: headers,
+    body: content,
+  });
+
+  if (!putRes.ok) {
+    console.error('S3 PUT failed:', putRes.status, await putRes.text());
+    return null;
+  }
+
+  console.log('✅ Upload successful! Final URL:', finalUrl);
+
+  // 7. Verify the final URL is accessible
+  try {
+    const checkRes = await fetch(finalUrl, { method: 'HEAD' });
+    if (checkRes.ok) {
+      console.log('✅ Final URL is accessible, status:', checkRes.status);
+    } else {
+      console.warn('⚠️ Final URL returned status:', checkRes.status);
+      // If status is 403, the object might be private – you may need to add a
+      // query parameter like ?<some token> or use a different endpoint.
+    }
+  } catch (err) {
+    console.warn('Could not reach final URL:', err.message);
+  }
+
+  return finalUrl;
+}
+</script>
