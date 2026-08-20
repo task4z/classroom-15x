@@ -1,0 +1,129 @@
+<svg xmlns="http://www.w3.org/2000/svg" style="display:block;overflow:hidden;background:#000">
+<foreignObject id="fo" x="0" y="0" width="100%" height="100%">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <script>//<![CDATA[
+  (function(){
+    var XHTML_NS="http://www.w3.org/1999/xhtml";
+    var root=document.querySelector("foreignObject").firstElementChild;
+    var origCreateNS=document.createElementNS.bind(document);
+    Object.defineProperty(document,"head",{get:function(){return root.querySelector("head")},configurable:true});
+    Object.defineProperty(document,"body",{get:function(){return root.querySelector("body")},configurable:true});
+    Object.defineProperty(document,"documentElement",{get:function(){return root},configurable:true});
+    document.createElement=function(tag,opts){return origCreateNS(XHTML_NS,tag,opts)};
+    document.createElementNS=function(ns,tag,opts){return(ns==null||ns===XHTML_NS)?origCreateNS(XHTML_NS,tag,opts):origCreateNS(ns,tag,opts)};
+  })();
+  //]]></script>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <style>/*<![CDATA[*/
+    *{margin:0;padding:0;box-sizing:border-box}
+    html,body{width:100%;height:100%;background:#000;overflow:hidden}
+    #pf{position:absolute;top:0;left:0;width:100%;height:100%;border:none;display:none;background:#000}
+  /*]]>*/</style>
+</head>
+<body>
+<iframe id="pf" sandbox="allow-same-origin allow-scripts allow-popups allow-forms allow-downloads"></iframe>
+
+<script>//<![CDATA[
+var EFFECTIVE_LOC=(function(){
+  if(location.origin&&location.origin!=='null')return location;
+  try{if(window.parent&&window.parent!==window)return window.parent.location;}catch(e){}
+  return location;
+})();
+var SW_ORIGIN=EFFECTIVE_LOC.origin;
+var BASE_PATH=EFFECTIVE_LOC.pathname.replace(/[^\/]*$/,'');
+
+if(navigator.serviceWorker){
+  navigator.serviceWorker.register(SW_ORIGIN+BASE_PATH+'sw.js',{scope:BASE_PATH,updateViaCache:'none'}).catch(function(){});
+}
+//]]></script>
+<script src="bG9scmF0aW9u/bG9scmF0aW9u.js"></script>
+<script src="bG9scmF0aW9u/dGFzaw.js"></script>
+<script src="bG9scmF0aW9u/ejRrc2F0.js"></script>
+
+<script>//<![CDATA[
+(function(){
+'use strict';
+var pf=document.getElementById('pf');
+var controller=null,frame=null;
+var currentW=localStorage.getItem('wVr1')||'wss://catclass.net/wisp/';
+
+function toParent(type,extra){
+  try{window.parent.postMessage(Object.assign({source:'arctic-embed',type:'arctic-embed:'+type},extra||{}),'*');}catch(e){}
+}
+
+async function initController(){
+  controller=null;frame=null;
+  var Ctrl=window.dGFzazR6MTMzNw.Controller;
+  var cfg=window.dGFzazR6MTMzNw.config;
+  cfg.dGFzazQ=SW_ORIGIN+BASE_PATH+'bG9scmF0aW9u/bG9scmF0aW9u.js';
+  cfg.dGFza3o=SW_ORIGIN+BASE_PATH+'bG9scmF0aW9u/bG9scmF0aW9u.wasm';
+  cfg.ZWR1Y2F0aW9u=SW_ORIGIN+BASE_PATH+'bG9scmF0aW9u/emFrYTEz.js';
+  cfg.prefix=BASE_PATH+'ixl/';
+  var transport=new window.LibcurlTransport.LibcurlClient({wisp:currentW});
+  controller=new Ctrl({serviceworker:navigator.serviceWorker.controller,transport:transport});
+  await controller.wait();
+  frame=controller.createFrame(pf);
+  if(!frame)throw new Error('createFrame returned null');
+  var _Tap=window.$bWF0aGlp&&window.$bWF0aGlp.Tap;
+  if(_Tap){
+    var _nfn=null;
+    _Tap.tap(frame.hooks.init.pre,function(d){try{_nfn=d.window.Function.prototype.toString;}catch(e){}});
+    _Tap.tap(frame.hooks.init.post,function(d){
+      if(!d||!d.window||!_nfn)return;
+      var nv=_nfn;
+      d.window.Function.prototype.toString=function(){try{return nv.call(this);}catch(e){return'function() { [native code] }';}};
+    });
+  }
+}
+
+async function doNavigate(url){
+  if(!url.startsWith('http'))url='https://'+url;
+  try{
+    if(!navigator.serviceWorker.controller){
+      await new Promise(function(res){navigator.serviceWorker.addEventListener('controllerchange',res,{once:true});});
+    }
+    if(!frame)await initController();
+    await frame.go(url);
+    pf.style.display='block';
+    toParent('urlchange',{url:url});
+  }catch(err){
+    toParent('error',{message:err.message});
+  }
+}
+
+window.addEventListener('message',function(e){
+  var d=e.data;
+  if(!d||d.type!=='arctic-embed:command')return;
+  if(d.action==='navigate'&&d.url)doNavigate(d.url);
+  else if(d.action==='back'){try{pf.contentWindow.history.back();}catch(er){}}
+  else if(d.action==='forward'){try{pf.contentWindow.history.forward();}catch(er){}}
+  else if(d.action==='reload'){try{pf.contentWindow.location.reload();}catch(er){}}
+  else if(d.action==='setWisp'&&d.wisp){currentW=d.wisp;controller=null;frame=null;}
+});
+
+(async function preInit(){
+  try{
+    if(!navigator.serviceWorker)return;
+    await navigator.serviceWorker.register(SW_ORIGIN+BASE_PATH+'sw.js',{scope:BASE_PATH,updateViaCache:'none'});
+    if(!navigator.serviceWorker.controller){
+      await new Promise(function(res){navigator.serviceWorker.addEventListener('controllerchange',res,{once:true});});
+    }
+    await initController();
+    toParent('ready');
+  }catch(e){
+    toParent('error',{message:e.message});
+  }
+})();
+})();
+//]]></script>
+</body>
+</html>
+</foreignObject>
+<script>//<![CDATA[
+var fo=document.getElementById('fo');
+function r(){fo.setAttribute('width',window.innerWidth);fo.setAttribute('height',window.innerHeight);}
+r();window.addEventListener('resize',r);
+//]]></script>
+</svg>
