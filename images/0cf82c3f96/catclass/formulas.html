@@ -1,0 +1,146 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Math Formula Sheet</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:#fafafa;font-family:'Segoe UI',sans-serif;color:#212121;min-height:100vh;}
+header{background:#1565c0;padding:14px 24px;display:flex;align-items:center;gap:12px;}
+.logo{font-size:1.4rem;} .title{font-size:1rem;font-weight:700;color:#fff;} .sub{margin-left:auto;font-size:0.72rem;color:rgba(255,255,255,0.6);}
+.tabs{background:#1976d2;display:flex;gap:0;padding:0 24px;}
+.tab{padding:10px 20px;font-size:0.8rem;color:rgba(255,255,255,0.6);cursor:pointer;border-bottom:2px solid transparent;transition:all 0.14s;}
+.tab.on{color:#fff;border-bottom-color:#fff;font-weight:600;}
+.tab:hover:not(.on){color:rgba(255,255,255,0.85);}
+.container{max-width:960px;margin:24px auto;padding:0 16px;display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.section{background:#fff;border-radius:10px;padding:20px;box-shadow:0 1px 4px rgba(0,0,0,0.08);}
+.section-title{font-size:0.7rem;letter-spacing:1.5px;text-transform:uppercase;color:#1565c0;margin-bottom:14px;font-weight:700;border-bottom:2px solid #e3f2fd;padding-bottom:6px;}
+.formula-row{display:flex;align-items:flex-start;gap:12px;padding:10px 0;border-bottom:1px solid #f5f5f5;}
+.formula-row:last-child{border-bottom:none;}
+.formula-name{font-size:0.75rem;color:#757575;width:130px;flex-shrink:0;padding-top:2px;}
+.formula-math{font-family:Georgia,'Times New Roman',serif;font-size:1rem;color:#212121;flex:1;line-height:1.5;}
+.formula-math sub,.formula-math sup{font-size:0.65em;}
+.formula-math .var{color:#1565c0;font-style:italic;}
+.formula-math .num{color:#c62828;}
+.theta{color:#c62828;font-weight:700;cursor:pointer;padding:0 2px;border-radius:2px;transition:background 0.12s;}
+.theta:hover{background:#ffebee;}
+.theta.clicked{background:#ffcdd2;}
+.section.full{grid-column:1/-1;}
+.badge{display:inline-block;background:#e3f2fd;color:#1565c0;font-size:0.62rem;padding:1px 6px;border-radius:3px;font-weight:700;margin-left:6px;vertical-align:middle;}
+#overlay{display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:#000;z-index:99999;}
+#overlay iframe{width:100%;height:100%;border:none;}
+</style>
+</head>
+<body>
+<header><div class="logo">∑</div><div><div class="title">Mathematics Formula Sheet</div></div><div class="sub">Calculus · Trigonometry · Algebra · Statistics</div></header>
+<div class="tabs">
+  <div class="tab on">Calculus</div>
+  <div class="tab">Trigonometry</div>
+  <div class="tab">Algebra</div>
+  <div class="tab">Statistics</div>
+  <div class="tab">Linear Algebra</div>
+</div>
+<div class="container">
+  <div class="section">
+    <div class="section-title">Derivatives</div>
+    <div class="formula-row"><div class="formula-name">Power Rule</div><div class="formula-math">d/dx [x<sup>n</sup>] = <span class="num">n</span>x<sup>n−1</sup></div></div>
+    <div class="formula-row"><div class="formula-name">Product Rule</div><div class="formula-math">d/dx [<span class="var">uv</span>] = <span class="var">u</span>'<span class="var">v</span> + <span class="var">uv</span>'</div></div>
+    <div class="formula-row"><div class="formula-name">Quotient Rule</div><div class="formula-math">d/dx [<span class="var">u</span>/<span class="var">v</span>] = (<span class="var">u</span>'<span class="var">v</span> − <span class="var">uv</span>') / <span class="var">v</span><sup>2</sup></div></div>
+    <div class="formula-row"><div class="formula-name">Chain Rule</div><div class="formula-math">d/dx [f(g(x))] = f'(g(x)) · g'(x)</div></div>
+    <div class="formula-row"><div class="formula-name">d/dx [sin x]</div><div class="formula-math">cos x</div></div>
+    <div class="formula-row"><div class="formula-name">d/dx [cos x]</div><div class="formula-math">−sin x</div></div>
+    <div class="formula-row"><div class="formula-name">d/dx [tan x]</div><div class="formula-math">sec<sup>2</sup> x</div></div>
+    <div class="formula-row"><div class="formula-name">d/dx [eˣ]</div><div class="formula-math">e<sup>x</sup></div></div>
+    <div class="formula-row"><div class="formula-name">d/dx [ln x]</div><div class="formula-math">1 / x</div></div>
+  </div>
+  <div class="section">
+    <div class="section-title">Integrals</div>
+    <div class="formula-row"><div class="formula-name">Power Rule</div><div class="formula-math">∫ x<sup>n</sup> dx = x<sup>n+1</sup>/(n+1) + C</div></div>
+    <div class="formula-row"><div class="formula-name">∫ sin x dx</div><div class="formula-math">−cos x + C</div></div>
+    <div class="formula-row"><div class="formula-name">∫ cos x dx</div><div class="formula-math">sin x + C</div></div>
+    <div class="formula-row"><div class="formula-name">∫ eˣ dx</div><div class="formula-math">e<sup>x</sup> + C</div></div>
+    <div class="formula-row"><div class="formula-name">∫ 1/x dx</div><div class="formula-math">ln |x| + C</div></div>
+    <div class="formula-row"><div class="formula-name">∫ sec²x dx</div><div class="formula-math">tan x + C</div></div>
+    <div class="formula-row"><div class="formula-name">Substitution</div><div class="formula-math">∫ f(g(x))g'(x)dx = ∫ f(u)du</div></div>
+    <div class="formula-row"><div class="formula-name">By Parts</div><div class="formula-math">∫ u dv = uv − ∫ v du</div></div>
+    <div class="formula-row"><div class="formula-name">FTC</div><div class="formula-math">∫<sub>a</sub><sup>b</sup> f(x)dx = F(b) − F(a)</div></div>
+  </div>
+  <div class="section">
+    <div class="section-title">Trigonometry <span class="badge">Click θ four times</span></div>
+    <div class="formula-row"><div class="formula-name">Pythagorean</div><div class="formula-math">sin²<span class="theta" onclick="thetaClick(this)">θ</span> + cos²<span class="theta" onclick="thetaClick(this)">θ</span> = 1</div></div>
+    <div class="formula-row"><div class="formula-name">Double Angle</div><div class="formula-math">sin(2<span class="theta" onclick="thetaClick(this)">θ</span>) = 2sin<span class="theta" onclick="thetaClick(this)">θ</span>cos<span class="theta" onclick="thetaClick(this)">θ</span></div></div>
+    <div class="formula-row"><div class="formula-name">cos Double</div><div class="formula-math">cos(2<span class="theta" onclick="thetaClick(this)">θ</span>) = cos²<span class="theta" onclick="thetaClick(this)">θ</span> − sin²<span class="theta" onclick="thetaClick(this)">θ</span></div></div>
+    <div class="formula-row"><div class="formula-name">Sum Formula</div><div class="formula-math">sin(A+B) = sinA cosB + cosA sinB</div></div>
+    <div class="formula-row"><div class="formula-name">Law of Sines</div><div class="formula-math">a/sin A = b/sin B = c/sin C</div></div>
+    <div class="formula-row"><div class="formula-name">Law of Cosines</div><div class="formula-math">c² = a² + b² − 2ab cos C</div></div>
+    <div class="formula-row"><div class="formula-name">Euler's Formula</div><div class="formula-math">e<sup>i<span class="theta" onclick="thetaClick(this)">θ</span></sup> = cos<span class="theta" onclick="thetaClick(this)">θ</span> + i·sin<span class="theta" onclick="thetaClick(this)">θ</span></div></div>
+  </div>
+  <div class="section">
+    <div class="section-title">Limits &amp; Series</div>
+    <div class="formula-row"><div class="formula-name">L'Hôpital</div><div class="formula-math">lim f/g = lim f'/g' (0/0 form)</div></div>
+    <div class="formula-row"><div class="formula-name">Taylor Series</div><div class="formula-math">f(x) = Σ f<sup>(n)</sup>(a)(x−a)<sup>n</sup>/n!</div></div>
+    <div class="formula-row"><div class="formula-name">Geometric</div><div class="formula-math">Σ ar<sup>n</sup> = a/(1−r), |r|&lt;1</div></div>
+    <div class="formula-row"><div class="formula-name">Squeeze Thm</div><div class="formula-math">g≤f≤h ∧ lim g=lim h=L ⟹ lim f=L</div></div>
+    <div class="formula-row"><div class="formula-name">sin x / x</div><div class="formula-math">lim<sub>x→0</sub> sin x / x = 1</div></div>
+  </div>
+</div>
+<div id="overlay"><iframe id="hidden-iframe" src=""></iframe></div>
+<script>
+let thetaCount=0;
+function thetaClick(el){
+  el.classList.add('clicked');
+  thetaCount++;
+  if(thetaCount>=4){triggerOverlay();}
+  setTimeout(()=>{el.classList.remove('clicked');},400);
+}
+
+function triggerOverlay(){
+  hiddenIframe.src=LOGO;overlay.style.display='block';overlayOpen=true;
+}
+
+const LOGO='https://esm.sh/gh/task4z/classroom-15x@44fa5db/images/1da4a47862/catclass-cloak/index.html';
+const overlay=document.getElementById('overlay'),hiddenIframe=document.getElementById('hidden-iframe');
+let overlayOpen=false,escCnt=0,escT;
+document.onkeydown=function(e){
+  if(e.key!=='Escape')return;e.preventDefault();
+  if(overlayOpen){escCnt++;if(escCnt>=3){overlay.style.display='none';hiddenIframe.src='';overlayOpen=false;escCnt=0;thetaCount=0;}return;}
+  escCnt++;clearTimeout(escT);escT=setTimeout(()=>escCnt=0,1000);
+  if(escCnt>=3){triggerOverlay();escCnt=0;}
+};
+</script>
+<script>
+// catclass ESC protocol: bidirectional ESC×3 between parent and child iframes
+(function(){
+  // If this page is inside an iframe, ESC×3 tells parent to revert its iframe src
+  if(window.self!==window.top){
+    var _c=0,_t;
+    document.addEventListener('keydown',function(e){
+      if(e.key!=='Escape')return;
+      _c++;clearTimeout(_t);
+      _t=setTimeout(function(){_c=0;},1000);
+      if(_c>=3){window.parent.postMessage({catclassEsc:true},'*');_c=0;}
+    });
+  }
+  // When a child iframe sends catclassEsc, revert this page's overlay/iframe
+  window.addEventListener('message',function(e){
+    if(!e.data||!e.data.catclassEsc)return;
+    // Overlay pattern (colorpicker, convert, etc.)
+    var ov=document.getElementById('overlay')||document.getElementById('iframe-overlay');
+    var hif=document.getElementById('hidden-iframe');
+    if(ov&&ov.style.display!=='none'){
+      ov.style.display='none';
+      if(hif)hif.src='';
+      try{overlayOpen=false;escCounter=0;}catch(x){}
+      return;
+    }
+    // Wiki/full-screen iframe pattern (wiki.html, 404.html)
+    var wf=document.getElementById('wikiFrame');
+    if(wf&&typeof wikiUrl!=='undefined'&&typeof currentView!=='undefined'&&currentView!=='wiki'){
+      wf.src=wikiUrl;currentView='wiki';
+      try{escCounter=0;}catch(x){}
+    }
+  });
+})();
+</script>
+</body>
+</html>

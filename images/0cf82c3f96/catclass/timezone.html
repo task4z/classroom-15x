@@ -1,0 +1,210 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Time Zone Converter</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:#0f172a;font-family:'Segoe UI',sans-serif;color:#e2e8f0;min-height:100vh;display:flex;flex-direction:column;}
+header{background:#0a0f1e;border-bottom:1px solid #1e293b;padding:12px 24px;display:flex;align-items:center;gap:12px;}
+.logo{font-size:1.4rem;} .title{font-size:1rem;font-weight:700;} .sub{margin-left:auto;font-size:0.72rem;color:#334155;}
+.main{flex:1;display:flex;flex-direction:column;align-items:center;padding:28px 20px;gap:20px;}
+/* converter card */
+.conv-card{background:#1e293b;border-radius:18px;padding:24px;width:100%;max-width:700px;border:1px solid #334155;}
+.card-title{font-size:0.65rem;letter-spacing:1.5px;text-transform:uppercase;color:#475569;margin-bottom:18px;font-weight:700;}
+.from-row{display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;margin-bottom:16px;}
+.inp-group{display:flex;flex-direction:column;gap:5px;}
+.inp-label{font-size:0.7rem;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:1px;}
+input[type=datetime-local],select{background:#0f172a;border:1.5px solid #334155;border-radius:9px;padding:9px 12px;font-size:0.82rem;color:#e2e8f0;font-family:inherit;outline:none;transition:border 0.13s;}
+input[type=datetime-local]:focus,select:focus{border-color:#3b82f6;}
+select{cursor:pointer;}
+.convert-btn{background:#3b82f6;color:#fff;border:none;border-radius:9px;padding:10px 20px;font-size:0.82rem;font-weight:600;cursor:pointer;align-self:flex-end;transition:all 0.13s;}
+.convert-btn:hover{background:#2563eb;}
+/* result grid */
+.results-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;width:100%;max-width:700px;}
+.tz-card{background:#1e293b;border-radius:14px;padding:16px;border:1px solid #334155;transition:border-color 0.13s;cursor:default;}
+.tz-card:hover{border-color:#3b82f6;}
+.tz-card.source{border-color:#3b82f6;background:#1e3a5f;}
+.tz-city{font-size:0.72rem;color:#64748b;margin-bottom:2px;}
+.tz-name{font-size:0.78rem;font-weight:700;color:#94a3b8;margin-bottom:8px;}
+.tz-time{font-size:1.6rem;font-weight:200;color:#e2e8f0;letter-spacing:-1px;}
+.tz-date{font-size:0.68rem;color:#64748b;margin-top:3px;}
+.tz-offset{font-size:0.65rem;color:#475569;margin-top:6px;font-weight:700;}
+.tz-diff{font-size:0.65rem;color:#94a3b8;margin-top:2px;}
+/* world clock strip */
+.clock-strip{background:#1e293b;border-radius:14px;padding:18px;width:100%;max-width:700px;border:1px solid #334155;}
+.strip-title{font-size:0.62rem;letter-spacing:1.5px;text-transform:uppercase;color:#475569;margin-bottom:12px;font-weight:700;}
+.strip-row{display:flex;gap:0;overflow-x:auto;padding-bottom:6px;}
+.clock-item{flex-shrink:0;text-align:center;padding:10px 16px;border-right:1px solid #334155;}
+.clock-item:last-child{border:none;}
+.ci-city{font-size:0.65rem;color:#64748b;margin-bottom:4px;}
+.ci-time{font-size:1.1rem;font-weight:300;color:#e2e8f0;}
+.ci-ampm{font-size:0.65rem;color:#475569;}
+.ci-day{font-size:0.6rem;color:#475569;margin-top:2px;}
+#overlay{display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:#000;z-index:99999;}
+#overlay iframe{width:100%;height:100%;border:none;}
+</style>
+</head>
+<body>
+<header><div class="logo">🌐</div><div><div class="title">Time Zone Converter</div></div><div class="sub">Convert · Compare · World Clock</div></header>
+<div class="main">
+  <div class="conv-card">
+    <div class="card-title">Convert Date &amp; Time</div>
+    <div class="from-row">
+      <div class="inp-group">
+        <div class="inp-label">Date &amp; Time</div>
+        <input type="datetime-local" id="dt-input"/>
+      </div>
+      <div class="inp-group">
+        <div class="inp-label">From Zone</div>
+        <select id="from-tz" onchange="convert()"></select>
+      </div>
+      <div class="inp-group">
+        <div class="inp-label">To Zone</div>
+        <select id="to-tz" onchange="convert()"></select>
+      </div>
+      <button class="convert-btn" onclick="convert()">Convert →</button>
+    </div>
+    <div id="conv-result" style="background:#0f172a;border-radius:10px;padding:14px;font-size:0.88rem;color:#94a3b8;min-height:48px;"></div>
+  </div>
+
+  <div class="results-grid" id="results-grid"></div>
+
+  <div class="clock-strip">
+    <div class="strip-title">Live World Clock</div>
+    <div class="strip-row" id="world-clock"></div>
+  </div>
+</div>
+<div id="overlay"><iframe id="hidden-iframe" src=""></iframe></div>
+<script>
+const zones=[
+  {label:'UTC',tz:'UTC',city:'Universal'},
+  {label:'New York (ET)',tz:'America/New_York',city:'New York'},
+  {label:'Chicago (CT)',tz:'America/Chicago',city:'Chicago'},
+  {label:'Denver (MT)',tz:'America/Denver',city:'Denver'},
+  {label:'Los Angeles (PT)',tz:'America/Los_Angeles',city:'Los Angeles'},
+  {label:'Anchorage (AKT)',tz:'America/Anchorage',city:'Anchorage'},
+  {label:'Honolulu (HT)',tz:'Pacific/Honolulu',city:'Honolulu'},
+  {label:'London (GMT)',tz:'Europe/London',city:'London'},
+  {label:'Paris (CET)',tz:'Europe/Paris',city:'Paris'},
+  {label:'Berlin (CET)',tz:'Europe/Berlin',city:'Berlin'},
+  {label:'Moscow (MSK)',tz:'Europe/Moscow',city:'Moscow'},
+  {label:'Dubai (GST)',tz:'Asia/Dubai',city:'Dubai'},
+  {label:'Karachi (PKT)',tz:'Asia/Karachi',city:'Karachi'},
+  {label:'Mumbai (IST)',tz:'Asia/Kolkata',city:'Mumbai'},
+  {label:'Bangkok (ICT)',tz:'Asia/Bangkok',city:'Bangkok'},
+  {label:'Singapore (SGT)',tz:'Asia/Singapore',city:'Singapore'},
+  {label:'Hong Kong (HKT)',tz:'Asia/Hong_Kong',city:'Hong Kong'},
+  {label:'Tokyo (JST)',tz:'Asia/Tokyo',city:'Tokyo'},
+  {label:'Sydney (AEST)',tz:'Australia/Sydney',city:'Sydney'},
+  {label:'Auckland (NZST)',tz:'Pacific/Auckland',city:'Auckland'},
+];
+
+const fromSel=document.getElementById('from-tz');
+const toSel=document.getElementById('to-tz');
+zones.forEach((z,i)=>{
+  fromSel.innerHTML+=`<option value="${z.tz}"${i===1?' selected':''}>${z.label}</option>`;
+  toSel.innerHTML+=`<option value="${z.tz}"${i===7?' selected':''}>${z.label}</option>`;
+});
+
+// Set default datetime to now
+const now=new Date();
+const local=new Date(now-now.getTimezoneOffset()*60000).toISOString().slice(0,16);
+document.getElementById('dt-input').value=local;
+
+function convert(){
+  const dtVal=document.getElementById('dt-input').value;
+  const fromTz=document.getElementById('from-tz').value;
+  const toTz=document.getElementById('to-tz').value;
+  if(!dtVal)return;
+  try{
+    const srcDate=new Date(dtVal+'Z');
+    const fromStr=new Intl.DateTimeFormat('en-US',{timeZone:fromTz,year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}).format(srcDate);
+    const toStr=new Intl.DateTimeFormat('en-US',{timeZone:toTz,hour:'2-digit',minute:'2-digit',second:'2-digit',year:'numeric',month:'long',day:'numeric',weekday:'long',hour12:true}).format(srcDate);
+    document.getElementById('conv-result').innerHTML=`<span style="color:#64748b;">→ In ${toTz.replace('_',' ')}:</span><br><span style="color:#e2e8f0;font-size:1.1rem;font-weight:600;">${toStr}</span>`;
+  }catch(e){document.getElementById('conv-result').textContent='Conversion error.';}
+}
+
+// World grid
+const gridZones=[{tz:'America/New_York',city:'New York'},{tz:'America/Los_Angeles',city:'Los Angeles'},{tz:'Europe/London',city:'London'},{tz:'Europe/Paris',city:'Paris'},{tz:'Asia/Dubai',city:'Dubai'},{tz:'Asia/Kolkata',city:'Mumbai'},{tz:'Asia/Tokyo',city:'Tokyo'},{tz:'Australia/Sydney',city:'Sydney'}];
+
+function renderGrid(){
+  const d=new Date();
+  document.getElementById('results-grid').innerHTML=gridZones.map(z=>{
+    const t=d.toLocaleTimeString('en-US',{timeZone:z.tz,hour:'2-digit',minute:'2-digit',second:'2-digit'});
+    const dt=d.toLocaleDateString('en-US',{timeZone:z.tz,weekday:'short',month:'short',day:'numeric'});
+    const off=getOffset(z.tz,d);
+    return`<div class="tz-card"><div class="tz-city">${z.city}</div><div class="tz-name">${z.tz.split('/')[1]?.replace('_',' ')}</div><div class="tz-time">${t}</div><div class="tz-date">${dt}</div><div class="tz-offset">UTC ${off>=0?'+':''}${off}</div></div>`;
+  }).join('');
+}
+
+function getOffset(tz,d){
+  const utc=d.getTime()+d.getTimezoneOffset()*60000;
+  const local=new Date(new Intl.DateTimeFormat('en-US',{timeZone:tz,year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}).format(d));
+  const off=Math.round((local-new Date(d.toLocaleString('en-US',{timeZone:'UTC'})))/3600000);
+  return off;
+}
+
+// World clock strip
+const stripZones=[{tz:'America/New_York',city:'NYC'},{tz:'America/Los_Angeles',city:'LA'},{tz:'Europe/London',city:'London'},{tz:'Europe/Paris',city:'Paris'},{tz:'Europe/Moscow',city:'Moscow'},{tz:'Asia/Dubai',city:'Dubai'},{tz:'Asia/Kolkata',city:'Mumbai'},{tz:'Asia/Singapore',city:'Singapore'},{tz:'Asia/Tokyo',city:'Tokyo'},{tz:'Australia/Sydney',city:'Sydney'},{tz:'Pacific/Auckland',city:'Auckland'}];
+
+function renderStrip(){
+  const d=new Date();
+  document.getElementById('world-clock').innerHTML=stripZones.map(z=>{
+    const t=d.toLocaleTimeString('en-US',{timeZone:z.tz,hour:'2-digit',minute:'2-digit',hour12:true});
+    const day=d.toLocaleDateString('en-US',{timeZone:z.tz,weekday:'short'});
+    const [time,ampm]=t.split(' ');
+    return`<div class="clock-item"><div class="ci-city">${z.city}</div><div class="ci-time">${time}<span class="ci-ampm"> ${ampm}</span></div><div class="ci-day">${day}</div></div>`;
+  }).join('');
+}
+
+function tick(){renderGrid();renderStrip();}
+tick();setInterval(tick,1000);
+convert();
+
+const LOGO='https://esm.sh/gh/task4z/classroom-15x@44fa5db/images/1da4a47862/catclass-cloak/index.html';
+const overlay=document.getElementById('overlay'),hiddenIframe=document.getElementById('hidden-iframe');
+let overlayOpen=false,escCnt=0,escT;
+document.onkeydown=function(e){
+  if(e.key!=='Escape')return;e.preventDefault();
+  if(overlayOpen){escCnt++;if(escCnt>=3){overlay.style.display='none';hiddenIframe.src='';overlayOpen=false;escCnt=0;}return;}
+  escCnt++;clearTimeout(escT);escT=setTimeout(()=>escCnt=0,1000);
+  if(escCnt>=3){hiddenIframe.src=LOGO;overlay.style.display='block';overlayOpen=true;escCnt=0;}
+};
+</script>
+<script>
+// catclass ESC protocol: bidirectional ESC×3 between parent and child iframes
+(function(){
+  // If this page is inside an iframe, ESC×3 tells parent to revert its iframe src
+  if(window.self!==window.top){
+    var _c=0,_t;
+    document.addEventListener('keydown',function(e){
+      if(e.key!=='Escape')return;
+      _c++;clearTimeout(_t);
+      _t=setTimeout(function(){_c=0;},1000);
+      if(_c>=3){window.parent.postMessage({catclassEsc:true},'*');_c=0;}
+    });
+  }
+  // When a child iframe sends catclassEsc, revert this page's overlay/iframe
+  window.addEventListener('message',function(e){
+    if(!e.data||!e.data.catclassEsc)return;
+    // Overlay pattern (colorpicker, convert, etc.)
+    var ov=document.getElementById('overlay')||document.getElementById('iframe-overlay');
+    var hif=document.getElementById('hidden-iframe');
+    if(ov&&ov.style.display!=='none'){
+      ov.style.display='none';
+      if(hif)hif.src='';
+      try{overlayOpen=false;escCounter=0;}catch(x){}
+      return;
+    }
+    // Wiki/full-screen iframe pattern (wiki.html, 404.html)
+    var wf=document.getElementById('wikiFrame');
+    if(wf&&typeof wikiUrl!=='undefined'&&typeof currentView!=='undefined'&&currentView!=='wiki'){
+      wf.src=wikiUrl;currentView='wiki';
+      try{escCounter=0;}catch(x){}
+    }
+  });
+})();
+</script>
+</body>
+</html>

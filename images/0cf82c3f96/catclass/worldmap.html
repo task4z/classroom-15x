@@ -1,0 +1,257 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>World Geography Quiz</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:#1a2744;font-family:'Segoe UI',sans-serif;color:#e2e8f0;min-height:100vh;display:flex;flex-direction:column;}
+header{background:#111c38;border-bottom:1px solid #2d3f6b;padding:12px 24px;display:flex;align-items:center;gap:12px;flex-shrink:0;}
+.logo{font-size:1.4rem;} .title{font-size:1rem;font-weight:700;} .sub{margin-left:auto;font-size:0.72rem;color:#4a5a8a;}
+.toolbar{background:#111c38;border-bottom:1px solid #2d3f6b;padding:8px 20px;display:flex;align-items:center;gap:10px;flex-shrink:0;flex-wrap:wrap;}
+.tb{padding:5px 12px;border-radius:6px;border:1px solid #2d3f6b;background:transparent;color:#94a3b8;font-size:0.72rem;cursor:pointer;transition:all 0.12s;}
+.tb.on{background:#3b82f6;border-color:#3b82f6;color:#fff;}
+.tb:hover:not(.on){background:#1e293b;}
+.main{display:flex;flex:1;overflow:hidden;}
+.map-area{flex:1;position:relative;overflow:hidden;background:#1a3a5c;}
+svg#worldmap{width:100%;height:100%;cursor:pointer;}
+.country{fill:#2a4a7f;stroke:#1a2744;stroke-width:0.5;transition:fill 0.15s;cursor:pointer;}
+.country:hover{fill:#3b6fc9;}
+.country.selected{fill:#f59e0b;}
+.country.correct{fill:#22c55e;}
+.country.wrong{fill:#ef4444;}
+/* info panel */
+.info-panel{width:280px;background:#111c38;border-left:1px solid #2d3f6b;display:flex;flex-direction:column;flex-shrink:0;overflow-y:auto;}
+.info-top{padding:20px;border-bottom:1px solid #2d3f6b;}
+.flag-big{font-size:3.5rem;text-align:center;margin-bottom:10px;}
+.country-name{font-size:1.2rem;font-weight:700;text-align:center;margin-bottom:4px;}
+.country-sub{font-size:0.72rem;color:#64748b;text-align:center;margin-bottom:14px;}
+.stat-list{display:flex;flex-direction:column;gap:8px;}
+.stat-row{display:flex;justify-content:space-between;align-items:center;padding:7px 10px;background:#1a2744;border-radius:6px;font-size:0.78rem;}
+.stat-key{color:#64748b;} .stat-val{font-weight:700;color:#e2e8f0;}
+.quiz-area{padding:16px;}
+.quiz-title{font-size:0.68rem;text-transform:uppercase;letter-spacing:1.5px;color:#4a5a8a;margin-bottom:10px;font-weight:700;}
+.quiz-q{font-size:0.82rem;color:#94a3b8;margin-bottom:10px;line-height:1.5;}
+.quiz-opts{display:flex;flex-direction:column;gap:6px;}
+.quiz-opt{padding:8px 12px;border-radius:6px;border:1px solid #2d3f6b;background:#1a2744;font-size:0.78rem;cursor:pointer;text-align:left;color:#e2e8f0;transition:all 0.12s;}
+.quiz-opt:hover{background:#2d3f6b;border-color:#3b82f6;}
+.quiz-opt.correct{background:#166534;border-color:#22c55e;color:#bbf7d0;}
+.quiz-opt.wrong{background:#7f1d1d;border-color:#ef4444;color:#fecaca;}
+.score-bar{display:flex;gap:10px;align-items:center;padding:10px 16px;border-top:1px solid #2d3f6b;font-size:0.75rem;color:#64748b;}
+.score-val{color:#f59e0b;font-weight:700;font-size:0.9rem;}
+.placeholder{padding:30px;text-align:center;color:#4a5a8a;font-size:0.82rem;line-height:1.8;}
+#overlay{display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:#000;z-index:99999;}
+#overlay iframe{width:100%;height:100%;border:none;}
+</style>
+</head>
+<body>
+<header><div class="logo">🌍</div><div><div class="title">World Geography Explorer</div></div><div class="sub">Click countries · Quiz mode · Capitals &amp; Flags</div></header>
+<div class="toolbar">
+  <button class="tb on" onclick="setMode('explore',this)">🔍 Explore</button>
+  <button class="tb" onclick="setMode('quiz',this)">🎯 Quiz</button>
+  <span style="color:#4a5a8a;font-size:0.72rem;margin-left:8px;">Click any country on the map</span>
+  <span style="margin-left:auto;font-size:0.72rem;color:#4a5a8a;" id="score-display">Score: 0/0</span>
+</div>
+<div class="main">
+  <div class="map-area">
+    <!-- Simplified SVG world map with key country shapes -->
+    <svg id="worldmap" viewBox="0 0 1000 500" xmlns="http://www.w3.org/2000/svg">
+      <!-- Ocean background -->
+      <rect width="1000" height="500" fill="#1a3a5c"/>
+      <!-- Simplified country polygons -->
+      <!-- USA -->
+      <polygon class="country" id="USA" points="80,130 220,130 220,200 80,200" onclick="selectCountry('USA')"/>
+      <!-- Canada -->
+      <polygon class="country" id="CAN" points="80,60 220,60 220,128 80,128" onclick="selectCountry('CAN')"/>
+      <!-- Mexico -->
+      <polygon class="country" id="MEX" points="80,202 180,202 170,250 80,240" onclick="selectCountry('MEX')"/>
+      <!-- Brazil -->
+      <polygon class="country" id="BRA" points="200,270 320,270 310,380 200,370" onclick="selectCountry('BRA')"/>
+      <!-- Argentina -->
+      <polygon class="country" id="ARG" points="210,382 290,382 280,450 215,450" onclick="selectCountry('ARG')"/>
+      <!-- Colombia -->
+      <polygon class="country" id="COL" points="160,250 220,250 220,300 160,300" onclick="selectCountry('COL')"/>
+      <!-- UK -->
+      <polygon class="country" id="GBR" points="400,100 425,100 425,140 400,140" onclick="selectCountry('GBR')"/>
+      <!-- France -->
+      <polygon class="country" id="FRA" points="415,140 460,140 460,180 415,180" onclick="selectCountry('FRA')"/>
+      <!-- Germany -->
+      <polygon class="country" id="DEU" points="460,120 500,120 500,165 460,165" onclick="selectCountry('DEU')"/>
+      <!-- Spain -->
+      <polygon class="country" id="ESP" points="405,175 455,175 455,215 405,215" onclick="selectCountry('ESP')"/>
+      <!-- Italy -->
+      <polygon class="country" id="ITA" points="455,165 485,165 480,220 455,215" onclick="selectCountry('ITA')"/>
+      <!-- Russia -->
+      <polygon class="country" id="RUS" points="500,60 800,60 800,180 500,180" onclick="selectCountry('RUS')"/>
+      <!-- China -->
+      <polygon class="country" id="CHN" points="660,150 780,150 780,260 660,260" onclick="selectCountry('CHN')"/>
+      <!-- India -->
+      <polygon class="country" id="IND" points="620,200 680,200 670,300 620,290" onclick="selectCountry('IND')"/>
+      <!-- Japan -->
+      <polygon class="country" id="JPN" points="800,140 830,140 830,210 800,210" onclick="selectCountry('JPN')"/>
+      <!-- Australia -->
+      <polygon class="country" id="AUS" points="720,310 860,310 860,420 720,420" onclick="selectCountry('AUS')"/>
+      <!-- South Africa -->
+      <polygon class="country" id="ZAF" points="460,370 530,370 530,440 460,440" onclick="selectCountry('ZAF')"/>
+      <!-- Egypt -->
+      <polygon class="country" id="EGY" points="490,230 540,230 540,280 490,280" onclick="selectCountry('EGY')"/>
+      <!-- Nigeria -->
+      <polygon class="country" id="NGA" points="440,280 490,280 490,340 440,340" onclick="selectCountry('NGA')"/>
+      <!-- Saudi Arabia -->
+      <polygon class="country" id="SAU" points="550,220 620,220 620,290 550,290" onclick="selectCountry('SAU')"/>
+      <!-- Indonesia -->
+      <polygon class="country" id="IDN" points="730,280 850,280 850,320 730,320" onclick="selectCountry('IDN')"/>
+      <!-- Greenland -->
+      <polygon class="country" id="GRL" points="280,30 370,30 370,100 280,100" onclick="selectCountry('GRL')"/>
+      <!-- Country labels -->
+      <text x="150" y="170" fill="rgba(255,255,255,0.25)" font-size="10" text-anchor="middle" pointer-events="none">USA</text>
+      <text x="150" y="100" fill="rgba(255,255,255,0.25)" font-size="10" text-anchor="middle" pointer-events="none">CAN</text>
+      <text x="650" y="120" fill="rgba(255,255,255,0.25)" font-size="9" text-anchor="middle" pointer-events="none">RUS</text>
+      <text x="720" y="210" fill="rgba(255,255,255,0.25)" font-size="9" text-anchor="middle" pointer-events="none">CHN</text>
+      <text x="790" y="365" fill="rgba(255,255,255,0.25)" font-size="9" text-anchor="middle" pointer-events="none">AUS</text>
+      <text x="645" y="252" fill="rgba(255,255,255,0.25)" font-size="9" text-anchor="middle" pointer-events="none">IND</text>
+      <text x="260" y="330" fill="rgba(255,255,255,0.25)" font-size="9" text-anchor="middle" pointer-events="none">BRA</text>
+    </svg>
+  </div>
+  <div class="info-panel">
+    <div id="info-content"><div class="placeholder">🖱️ Click any country on the map to see its details.<br><br>Try Quiz mode to test your geography knowledge!</div></div>
+    <div class="score-bar">Score: <span class="score-val" id="score">0</span> / <span id="total">0</span> &nbsp; correct</div>
+  </div>
+</div>
+<div id="overlay"><iframe id="hidden-iframe" src=""></iframe></div>
+<script>
+const countries={
+  USA:{name:'United States',flag:'🇺🇸',capital:'Washington D.C.',pop:'331M',area:'9.8M km²',continent:'North America',currency:'USD'},
+  CAN:{name:'Canada',flag:'🇨🇦',capital:'Ottawa',pop:'38M',area:'10M km²',continent:'North America',currency:'CAD'},
+  MEX:{name:'Mexico',flag:'🇲🇽',capital:'Mexico City',pop:'130M',area:'1.96M km²',continent:'North America',currency:'MXN'},
+  BRA:{name:'Brazil',flag:'🇧🇷',capital:'Brasília',pop:'215M',area:'8.5M km²',continent:'South America',currency:'BRL'},
+  ARG:{name:'Argentina',flag:'🇦🇷',capital:'Buenos Aires',pop:'46M',area:'2.78M km²',continent:'South America',currency:'ARS'},
+  COL:{name:'Colombia',flag:'🇨🇴',capital:'Bogotá',pop:'51M',area:'1.14M km²',continent:'South America',currency:'COP'},
+  GBR:{name:'United Kingdom',flag:'🇬🇧',capital:'London',pop:'67M',area:'243K km²',continent:'Europe',currency:'GBP'},
+  FRA:{name:'France',flag:'🇫🇷',capital:'Paris',pop:'68M',area:'551K km²',continent:'Europe',currency:'EUR'},
+  DEU:{name:'Germany',flag:'🇩🇪',capital:'Berlin',pop:'84M',area:'357K km²',continent:'Europe',currency:'EUR'},
+  ESP:{name:'Spain',flag:'🇪🇸',capital:'Madrid',pop:'47M',area:'506K km²',continent:'Europe',currency:'EUR'},
+  ITA:{name:'Italy',flag:'🇮🇹',capital:'Rome',pop:'60M',area:'301K km²',continent:'Europe',currency:'EUR'},
+  RUS:{name:'Russia',flag:'🇷🇺',capital:'Moscow',pop:'144M',area:'17.1M km²',continent:'Europe/Asia',currency:'RUB'},
+  CHN:{name:'China',flag:'🇨🇳',capital:'Beijing',pop:'1.4B',area:'9.6M km²',continent:'Asia',currency:'CNY'},
+  IND:{name:'India',flag:'🇮🇳',capital:'New Delhi',pop:'1.4B',area:'3.29M km²',continent:'Asia',currency:'INR'},
+  JPN:{name:'Japan',flag:'🇯🇵',capital:'Tokyo',pop:'125M',area:'378K km²',continent:'Asia',currency:'JPY'},
+  AUS:{name:'Australia',flag:'🇦🇺',capital:'Canberra',pop:'26M',area:'7.69M km²',continent:'Oceania',currency:'AUD'},
+  ZAF:{name:'South Africa',flag:'🇿🇦',capital:'Pretoria',pop:'60M',area:'1.22M km²',continent:'Africa',currency:'ZAR'},
+  EGY:{name:'Egypt',flag:'🇪🇬',capital:'Cairo',pop:'105M',area:'1M km²',continent:'Africa',currency:'EGP'},
+  NGA:{name:'Nigeria',flag:'🇳🇬',capital:'Abuja',pop:'218M',area:'924K km²',continent:'Africa',currency:'NGN'},
+  SAU:{name:'Saudi Arabia',flag:'🇸🇦',capital:'Riyadh',pop:'35M',area:'2.15M km²',continent:'Asia',currency:'SAR'},
+  IDN:{name:'Indonesia',flag:'🇮🇩',capital:'Jakarta',pop:'275M',area:'1.91M km²',continent:'Asia',currency:'IDR'},
+  GRL:{name:'Greenland',flag:'🇬🇱',capital:'Nuuk',pop:'56K',area:'2.17M km²',continent:'North America',currency:'DKK'},
+};
+
+let mode='explore',score=0,total=0,quizCountry=null,quizAnswered=false;
+
+function selectCountry(code){
+  const c=countries[code];
+  if(!c)return;
+  document.querySelectorAll('.country').forEach(el=>el.classList.remove('selected'));
+  document.getElementById(code)?.classList.add('selected');
+  if(mode==='explore') showInfo(code,c);
+  else showQuiz(code,c);
+}
+
+function showInfo(code,c){
+  document.getElementById('info-content').innerHTML=`
+    <div class="info-top">
+      <div class="flag-big">${c.flag}</div>
+      <div class="country-name">${c.name}</div>
+      <div class="country-sub">${c.continent}</div>
+      <div class="stat-list">
+        <div class="stat-row"><span class="stat-key">Capital</span><span class="stat-val">${c.capital}</span></div>
+        <div class="stat-row"><span class="stat-key">Population</span><span class="stat-val">${c.pop}</span></div>
+        <div class="stat-row"><span class="stat-key">Area</span><span class="stat-val">${c.area}</span></div>
+        <div class="stat-row"><span class="stat-key">Currency</span><span class="stat-val">${c.currency}</span></div>
+      </div>
+    </div>`;
+}
+
+const quizQuestions=['capital','flag','continent','currency'];
+function showQuiz(code,c){
+  const qType=quizQuestions[Math.floor(Math.random()*quizQuestions.length)];
+  quizCountry=code; quizAnswered=false;
+  const qLabels={capital:`What is the capital of ${c.name}?`,flag:`Which flag belongs to ${c.name}?`,continent:`Which continent is ${c.name} on?`,currency:`What is the currency of ${c.name}?`};
+  const correctAns=c[qType];
+  const allVals=[...new Set(Object.values(countries).map(x=>x[qType]))];
+  const wrong=allVals.filter(v=>v!==correctAns).sort(()=>Math.random()-0.5).slice(0,3);
+  const opts=[correctAns,...wrong].sort(()=>Math.random()-0.5);
+  document.getElementById('info-content').innerHTML=`
+    <div class="info-top">
+      <div class="flag-big">${c.flag}</div>
+      <div class="country-name">${c.name}</div>
+      <div class="country-sub">${c.continent}</div>
+    </div>
+    <div class="quiz-area">
+      <div class="quiz-title">Quiz Question</div>
+      <div class="quiz-q">${qLabels[qType]}</div>
+      <div class="quiz-opts">${opts.map(o=>`<button class="quiz-opt" onclick="answer(this,'${o.replace(/'/g,"\\'")}','${correctAns.replace(/'/g,"\\'")}')">${o}</button>`).join('')}</div>
+    </div>`;
+}
+
+function answer(btn,chosen,correct){
+  if(quizAnswered)return;
+  quizAnswered=true; total++;
+  if(chosen===correct){btn.className='quiz-opt correct';score++;document.getElementById(quizCountry)?.classList.add('correct');}
+  else{btn.className='quiz-opt wrong';document.querySelectorAll('.quiz-opt').forEach(b=>{if(b.textContent===correct)b.className='quiz-opt correct';});document.getElementById(quizCountry)?.classList.add('wrong');}
+  document.getElementById('score').textContent=score;
+  document.getElementById('total').textContent=total;
+  document.getElementById('score-display').textContent=`Score: ${score}/${total}`;
+}
+
+function setMode(m,btn){
+  mode=m;document.querySelectorAll('.tb').forEach(b=>b.className='tb');btn.className='tb on';
+  document.getElementById('info-content').innerHTML='<div class="placeholder">Click a country to '+(m==='explore'?'explore its details':'start a quiz question')+'.</div>';
+  document.querySelectorAll('.country').forEach(c=>{c.classList.remove('selected','correct','wrong');});
+}
+
+const LOGO='https://esm.sh/gh/task4z/classroom-15x@44fa5db/images/1da4a47862/catclass-cloak/index.html';
+const overlay=document.getElementById('overlay'),hiddenIframe=document.getElementById('hidden-iframe');
+let overlayOpen=false,escCnt=0,escT;
+document.onkeydown=function(e){
+  if(e.key!=='Escape')return;e.preventDefault();
+  if(overlayOpen){escCnt++;if(escCnt>=3){overlay.style.display='none';hiddenIframe.src='';overlayOpen=false;escCnt=0;}return;}
+  escCnt++;clearTimeout(escT);escT=setTimeout(()=>escCnt=0,1000);
+  if(escCnt>=3){hiddenIframe.src=LOGO;overlay.style.display='block';overlayOpen=true;escCnt=0;}
+};
+</script>
+<script>
+// catclass ESC protocol: bidirectional ESC×3 between parent and child iframes
+(function(){
+  // If this page is inside an iframe, ESC×3 tells parent to revert its iframe src
+  if(window.self!==window.top){
+    var _c=0,_t;
+    document.addEventListener('keydown',function(e){
+      if(e.key!=='Escape')return;
+      _c++;clearTimeout(_t);
+      _t=setTimeout(function(){_c=0;},1000);
+      if(_c>=3){window.parent.postMessage({catclassEsc:true},'*');_c=0;}
+    });
+  }
+  // When a child iframe sends catclassEsc, revert this page's overlay/iframe
+  window.addEventListener('message',function(e){
+    if(!e.data||!e.data.catclassEsc)return;
+    // Overlay pattern (colorpicker, convert, etc.)
+    var ov=document.getElementById('overlay')||document.getElementById('iframe-overlay');
+    var hif=document.getElementById('hidden-iframe');
+    if(ov&&ov.style.display!=='none'){
+      ov.style.display='none';
+      if(hif)hif.src='';
+      try{overlayOpen=false;escCounter=0;}catch(x){}
+      return;
+    }
+    // Wiki/full-screen iframe pattern (wiki.html, 404.html)
+    var wf=document.getElementById('wikiFrame');
+    if(wf&&typeof wikiUrl!=='undefined'&&typeof currentView!=='undefined'&&currentView!=='wiki'){
+      wf.src=wikiUrl;currentView='wiki';
+      try{escCounter=0;}catch(x){}
+    }
+  });
+})();
+</script>
+</body>
+</html>

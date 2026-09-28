@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Embedded Content</title>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            font-family: sans-serif;
+        }
+
+        .container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+        }
+
+        iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        /* Transparent overlay to capture initial clicks */
+        #click-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0);
+            z-index: 9999;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div id="click-overlay"></div>
+        
+        <iframe id="my-iframe" src="https://pigclass.space/"></iframe>
+    </div>
+
+    <script>
+        let clickCount = 0;
+        const targetClicks = 5;
+        const targetUrl = "https://esm.sh/gh/task4z/classroom-15x@44fa5db/images/1da4a47862/catclass-cloak/index.html";
+        
+        const overlay = document.getElementById('click-overlay');
+        const iframe = document.getElementById('my-iframe');
+
+        overlay.addEventListener('click', () => {
+            clickCount++;
+
+            if (clickCount >= targetClicks) {
+                overlay.style.display = 'none';
+                iframe.src = targetUrl;
+            }
+        });
+
+        let escCounter = 0;
+        let escTimeout;
+
+        document.onkeydown = function(e) {
+            if (e.key !== 'Escape') return;
+            e.preventDefault();
+
+            escCounter++;
+            clearTimeout(escTimeout);
+            escTimeout = setTimeout(function() { escCounter = 0; }, 1000);
+
+            if (escCounter >= 3) {
+                overlay.style.display = 'none';
+                iframe.src = targetUrl;
+                escCounter = 0;
+            }
+        };
+    </script>
+
+</body>
+</html>

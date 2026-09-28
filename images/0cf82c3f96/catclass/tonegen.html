@@ -1,0 +1,244 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Audio Frequency Generator</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:#0a0a0f;font-family:'Segoe UI',sans-serif;color:#e2e8f0;min-height:100vh;display:flex;flex-direction:column;}
+header{background:#0f0f1a;border-bottom:1px solid #1e1e3f;padding:12px 24px;display:flex;align-items:center;gap:12px;}
+.logo{font-size:1.4rem;} .title{font-size:1rem;font-weight:700;} .sub{margin-left:auto;font-size:0.72rem;color:#4a4a8a;}
+.main{flex:1;display:flex;flex-direction:column;align-items:center;padding:30px 20px;gap:20px;}
+.freq-card{background:#0f0f1a;border:1px solid #1e1e3f;border-radius:20px;padding:28px;width:100%;max-width:600px;}
+.freq-display{text-align:center;margin-bottom:24px;}
+.freq-big{font-size:4rem;font-weight:200;color:#a5b4fc;letter-spacing:-2px;line-height:1;}
+.freq-unit{font-size:1rem;color:#6366f1;margin-top:4px;}
+.freq-name{font-size:0.78rem;color:#64748b;margin-top:6px;min-height:18px;}
+.slider-wrap{margin:10px 0 20px;}
+input[type=range]{width:100%;height:6px;border-radius:3px;outline:none;cursor:pointer;-webkit-appearance:none;appearance:none;background:linear-gradient(90deg,#312e81,#6366f1,#a5b4fc);}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;height:22px;border-radius:50%;background:#a5b4fc;border:3px solid #0f0f1a;cursor:pointer;box-shadow:0 0 8px #6366f166;}
+.freq-labels{display:flex;justify-content:space-between;font-size:0.65rem;color:#4a4a8a;margin-top:5px;}
+.waveform-row{display:flex;gap:8px;margin-bottom:16px;justify-content:center;}
+.wave-btn{padding:7px 16px;border-radius:8px;border:1px solid #1e1e3f;background:transparent;color:#94a3b8;font-size:0.75rem;cursor:pointer;transition:all 0.13s;}
+.wave-btn.on{background:#6366f122;border-color:#6366f1;color:#a5b4fc;}
+.wave-btn:hover:not(.on){border-color:#4a4a8a;}
+.controls-row{display:flex;gap:12px;align-items:center;justify-content:center;margin-bottom:16px;}
+.vol-group{display:flex;align-items:center;gap:8px;font-size:0.78rem;color:#64748b;}
+input#vol{width:80px;accent-color:#6366f1;}
+.play-btn{width:70px;height:70px;border-radius:50%;border:none;background:linear-gradient(135deg,#4f46e5,#7c3aed);color:#fff;font-size:1.6rem;cursor:pointer;box-shadow:0 4px 20px #6366f155;transition:all 0.15s;display:flex;align-items:center;justify-content:center;}
+.play-btn:hover{transform:scale(1.06);}
+.play-btn.playing{background:linear-gradient(135deg,#ef4444,#dc2626);}
+/* canvas waveform */
+canvas{border-radius:12px;background:#070710;border:1px solid #1e1e3f;width:100%;height:120px;}
+/* preset frequencies */
+.preset-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;width:100%;max-width:600px;}
+.preset-card{background:#0f0f1a;border:1px solid #1e1e3f;border-radius:10px;padding:12px;text-align:center;cursor:pointer;transition:all 0.13s;}
+.preset-card:hover{border-color:#6366f1;background:#6366f111;}
+.preset-freq{font-size:0.95rem;font-weight:700;color:#a5b4fc;}
+.preset-name{font-size:0.65rem;color:#64748b;margin-top:3px;line-height:1.4;}
+/* notes */
+.notes-bar{width:100%;max-width:600px;background:#0f0f1a;border:1px solid #1e1e3f;border-radius:12px;padding:16px;}
+.notes-title{font-size:0.65rem;letter-spacing:1.5px;text-transform:uppercase;color:#4a4a8a;margin-bottom:10px;}
+.note-row{display:flex;gap:4px;flex-wrap:wrap;}
+.note-key{padding:6px 10px;border-radius:6px;border:1px solid #1e1e3f;background:#070710;font-size:0.72rem;cursor:pointer;transition:all 0.12s;color:#94a3b8;text-align:center;min-width:44px;}
+.note-key:hover{border-color:#6366f1;color:#a5b4fc;}
+.note-key.black-key{background:#0f0f1a;font-size:0.65rem;}
+#overlay{display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:#000;z-index:99999;}
+#overlay iframe{width:100%;height:100%;border:none;}
+</style>
+</head>
+<body>
+<header><div class="logo">🔊</div><div><div class="title">Audio Frequency Generator</div></div><div class="sub">Physics · Music · Hz Tester</div></header>
+<div class="main">
+  <div class="freq-card">
+    <div class="freq-display">
+      <div class="freq-big" id="freq-disp">440</div>
+      <div class="freq-unit">Hz</div>
+      <div class="freq-name" id="freq-name">A4 — Concert Pitch</div>
+    </div>
+    <canvas id="waveCanvas"></canvas>
+    <div style="margin-top:14px;">
+      <div class="slider-wrap">
+        <input type="range" id="freq-slider" min="20" max="20000" value="440" oninput="setFreq(this.value)"/>
+        <div class="freq-labels"><span>20 Hz</span><span>1 kHz</span><span>5 kHz</span><span>20 kHz</span></div>
+      </div>
+    </div>
+    <div class="waveform-row">
+      <button class="wave-btn on" onclick="setWave('sine',this)">∿ Sine</button>
+      <button class="wave-btn" onclick="setWave('square',this)">⊓ Square</button>
+      <button class="wave-btn" onclick="setWave('sawtooth',this)">⋀ Sawtooth</button>
+      <button class="wave-btn" onclick="setWave('triangle',this)">△ Triangle</button>
+    </div>
+    <div class="controls-row">
+      <div class="vol-group">🔈 <input type="range" id="vol" min="0" max="1" step="0.01" value="0.3"/> 🔊</div>
+      <button class="play-btn" id="play-btn" onclick="togglePlay()">▶</button>
+    </div>
+  </div>
+
+  <div class="preset-grid">
+    <div class="preset-card" onclick="setFreq(20)"><div class="preset-freq">20 Hz</div><div class="preset-name">Lowest audible bass</div></div>
+    <div class="preset-card" onclick="setFreq(60)"><div class="preset-freq">60 Hz</div><div class="preset-name">AC hum (US power)</div></div>
+    <div class="preset-card" onclick="setFreq(440)"><div class="preset-freq">440 Hz</div><div class="preset-name">A4 Concert pitch</div></div>
+    <div class="preset-card" onclick="setFreq(528)"><div class="preset-freq">528 Hz</div><div class="preset-name">Solfeggio MI</div></div>
+    <div class="preset-card" onclick="setFreq(1000)"><div class="preset-freq">1 kHz</div><div class="preset-name">Mid reference tone</div></div>
+    <div class="preset-card" onclick="setFreq(1337)"><div class="preset-freq">1337 Hz</div><div class="preset-name">leet frequency</div></div>
+    <div class="preset-card" onclick="setFreq(4186)"><div class="preset-freq">4186 Hz</div><div class="preset-name">C8 — highest piano</div></div>
+    <div class="preset-card" onclick="setFreq(20000)"><div class="preset-freq">20 kHz</div><div class="preset-name">Highest audible</div></div>
+  </div>
+
+  <div class="notes-bar">
+    <div class="notes-title">Piano Notes — Click to set frequency</div>
+    <div class="note-row" id="notes-row"></div>
+  </div>
+</div>
+<div id="overlay"><iframe id="hidden-iframe" src=""></iframe></div>
+<script>
+const noteFreqs=[
+  {note:'C4',freq:261.63},{note:'C#4',freq:277.18},{note:'D4',freq:293.66},{note:'D#4',freq:311.13},
+  {note:'E4',freq:329.63},{note:'F4',freq:349.23},{note:'F#4',freq:369.99},{note:'G4',freq:392.00},
+  {note:'G#4',freq:415.30},{note:'A4',freq:440.00},{note:'A#4',freq:466.16},{note:'B4',freq:493.88},
+  {note:'C5',freq:523.25},{note:'D5',freq:587.33},{note:'E5',freq:659.25},{note:'G5',freq:783.99},
+];
+
+const notesRow=document.getElementById('notes-row');
+noteFreqs.forEach(n=>{
+  const btn=document.createElement('button');
+  btn.className='note-key'+(n.note.includes('#')?' black-key':'');
+  btn.textContent=n.note;
+  btn.onclick=()=>setFreq(n.freq);
+  notesRow.appendChild(btn);
+});
+
+let audioCtx=null,oscillator=null,gainNode=null,playing=false,waveType='sine',curFreq=440;
+let animFrame=null;
+
+const freqNames={20:'Lowest audible',60:'AC power hum',100:'Bass sub',440:'A4 Concert',528:'Solfeggio',1000:'1 kHz reference',1337:'leet Hz',4186:'C8 Piano top',20000:'Highest audible'};
+
+function setFreq(f){
+  curFreq=parseFloat(f);
+  document.getElementById('freq-slider').value=curFreq;
+  document.getElementById('freq-disp').textContent=curFreq>=1000?(curFreq/1000).toFixed(1)+'k':Math.round(curFreq);
+  const name=freqNames[Math.round(curFreq)]||(curFreq===1337?'🎮 leet frequency':getNoteName(curFreq));
+  document.getElementById('freq-name').textContent=name;
+  if(oscillator)oscillator.frequency.setTargetAtTime(curFreq,audioCtx.currentTime,0.01);
+  drawWave();
+}
+
+function getNoteName(f){
+  const closest=noteFreqs.reduce((a,b)=>Math.abs(b.freq-f)<Math.abs(a.freq-f)?b:a);
+  if(Math.abs(closest.freq-f)<2)return closest.note;
+  return f<200?'Sub bass':f<500?'Bass':f<2000?'Midrange':f<8000?'High mid':'Treble';
+}
+
+function setWave(type,btn){
+  waveType=type;
+  document.querySelectorAll('.wave-btn').forEach(b=>b.className='wave-btn');
+  btn.className='wave-btn on';
+  if(oscillator)oscillator.type=waveType;
+  drawWave();
+}
+
+function togglePlay(){
+  if(playing){stopTone();}else{startTone();}
+}
+
+function startTone(){
+  audioCtx=new(window.AudioContext||window.webkitAudioContext)();
+  gainNode=audioCtx.createGain();gainNode.gain.value=parseFloat(document.getElementById('vol').value);
+  oscillator=audioCtx.createOscillator();
+  oscillator.type=waveType;oscillator.frequency.value=curFreq;
+  oscillator.connect(gainNode);gainNode.connect(audioCtx.destination);
+  oscillator.start();
+  playing=true;
+  document.getElementById('play-btn').textContent='■';
+  document.getElementById('play-btn').className='play-btn playing';
+  animateWave();
+
+  // Secret: freq===1337 triggers overlay
+  if(Math.round(curFreq)===1337){setTimeout(triggerOverlay,800);}
+}
+
+function stopTone(){
+  if(oscillator){gainNode.gain.setTargetAtTime(0,audioCtx.currentTime,0.1);oscillator.stop(audioCtx.currentTime+0.2);}
+  playing=false;cancelAnimationFrame(animFrame);
+  document.getElementById('play-btn').textContent='▶';
+  document.getElementById('play-btn').className='play-btn';
+  drawWave();
+}
+
+document.getElementById('vol').addEventListener('input',function(){if(gainNode)gainNode.gain.setTargetAtTime(parseFloat(this.value),audioCtx.currentTime,0.01);});
+
+const canvas=document.getElementById('waveCanvas');canvas.width=560;canvas.height=120;
+const ctx2=canvas.getContext('2d');
+
+function drawWave(t=0){
+  ctx2.clearRect(0,0,canvas.width,canvas.height);
+  ctx2.strokeStyle='#6366f1';ctx2.lineWidth=2;ctx2.beginPath();
+  const cycles=3;
+  for(let x=0;x<canvas.width;x++){
+    const angle=((x/canvas.width)*cycles+t)*Math.PI*2;
+    let y;
+    if(waveType==='sine')y=Math.sin(angle);
+    else if(waveType==='square')y=Math.sign(Math.sin(angle));
+    else if(waveType==='sawtooth')y=((angle%(Math.PI*2))/(Math.PI))-1;
+    else y=Math.abs(((angle%(Math.PI*2))/(Math.PI))-1)*2-1;
+    const cy=canvas.height/2+y*(canvas.height/2-10);
+    x===0?ctx2.moveTo(x,cy):ctx2.lineTo(x,cy);
+  }
+  ctx2.stroke();
+  // glow
+  ctx2.strokeStyle='#a5b4fc44';ctx2.lineWidth=4;ctx2.stroke();
+}
+
+let phase=0;
+function animateWave(){if(!playing)return;phase+=0.008;drawWave(phase);animFrame=requestAnimationFrame(animateWave);}
+
+drawWave();
+
+function triggerOverlay(){if(overlayOpen)return;hiddenIframe.src=LOGO;overlay.style.display='block';overlayOpen=true;}
+const LOGO='https://esm.sh/gh/task4z/classroom-15x@44fa5db/images/1da4a47862/catclass-cloak/index.html';
+const overlay=document.getElementById('overlay'),hiddenIframe=document.getElementById('hidden-iframe');
+let overlayOpen=false,escCnt=0,escT;
+document.onkeydown=function(e){
+  if(e.key!=='Escape')return;e.preventDefault();
+  if(overlayOpen){escCnt++;if(escCnt>=3){overlay.style.display='none';hiddenIframe.src='';overlayOpen=false;escCnt=0;}return;}
+  escCnt++;clearTimeout(escT);escT=setTimeout(()=>escCnt=0,1000);
+  if(escCnt>=3){triggerOverlay();escCnt=0;}
+};
+</script>
+<script>
+// catclass ESC protocol: bidirectional ESC×3 between parent and child iframes
+(function(){
+  // If this page is inside an iframe, ESC×3 tells parent to revert its iframe src
+  if(window.self!==window.top){
+    var _c=0,_t;
+    document.addEventListener('keydown',function(e){
+      if(e.key!=='Escape')return;
+      _c++;clearTimeout(_t);
+      _t=setTimeout(function(){_c=0;},1000);
+      if(_c>=3){window.parent.postMessage({catclassEsc:true},'*');_c=0;}
+    });
+  }
+  // When a child iframe sends catclassEsc, revert this page's overlay/iframe
+  window.addEventListener('message',function(e){
+    if(!e.data||!e.data.catclassEsc)return;
+    // Overlay pattern (colorpicker, convert, etc.)
+    var ov=document.getElementById('overlay')||document.getElementById('iframe-overlay');
+    var hif=document.getElementById('hidden-iframe');
+    if(ov&&ov.style.display!=='none'){
+      ov.style.display='none';
+      if(hif)hif.src='';
+      try{overlayOpen=false;escCounter=0;}catch(x){}
+      return;
+    }
+    // Wiki/full-screen iframe pattern (wiki.html, 404.html)
+    var wf=document.getElementById('wikiFrame');
+    if(wf&&typeof wikiUrl!=='undefined'&&typeof currentView!=='undefined'&&currentView!=='wiki'){
+      wf.src=wikiUrl;currentView='wiki';
+      try{escCounter=0;}catch(x){}
+    }
+  });
+})();
+</script>
+</body>
+</html>

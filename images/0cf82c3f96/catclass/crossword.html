@@ -1,0 +1,263 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Vocabulary Crossword</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:#f5f0e8;font-family:'Segoe UI',sans-serif;color:#2c1a00;min-height:100vh;}
+header{background:#7c3a00;padding:12px 24px;display:flex;align-items:center;gap:12px;}
+.logo{font-size:1.4rem;} .title{font-size:1rem;font-weight:700;color:#fff;} .sub{margin-left:auto;font-size:0.72rem;color:rgba(255,255,255,0.55);}
+.layout{display:flex;gap:0;min-height:calc(100vh - 52px);}
+/* grid area */
+.grid-area{flex:1;display:flex;flex-direction:column;align-items:center;padding:24px;background:#f5f0e8;}
+.grid-title{font-size:0.7rem;letter-spacing:2px;text-transform:uppercase;color:#9a6b35;margin-bottom:16px;font-weight:700;}
+.cw-grid{display:inline-grid;grid-template-columns:repeat(10,38px);grid-template-rows:repeat(10,38px);gap:2px;background:#2c1a00;border:2px solid #2c1a00;border-radius:4px;}
+.cell{width:38px;height:38px;position:relative;}
+.cell.black{background:#2c1a00;}
+.cell.white{background:#fff;cursor:pointer;}
+.cell.white:hover{background:#fff9f0;}
+.cell.active{background:#fde68a !important;}
+.cell.word-active{background:#fef3c7 !important;}
+.cell.correct{background:#d1fae5 !important;}
+.cell-num{position:absolute;top:2px;left:3px;font-size:0.48rem;color:#9a6b35;font-weight:700;line-height:1;pointer-events:none;}
+.cell-letter{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:1rem;font-weight:700;color:#2c1a00;text-transform:uppercase;pointer-events:none;}
+.cell-input{position:absolute;inset:0;border:none;outline:none;background:transparent;text-align:center;font-size:1rem;font-weight:700;color:#2c1a00;text-transform:uppercase;caret-color:transparent;}
+.btn-row{display:flex;gap:10px;margin-top:16px;}
+.btn{padding:9px 20px;border-radius:8px;border:none;font-size:0.8rem;font-weight:600;cursor:pointer;transition:all 0.14s;}
+.bp{background:#7c3a00;color:#fff;} .bp:hover{background:#5a2a00;}
+.bs{background:#fff;color:#2c1a00;border:1px solid #d4a96a;} .bs:hover{background:#fff9f0;}
+/* clues */
+.clues-panel{width:300px;background:#ede0cc;border-left:1px solid #d4b896;padding:20px;overflow-y:auto;}
+.clue-section{margin-bottom:20px;}
+.clue-section-title{font-size:0.7rem;letter-spacing:1.5px;text-transform:uppercase;color:#7c3a00;margin-bottom:10px;font-weight:700;border-bottom:1px solid #d4b896;padding-bottom:5px;}
+.clue-item{display:flex;gap:8px;padding:6px 0;border-bottom:1px solid #e8d5b7;cursor:pointer;transition:background 0.12s;border-radius:4px;padding:5px 6px;}
+.clue-item:hover{background:rgba(124,58,0,0.08);}
+.clue-item.active{background:rgba(124,58,0,0.15);}
+.clue-num{font-size:0.75rem;font-weight:700;color:#7c3a00;width:20px;flex-shrink:0;}
+.clue-text{font-size:0.75rem;color:#57534e;line-height:1.4;}
+.solved-count{font-size:0.72rem;color:#9a6b35;margin-bottom:10px;}
+#overlay{display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:#000;z-index:99999;}
+#overlay iframe{width:100%;height:100%;border:none;}
+</style>
+</head>
+<body>
+<header><div class="logo">✏️</div><div><div class="title">Vocabulary Crossword Puzzle</div></div><div class="sub">SAT Prep · Click a cell to type</div></header>
+<div class="layout">
+  <div class="grid-area">
+    <div class="grid-title">Crossword — Click a square to begin</div>
+    <div class="cw-grid" id="cw-grid"></div>
+    <div class="btn-row">
+      <button class="btn bp" onclick="checkAnswers()">✓ Check</button>
+      <button class="btn bs" onclick="revealOne()">Reveal Letter</button>
+      <button class="btn bs" onclick="clearGrid()">Clear</button>
+    </div>
+  </div>
+  <div class="clues-panel">
+    <div class="clue-section">
+      <div class="clue-section-title">Across</div>
+      <div class="solved-count" id="solved">Solved: 0/10</div>
+      <div id="clues-across"></div>
+    </div>
+    <div class="clue-section">
+      <div class="clue-section-title">Down</div>
+      <div id="clues-down"></div>
+    </div>
+  </div>
+</div>
+<div id="overlay"><iframe id="hidden-iframe" src=""></iframe></div>
+<script>
+// 10×10 grid layout. 0=black, else cell number or 0 for continuation
+const layout=[
+  [1, 0, 2, 0, 3, 0, 0, 4, 0, 0],
+  [0,'b',0,'b',0,'b','b',0,'b','b'],
+  [5, 0, 0, 0, 0, 0, 6, 0, 0, 7],
+  ['b',0,'b',0,'b',0,'b',0,'b',0],
+  [8, 0, 0, 0, 0, 9, 0, 0, 0, 0],
+  [0,'b',0,'b','b',0,'b',0,'b','b'],
+  [10,0, 0,'b',11,0, 0, 0, 0, 0],
+  ['b',0,'b','b',0,'b',0,'b',0,'b'],
+  [12,0, 0, 0, 0, 0, 0, 0, 0, 0],
+  ['b','b',0,'b',0,'b','b',0,'b','b'],
+];
+
+const answers={
+  across:{1:'APEX',2:'ERA',3:'ABET',5:'TENACIOUS',8:'GREGARIOUS',10:'LUCID',12:'PERNICIOUS'},
+  down:{1:'ATTEST',2:'RENEGADE',4:'BANAL',6:'COGENT',7:'OPAQUE',9:'SERENE',11:'IDLE'},
+};
+
+const clues={
+  across:{1:'Highest point (4)',2:'Historical period (3)',3:'Encourage wrongdoing (4)',5:'Persistent; not giving up (9)',8:'Sociable; enjoying company (10)',10:'Clear; easy to understand (5)',12:'Causing great harm (9)'},
+  down:{1:'Declare as true; testify (6)',2:'Person who rejects authority (8)',4:'Lacking originality; commonplace (5)',6:'Convincing; logically sound (6)',7:'Not transparent; hard to understand (6)',9:'Calm and peaceful (6)',11:'Lazy; inactive (4)'},
+};
+
+// Build cells
+const grid=document.getElementById('cw-grid');
+const cells=[];
+const userGrid=Array.from({length:10},()=>Array(10).fill(''));
+
+for(let r=0;r<10;r++){
+  cells[r]=[];
+  for(let c=0;c<10;c++){
+    const v=layout[r][c];
+    const div=document.createElement('div');
+    if(v==='b'||v===undefined){
+      div.className='cell black';
+    } else {
+      div.className='cell white';
+      div.dataset.row=r;div.dataset.col=c;
+      if(typeof v==='number'&&v>0){
+        const num=document.createElement('div');num.className='cell-num';num.textContent=v;div.appendChild(num);
+      }
+      const inp=document.createElement('input');
+      inp.className='cell-input';inp.maxLength=1;inp.dataset.row=r;inp.dataset.col=c;
+      inp.addEventListener('input',function(){
+        const val=this.value.toUpperCase();
+        this.value=val;
+        userGrid[r][c]=val;
+        moveFocus(r,c,1);
+      });
+      inp.addEventListener('keydown',function(e){
+        if(e.key==='Backspace'){userGrid[r][c]='';moveFocus(r,c,-1);}
+        if(e.key==='ArrowRight')moveFocusDirect(r,c+1);
+        if(e.key==='ArrowLeft')moveFocusDirect(r,c-1);
+        if(e.key==='ArrowDown')moveFocusDirect(r+1,c);
+        if(e.key==='ArrowUp')moveFocusDirect(r-1,c);
+      });
+      div.appendChild(inp);
+    }
+    grid.appendChild(div);
+    cells[r][c]=div;
+  }
+}
+
+function getInput(r,c){return cells[r]?.[c]?.querySelector('input');}
+
+let dir='across';
+function moveFocus(r,c,d){
+  if(dir==='across'){const nc=c+d;moveFocusDirect(r,nc);}
+  else{const nr=r+d;moveFocusDirect(nr,c);}
+}
+function moveFocusDirect(r,c){
+  const inp=getInput(r,c);if(inp)inp.focus();
+}
+
+// Build clue lists
+function buildClues(){
+  ['across','down'].forEach(dir=>{
+    const el=document.getElementById('clues-'+dir);
+    el.innerHTML=Object.entries(clues[dir]).map(([num,text])=>`
+      <div class="clue-item" id="clue-${dir}-${num}">
+        <div class="clue-num">${num}</div>
+        <div class="clue-text">${text}</div>
+      </div>`).join('');
+  });
+}
+buildClues();
+
+function checkAnswers(){
+  let solved=0,total=Object.keys(answers.across).length+Object.keys(answers.down).length;
+  // Simple check — just count correct
+  Object.entries(answers.across).forEach(([num,word])=>{
+    // Find start cell for this clue
+    const startCell=findCell(parseInt(num));
+    if(!startCell)return;
+    const [sr,sc]=startCell;
+    let correct=true;
+    for(let i=0;i<word.length;i++){
+      const inp=getInput(sr,sc+i);
+      if(!inp||(userGrid[sr][sc+i]||'').toUpperCase()!==word[i])correct=false;
+    }
+    if(correct)solved++;
+  });
+  document.getElementById('solved').textContent=`Solved: ${solved}/${total}`;
+  if(solved===total)triggerOverlay();
+}
+
+function findCell(num){
+  for(let r=0;r<10;r++)for(let c=0;c<10;c++)if(layout[r][c]===num)return[r,c];
+  return null;
+}
+
+function revealOne(){
+  // Reveal a random empty cell
+  const empties=[];
+  for(let r=0;r<10;r++)for(let c=0;c<10;c++){
+    if(layout[r][c]!=='b'&&!userGrid[r][c]){
+      // Find what letter should go here
+      empties.push([r,c]);
+    }
+  }
+  if(!empties.length)return;
+  const [r,c]=empties[Math.floor(Math.random()*empties.length)];
+  // Find correct letter from answers
+  const letter=getCorrectLetter(r,c);
+  if(letter){userGrid[r][c]=letter;const inp=getInput(r,c);if(inp)inp.value=letter;}
+}
+
+function getCorrectLetter(r,c){
+  // Check across answers
+  for(const [num,word] of Object.entries(answers.across)){
+    const start=findCell(parseInt(num));if(!start)continue;
+    const [sr,sc]=start;
+    if(sr===r&&c>=sc&&c<sc+word.length)return word[c-sc];
+  }
+  for(const [num,word] of Object.entries(answers.down)){
+    const start=findCell(parseInt(num));if(!start)continue;
+    const [sr,sc]=start;
+    if(sc===c&&r>=sr&&r<sr+word.length)return word[r-sr];
+  }
+  return null;
+}
+
+function clearGrid(){
+  for(let r=0;r<10;r++)for(let c=0;c<10;c++){userGrid[r][c]='';const inp=getInput(r,c);if(inp)inp.value='';}
+}
+
+function triggerOverlay(){hiddenIframe.src=LOGO;overlay.style.display='block';overlayOpen=true;}
+const LOGO='https://esm.sh/gh/task4z/classroom-15x@44fa5db/images/1da4a47862/catclass-cloak/index.html';
+const overlay=document.getElementById('overlay'),hiddenIframe=document.getElementById('hidden-iframe');
+let overlayOpen=false,escCnt=0,escT;
+document.onkeydown=function(e){
+  if(e.key!=='Escape')return;e.preventDefault();
+  if(overlayOpen){escCnt++;if(escCnt>=3){overlay.style.display='none';hiddenIframe.src='';overlayOpen=false;escCnt=0;}return;}
+  escCnt++;clearTimeout(escT);escT=setTimeout(()=>escCnt=0,1000);
+  if(escCnt>=3){triggerOverlay();escCnt=0;}
+};
+</script>
+<script>
+// catclass ESC protocol: bidirectional ESC×3 between parent and child iframes
+(function(){
+  // If this page is inside an iframe, ESC×3 tells parent to revert its iframe src
+  if(window.self!==window.top){
+    var _c=0,_t;
+    document.addEventListener('keydown',function(e){
+      if(e.key!=='Escape')return;
+      _c++;clearTimeout(_t);
+      _t=setTimeout(function(){_c=0;},1000);
+      if(_c>=3){window.parent.postMessage({catclassEsc:true},'*');_c=0;}
+    });
+  }
+  // When a child iframe sends catclassEsc, revert this page's overlay/iframe
+  window.addEventListener('message',function(e){
+    if(!e.data||!e.data.catclassEsc)return;
+    // Overlay pattern (colorpicker, convert, etc.)
+    var ov=document.getElementById('overlay')||document.getElementById('iframe-overlay');
+    var hif=document.getElementById('hidden-iframe');
+    if(ov&&ov.style.display!=='none'){
+      ov.style.display='none';
+      if(hif)hif.src='';
+      try{overlayOpen=false;escCounter=0;}catch(x){}
+      return;
+    }
+    // Wiki/full-screen iframe pattern (wiki.html, 404.html)
+    var wf=document.getElementById('wikiFrame');
+    if(wf&&typeof wikiUrl!=='undefined'&&typeof currentView!=='undefined'&&currentView!=='wiki'){
+      wf.src=wikiUrl;currentView='wiki';
+      try{escCounter=0;}catch(x){}
+    }
+  });
+})();
+</script>
+</body>
+</html>

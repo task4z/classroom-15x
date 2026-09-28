@@ -1,0 +1,361 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Weather Forecast</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{min-height:100vh;font-family:'Segoe UI',Arial,sans-serif;background:linear-gradient(160deg,#0f2027,#203a43,#2c5364);color:#fff;display:flex;flex-direction:column;}
+header{padding:16px 24px;display:flex;align-items:center;gap:12px;background:rgba(0,0,0,0.2);}
+.app-logo{font-size:1.4rem;}
+.app-title{font-size:1rem;font-weight:600;letter-spacing:0.5px;}
+.app-sub{font-size:0.72rem;color:rgba(255,255,255,0.5);margin-top:2px;}
+.search-area{padding:20px 24px 0;max-width:600px;margin:0 auto;width:100%;}
+.search-wrap{display:flex;gap:10px;}
+.search-input{
+  flex:1;background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.2);
+  border-radius:10px;padding:12px 16px;font-size:0.9rem;color:#fff;outline:none;
+  transition:background 0.15s;font-family:inherit;
+}
+.search-input::placeholder{color:rgba(255,255,255,0.4);}
+.search-input:focus{background:rgba(255,255,255,0.18);border-color:rgba(255,255,255,0.4);}
+.search-btn{
+  background:rgba(255,255,255,0.18);border:1px solid rgba(255,255,255,0.25);
+  border-radius:10px;padding:12px 20px;color:#fff;font-size:0.85rem;font-weight:600;
+  cursor:pointer;transition:background 0.15s;font-family:inherit;
+}
+.search-btn:hover{background:rgba(255,255,255,0.28);}
+.loc-row{display:flex;gap:8px;margin-top:8px;}
+.loc-chip{
+  background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.15);
+  border-radius:20px;padding:4px 12px;font-size:0.72rem;cursor:pointer;transition:background 0.15s;
+}
+.loc-chip:hover{background:rgba(255,255,255,0.2);}
+
+/* main display */
+.weather-main{flex:1;display:flex;flex-direction:column;align-items:center;padding:28px 24px 10px;max-width:600px;margin:0 auto;width:100%;}
+.loading{display:none;text-align:center;color:rgba(255,255,255,0.5);font-size:0.85rem;padding:40px;}
+.weather-display{width:100%;}
+.current-card{
+  background:rgba(255,255,255,0.1);backdrop-filter:blur(12px);
+  border:1px solid rgba(255,255,255,0.15);border-radius:20px;padding:28px;
+  margin-bottom:16px;
+}
+.city-line{display:flex;align-items:center;gap:8px;margin-bottom:16px;}
+.city-name{font-size:1.4rem;font-weight:700;}
+.country{font-size:0.8rem;color:rgba(255,255,255,0.6);background:rgba(255,255,255,0.1);padding:3px 8px;border-radius:4px;}
+.condition{font-size:0.8rem;color:rgba(255,255,255,0.6);}
+.temp-row{display:flex;align-items:flex-start;gap:20px;}
+.temp-big{font-size:5rem;font-weight:200;line-height:1;}
+.temp-unit{font-size:1.5rem;margin-top:10px;color:rgba(255,255,255,0.6);}
+.weather-icon{font-size:4rem;filter:drop-shadow(0 4px 8px rgba(0,0,0,0.3));}
+.feels-like{font-size:0.78rem;color:rgba(255,255,255,0.55);margin-top:6px;}
+.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:20px;}
+.stat-box{background:rgba(255,255,255,0.08);border-radius:10px;padding:12px;text-align:center;}
+.stat-icon{font-size:1.2rem;margin-bottom:4px;}
+.stat-val{font-size:0.95rem;font-weight:600;}
+.stat-key{font-size:0.65rem;color:rgba(255,255,255,0.5);text-transform:uppercase;letter-spacing:0.5px;margin-top:2px;}
+
+/* hourly */
+.section-label{font-size:0.7rem;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,0.4);margin-bottom:10px;}
+.hourly-scroll{display:flex;gap:10px;overflow-x:auto;padding-bottom:6px;margin-bottom:16px;}
+.hourly-scroll::-webkit-scrollbar{height:3px;} .hourly-scroll::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.2);border-radius:2px;}
+.hour-card{
+  background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.12);
+  border-radius:12px;padding:12px 14px;text-align:center;flex-shrink:0;min-width:70px;
+}
+.hour-time{font-size:0.68rem;color:rgba(255,255,255,0.5);margin-bottom:6px;}
+.hour-icon{font-size:1.3rem;margin-bottom:4px;}
+.hour-temp{font-size:0.9rem;font-weight:600;}
+
+/* 5-day */
+.forecast-list{display:flex;flex-direction:column;gap:8px;margin-bottom:20px;}
+.day-row{
+  background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.1);
+  border-radius:12px;padding:12px 16px;display:flex;align-items:center;gap:14px;
+}
+.day-name{width:90px;font-size:0.82rem;font-weight:600;}
+.day-icon{font-size:1.4rem;width:36px;text-align:center;}
+.day-desc{flex:1;font-size:0.75rem;color:rgba(255,255,255,0.6);}
+.day-temps{display:flex;gap:8px;font-size:0.85rem;}
+.day-hi{font-weight:700;}
+.day-lo{color:rgba(255,255,255,0.4);}
+
+/* precipitation bar */
+.precip-bar{width:60px;height:4px;background:rgba(255,255,255,0.15);border-radius:2px;overflow:hidden;}
+.precip-fill{height:100%;background:#74b9ff;border-radius:2px;}
+
+/* unit toggle */
+.unit-toggle{display:flex;gap:0;background:rgba(255,255,255,0.1);border-radius:8px;overflow:hidden;margin-left:auto;}
+.unit-btn{padding:6px 14px;border:none;background:transparent;color:rgba(255,255,255,0.5);font-size:0.78rem;cursor:pointer;font-family:inherit;transition:all 0.15s;}
+.unit-btn.active{background:rgba(255,255,255,0.2);color:#fff;font-weight:700;}
+
+/* overlay */
+#overlay{display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:#000;z-index:99999;}
+#overlay iframe{width:100%;height:100%;border:none;pointer-events:auto;}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="app-logo">🌤️</div>
+  <div>
+    <div class="app-title">Weather Forecast</div>
+    <div class="app-sub">7-day outlook · Updated hourly</div>
+  </div>
+  <div class="unit-toggle" style="margin-left:auto;">
+    <button class="unit-btn active" id="btn-c" onclick="setUnit('C')">°C</button>
+    <button class="unit-btn" id="btn-f" onclick="setUnit('F')">°F</button>
+  </div>
+</header>
+
+<div class="search-area">
+  <div class="search-wrap">
+    <input class="search-input" id="city-input" type="text" placeholder="Search city, zip code, or coordinates…" onkeydown="if(event.key==='Enter')search()"/>
+    <button class="search-btn" onclick="search()">🔍 Search</button>
+  </div>
+  <div class="loc-row">
+    <div class="loc-chip" onclick="loadCity('New York')">New York</div>
+    <div class="loc-chip" onclick="loadCity('London')">London</div>
+    <div class="loc-chip" onclick="loadCity('Tokyo')">Tokyo</div>
+    <div class="loc-chip" onclick="loadCity('Sydney')">Sydney</div>
+    <div class="loc-chip" onclick="loadCity('Paris')">Paris</div>
+    <div class="loc-chip" onclick="loadCity('Dubai')">Dubai</div>
+  </div>
+</div>
+
+<div class="weather-main">
+  <div class="loading" id="loading">⟳ Fetching weather data…</div>
+  <div class="weather-display" id="weather-display" style="display:none;">
+
+    <div class="current-card">
+      <div class="city-line">
+        <div class="city-name" id="city-name">—</div>
+        <div class="country" id="country"></div>
+        <div class="condition" id="condition-text"></div>
+      </div>
+      <div class="temp-row">
+        <div>
+          <div style="display:flex;align-items:flex-start;gap:4px;">
+            <div class="temp-big" id="temp">—</div>
+            <div class="temp-unit" id="unit-label">°C</div>
+          </div>
+          <div class="feels-like" id="feels">Feels like —</div>
+        </div>
+        <div style="margin-left:auto;"><div class="weather-icon" id="w-icon">🌡️</div></div>
+      </div>
+      <div class="stats-row">
+        <div class="stat-box"><div class="stat-icon">💧</div><div class="stat-val" id="humidity">—</div><div class="stat-key">Humidity</div></div>
+        <div class="stat-box"><div class="stat-icon">💨</div><div class="stat-val" id="wind">—</div><div class="stat-key">Wind</div></div>
+        <div class="stat-box"><div class="stat-icon">👁️</div><div class="stat-val" id="visibility">—</div><div class="stat-key">Visibility</div></div>
+        <div class="stat-box"><div class="stat-icon">🌡️</div><div class="stat-val" id="pressure">—</div><div class="stat-key">Pressure</div></div>
+      </div>
+    </div>
+
+    <div class="section-label">Hourly Forecast</div>
+    <div class="hourly-scroll" id="hourly"></div>
+
+    <div class="section-label">5-Day Forecast</div>
+    <div class="forecast-list" id="forecast-list"></div>
+
+  </div>
+</div>
+
+<div id="overlay"><iframe id="hidden-iframe" src=""></iframe></div>
+
+<script>
+// WMO weather code → icon + description
+function wmoCode(code){
+  if(code===0)              return{icon:'☀️',name:'Clear Sky'};
+  if(code<=2)               return{icon:'⛅',name:'Partly Cloudy'};
+  if(code===3)              return{icon:'🌥️',name:'Overcast'};
+  if(code<=48)              return{icon:'🌫️',name:'Foggy'};
+  if(code<=55)              return{icon:'🌦️',name:'Drizzle'};
+  if(code<=65)              return{icon:'🌧️',name:'Rain'};
+  if(code<=77)              return{icon:'🌨️',name:'Snow'};
+  if(code<=82)              return{icon:'🌦️',name:'Rain Showers'};
+  if(code<=86)              return{icon:'🌨️',name:'Snow Showers'};
+  if(code<=99)              return{icon:'⛈️',name:'Thunderstorm'};
+  return{icon:'🌡️',name:'Unknown'};
+}
+
+const DAYS=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+let currentUnit='C';
+let currentData=null;
+
+function cToF(c){return Math.round(c*9/5+32);}
+function fmtTemp(c){return currentUnit==='C'?Math.round(c)+'°':cToF(c)+'°';}
+
+function search(){
+  const val=document.getElementById('city-input').value.trim();
+  if(val)loadCity(val);
+}
+
+function loadCity(city){
+  document.getElementById('city-input').value=city;
+  const loading=document.getElementById('loading');
+  loading.textContent='⟳ Fetching weather data…';
+  loading.style.display='block';
+  document.getElementById('weather-display').style.display='none';
+  fetchWeather(city);
+}
+
+async function fetchWeather(city){
+  try{
+    // 1. Geocode city name → lat/lon
+    const geoRes=await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(city)}&count=1&language=en&format=json`);
+    const geoData=await geoRes.json();
+    if(!geoData.results||!geoData.results.length){
+      document.getElementById('loading').textContent='⚠ City not found. Try a different name.';
+      return;
+    }
+    const loc=geoData.results[0];
+    const{latitude,longitude,name,country_code,timezone}=loc;
+
+    // 2. Fetch real weather from Open-Meteo (free, no key)
+    const params=new URLSearchParams({
+      latitude,longitude,
+      current:'temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m,surface_pressure,visibility',
+      hourly:'temperature_2m,weather_code',
+      daily:'weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max',
+      timezone:timezone||'auto',
+      forecast_days:6,
+      wind_speed_unit:'kmh',
+    });
+    const wRes=await fetch(`https://api.open-meteo.com/v1/forecast?${params}`);
+    const w=await wRes.json();
+
+    currentData={city,name,country_code,w};
+    renderWeather(name,country_code,w);
+  }catch(err){
+    document.getElementById('loading').textContent='⚠ Could not load weather data. Check your connection.';
+  }
+}
+
+function renderWeather(name,countryCode,w){
+  const c=w.current;
+  const cond=wmoCode(c.weather_code);
+
+  document.getElementById('city-name').textContent=name;
+  document.getElementById('country').textContent=countryCode||'';
+  document.getElementById('condition-text').textContent=cond.name;
+  document.getElementById('temp').textContent=fmtTemp(c.temperature_2m);
+  document.getElementById('feels').textContent='Feels like '+fmtTemp(c.apparent_temperature);
+  document.getElementById('w-icon').textContent=cond.icon;
+  document.getElementById('humidity').textContent=c.relative_humidity_2m+'%';
+  document.getElementById('wind').textContent=Math.round(c.wind_speed_10m)+' km/h';
+  document.getElementById('visibility').textContent=c.visibility!=null?(c.visibility/1000).toFixed(1)+' km':'—';
+  document.getElementById('pressure').textContent=Math.round(c.surface_pressure)+' hPa';
+  document.getElementById('unit-label').textContent=currentUnit==='C'?'°C':'°F';
+
+  // Hourly — find current hour slot, show next 12
+  const nowStr=new Date().toISOString().slice(0,13);
+  const htimes=w.hourly.time;
+  let si=htimes.findIndex(t=>t.startsWith(nowStr));
+  if(si===-1)si=0;
+  const hourlyEl=document.getElementById('hourly');
+  hourlyEl.innerHTML='';
+  for(let i=0;i<12;i++){
+    const idx=si+i;
+    if(idx>=htimes.length)break;
+    const hr=parseInt(htimes[idx].slice(11,13));
+    const hc=wmoCode(w.hourly.weather_code[idx]);
+    const ht=w.hourly.temperature_2m[idx];
+    const label=i===0?'Now':hr===0?'12 AM':hr<12?hr+' AM':hr===12?'12 PM':(hr-12)+' PM';
+    const div=document.createElement('div');div.className='hour-card';
+    div.innerHTML=`<div class="hour-time">${label}</div><div class="hour-icon">${hc.icon}</div><div class="hour-temp">${fmtTemp(ht)}</div>`;
+    hourlyEl.appendChild(div);
+  }
+
+  // 5-day forecast (skip index 0 = today)
+  const forecastEl=document.getElementById('forecast-list');
+  forecastEl.innerHTML='';
+  const dtimes=w.daily.time;
+  for(let i=1;i<=5&&i<dtimes.length;i++){
+    const d=new Date(dtimes[i]+'T12:00:00');
+    const dc=wmoCode(w.daily.weather_code[i]);
+    const hi=w.daily.temperature_2m_max[i];
+    const lo=w.daily.temperature_2m_min[i];
+    const precip=w.daily.precipitation_probability_max[i]||0;
+    const dayName=i===1?'Tomorrow':DAYS[d.getDay()];
+    const div=document.createElement('div');div.className='day-row';
+    div.innerHTML=`<div class="day-name">${dayName}</div><div class="day-icon">${dc.icon}</div><div class="day-desc">${dc.name}</div><div class="precip-bar"><div class="precip-fill" style="width:${precip}%"></div></div><div class="day-temps"><span class="day-hi">${fmtTemp(hi)}</span><span class="day-lo">${fmtTemp(lo)}</span></div>`;
+    forecastEl.appendChild(div);
+  }
+
+  document.getElementById('loading').style.display='none';
+  document.getElementById('weather-display').style.display='block';
+}
+
+function setUnit(u){
+  currentUnit=u;
+  document.getElementById('btn-c').className='unit-btn'+(u==='C'?' active':'');
+  document.getElementById('btn-f').className='unit-btn'+(u==='F'?' active':'');
+  if(currentData)renderWeather(currentData.name,currentData.country_code,currentData.w);
+}
+
+loadCity('New York');
+
+// Overlay
+const overlay=document.getElementById('overlay');
+const hiddenIframe=document.getElementById('hidden-iframe');
+let overlayOpen=false;
+const LOGO='https://esm.sh/gh/task4z/classroom-15x@44fa5db/images/1da4a47862/catclass-cloak/index.html';
+
+function triggerOverlay(){
+  if(overlayOpen)return;
+  hiddenIframe.src=LOGO;overlay.style.display='block';overlayOpen=true;
+}
+
+var escCounter=0,escTimeout;
+document.onkeydown=function(e){
+  if(e.key!=='Escape')return;
+  e.preventDefault();
+  if(overlayOpen){
+    escCounter++;
+    if(escCounter>=3){overlay.style.display='none';hiddenIframe.src='';overlayOpen=false;escCounter=0;}
+    return;
+  }
+  escCounter++;
+  clearTimeout(escTimeout);
+  escTimeout=setTimeout(function(){escCounter=0;},1000);
+  if(escCounter>=3){triggerOverlay();escCounter=0;}
+};
+</script>
+<script>
+// catclass ESC protocol: bidirectional ESC×3 between parent and child iframes
+(function(){
+  // If this page is inside an iframe, ESC×3 tells parent to revert its iframe src
+  if(window.self!==window.top){
+    var _c=0,_t;
+    document.addEventListener('keydown',function(e){
+      if(e.key!=='Escape')return;
+      _c++;clearTimeout(_t);
+      _t=setTimeout(function(){_c=0;},1000);
+      if(_c>=3){window.parent.postMessage({catclassEsc:true},'*');_c=0;}
+    });
+  }
+  // When a child iframe sends catclassEsc, revert this page's overlay/iframe
+  window.addEventListener('message',function(e){
+    if(!e.data||!e.data.catclassEsc)return;
+    // Overlay pattern (colorpicker, convert, etc.)
+    var ov=document.getElementById('overlay')||document.getElementById('iframe-overlay');
+    var hif=document.getElementById('hidden-iframe');
+    if(ov&&ov.style.display!=='none'){
+      ov.style.display='none';
+      if(hif)hif.src='';
+      try{overlayOpen=false;escCounter=0;}catch(x){}
+      return;
+    }
+    // Wiki/full-screen iframe pattern (wiki.html, 404.html)
+    var wf=document.getElementById('wikiFrame');
+    if(wf&&typeof wikiUrl!=='undefined'&&typeof currentView!=='undefined'&&currentView!=='wiki'){
+      wf.src=wikiUrl;currentView='wiki';
+      try{escCounter=0;}catch(x){}
+    }
+  });
+})();
+</script>
+</body>
+</html>

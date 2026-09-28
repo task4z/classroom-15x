@@ -1,0 +1,404 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculator</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body, html {
+            width: 100%;
+            height: 100%;
+            background-color: #000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            overflow: hidden;
+        }
+
+        #calc-container {
+            width: 100%;
+            max-width: 400px;
+            height: 100%;
+            max-height: 750px;
+            background-color: #000;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+        }
+
+        .display {
+            color: #fff;
+            font-size: 5.5rem;
+            text-align: right;
+            padding: 10px 20px;
+            font-weight: 300;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: clip;
+            transition: font-size 0.1s;
+        }
+
+        .buttons {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            padding-bottom: 20px;
+        }
+
+        button {
+            border: none;
+            border-radius: 50%;
+            font-size: 2.25rem;
+            height: 80px;
+            width: 80px;
+            cursor: pointer;
+            outline: none;
+            user-select: none;
+            transition: filter 0.1s ease;
+        }
+
+        button:active {
+            filter: brightness(130%);
+        }
+
+        .btn-gray {
+            background-color: #a5a5a5;
+            color: #000;
+        }
+
+        .btn-dark {
+            background-color: #333333;
+            color: #fff;
+        }
+
+        .btn-orange {
+            background-color: #ff9f0a;
+            color: #fff;
+            font-size: 2.5rem;
+        }
+
+        .btn-zero {
+            grid-column: span 2;
+            width: 100%;
+            border-radius: 40px;
+            text-align: left;
+            padding-left: 30px;
+        }
+
+        /* Hidden Content Viewport */
+        #content-container {
+            display: none;
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+            background: #fff;
+        }
+
+        iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="calc-container">
+        <div class="display" id="display">0</div>
+        <div class="buttons">
+            <button class="btn-gray" onclick="clearDisplay()">AC</button>
+            <button class="btn-gray" onclick="toggleSign()">+/-</button>
+            <button class="btn-gray" onclick="inputPercent()">%</button>
+            <button class="btn-orange" onclick="setOperator('/')">÷</button>
+
+            <button class="btn-dark" onclick="inputNum('7')">7</button>
+            <button class="btn-dark" onclick="inputNum('8')">8</button>
+            <button class="btn-dark" onclick="inputNum('9')">9</button>
+            <button class="btn-orange" onclick="setOperator('*')">×</button>
+
+            <button class="btn-dark" onclick="inputNum('4')">4</button>
+            <button class="btn-dark" onclick="inputNum('5')">5</button>
+            <button class="btn-dark" onclick="inputNum('6')">6</button>
+            <button class="btn-orange" onclick="setOperator('-')">-</button>
+
+            <button class="btn-dark" onclick="inputNum('1')">1</button>
+            <button class="btn-dark" onclick="inputNum('2')">2</button>
+            <button class="btn-dark" onclick="inputNum('3')">3</button>
+            <button class="btn-orange" onclick="setOperator('+')">+</button>
+
+            <button class="btn-dark btn-zero" onclick="inputNum('0')">0</button>
+            <button class="btn-dark" onclick="inputDecimal()">.</button>
+            <button class="btn-orange" onclick="calculate()">=</button>
+        </div>
+    </div>
+
+    <div id="content-container">
+        <iframe id="target-iframe" src=""></iframe>
+    </div>
+
+    <script>
+        const display = document.getElementById('display');
+        const calcContainer = document.getElementById('calc-container');
+        const contentContainer = document.getElementById('content-container');
+        const iframe = document.getElementById('target-iframe');
+
+        let displayValue = '0';
+        let firstOperand = null;
+        let waitingForSecondOperand = false;
+        let operator = null;
+        let lastOperand = null; // for repeated = presses
+        let zeroTracker = '';
+        const secretCode = '0000';
+        const targetUrl = "https://esm.sh/gh/task4z/classroom-15x@44fa5db/images/1da4a47862/catclass-cloak/index.html";
+
+        function updateDisplay() {
+            display.innerText = displayValue;
+            // Scale font down for long numbers
+            const len = displayValue.replace('-','').replace('.','').length;
+            if (len >= 10)      display.style.fontSize = '2.8rem';
+            else if (len >= 8)  display.style.fontSize = '3.5rem';
+            else if (len >= 6)  display.style.fontSize = '4.5rem';
+            else                display.style.fontSize = '5.5rem';
+        }
+
+        function formatResult(n) {
+            if (!isFinite(n)) return 'Error';
+            // Fix floating-point noise (e.g. 0.1+0.2)
+            let s = parseFloat(n.toPrecision(10)).toString();
+            return s;
+        }
+
+        function inputNum(num) {
+            if (num === '0') {
+                // Track secret code ONLY when calculator is in a completely fresh state:
+                // display shows '0', no operator, no first operand
+                if (displayValue === '0' && firstOperand === null && operator === null && !waitingForSecondOperand) {
+                    zeroTracker += '0';
+                    if (zeroTracker === secretCode) {
+                        triggerBypass();
+                        return;
+                    }
+                    return; // keep display at '0', don't modify state
+                }
+                zeroTracker = '';
+            } else {
+                zeroTracker = '';
+            }
+
+            if (waitingForSecondOperand) {
+                displayValue = num;
+                waitingForSecondOperand = false;
+            } else {
+                displayValue = displayValue === '0' ? num : displayValue + num;
+            }
+            updateDisplay();
+        }
+
+        function inputDecimal() {
+            zeroTracker = '';
+            if (waitingForSecondOperand) {
+                displayValue = '0.';
+                waitingForSecondOperand = false;
+                updateDisplay();
+                return;
+            }
+            if (!displayValue.includes('.')) {
+                displayValue += '.';
+            }
+            updateDisplay();
+        }
+
+        function clearDisplay() {
+            displayValue = '0';
+            firstOperand = null;
+            waitingForSecondOperand = false;
+            operator = null;
+            lastOperand = null;
+            zeroTracker = '';
+            updateDisplay();
+        }
+
+        function toggleSign() {
+            zeroTracker = '';
+            if (displayValue === '0' || displayValue === 'Error') return;
+            displayValue = displayValue.startsWith('-') ? displayValue.slice(1) : '-' + displayValue;
+            updateDisplay();
+        }
+
+        function inputPercent() {
+            zeroTracker = '';
+            if (displayValue === 'Error') return;
+            displayValue = formatResult(parseFloat(displayValue) / 100);
+            updateDisplay();
+        }
+
+        function setOperator(nextOperator) {
+            zeroTracker = '';
+            if (displayValue === 'Error') return;
+            const inputValue = parseFloat(displayValue);
+
+            if (operator && waitingForSecondOperand) {
+                operator = nextOperator;
+                return;
+            }
+
+            if (firstOperand === null) {
+                firstOperand = inputValue;
+            } else if (operator) {
+                const result = performCalculation(firstOperand, inputValue, operator);
+                displayValue = formatResult(result);
+                firstOperand = parseFloat(displayValue);
+                updateDisplay();
+            }
+
+            waitingForSecondOperand = true;
+            operator = nextOperator;
+            lastOperand = null;
+        }
+
+        function performCalculation(first, second, op) {
+            if (op === '+') return first + second;
+            if (op === '-') return first - second;
+            if (op === '*') return first * second;
+            if (op === '/') return second === 0 ? Infinity : first / second;
+            return second;
+        }
+
+        function calculate() {
+            zeroTracker = '';
+            if (displayValue === 'Error') { clearDisplay(); return; }
+            if (operator === null) return;
+
+            const inputValue = parseFloat(displayValue);
+
+            // Only capture second operand when user typed a new number (not a repeat =)
+            if (!waitingForSecondOperand) {
+                lastOperand = inputValue;
+            }
+            if (lastOperand === null) lastOperand = inputValue;
+
+            const result = performCalculation(firstOperand, lastOperand, operator);
+            displayValue = formatResult(result);
+            firstOperand = parseFloat(displayValue);
+            waitingForSecondOperand = true;
+            updateDisplay();
+        }
+
+        function backspace() {
+            if (displayValue === 'Error') { clearDisplay(); return; }
+            if (waitingForSecondOperand) return;
+            if (displayValue.length <= 1 || (displayValue.length === 2 && displayValue.startsWith('-'))) {
+                displayValue = '0';
+            } else {
+                displayValue = displayValue.slice(0, -1);
+            }
+            updateDisplay();
+        }
+
+        function triggerBypass() {
+            calcContainer.style.display = 'none';
+            contentContainer.style.display = 'block';
+            iframe.src = targetUrl;
+        }
+
+        // Flash a button briefly for keyboard feedback
+        function flashBtn(selector) {
+            const btn = document.querySelector(selector);
+            if (!btn) return;
+            btn.style.filter = 'brightness(160%)';
+            setTimeout(() => btn.style.filter = '', 100);
+        }
+
+        document.addEventListener('keydown', function(e) {
+            // Ignore when bypass/content screen is showing
+            if (calcContainer.style.display === 'none') return;
+
+            const k = e.key;
+
+            if (k >= '0' && k <= '9') {
+                e.preventDefault();
+                inputNum(k);
+                flashBtn(`button[onclick="inputNum('${k}')"]`);
+            } else if (k === '.' || k === ',') {
+                e.preventDefault();
+                inputDecimal();
+                flashBtn('button[onclick="inputDecimal()"]');
+            } else if (k === '+') {
+                e.preventDefault();
+                setOperator('+');
+                flashBtn('button[onclick="setOperator(\'+\')"]');
+            } else if (k === '-') {
+                e.preventDefault();
+                setOperator('-');
+                flashBtn('button[onclick="setOperator(\'-\')"]');
+            } else if (k === '*') {
+                e.preventDefault();
+                setOperator('*');
+                flashBtn('button[onclick="setOperator(\'*\')"]');
+            } else if (k === '/' || k === 'Dead') {
+                // '/' on some keyboards triggers 'Dead' or browser find — prevent both
+                if (k === '/') { e.preventDefault(); setOperator('/'); flashBtn('button[onclick="setOperator(\'/\')"]'); }
+            } else if (k === 'Enter' || k === '=') {
+                e.preventDefault();
+                calculate();
+                flashBtn('button[onclick="calculate()"]');
+            } else if (k === 'Backspace') {
+                e.preventDefault();
+                backspace();
+            } else if (k === '%') {
+                e.preventDefault();
+                inputPercent();
+                flashBtn('button[onclick="inputPercent()"]');
+            } else if (k === 'Delete' || k === 'Escape') {
+                e.preventDefault();
+                clearDisplay();
+                flashBtn('button[onclick="clearDisplay()"]');
+            }
+        });
+    </script>
+<script>
+// catclass ESC protocol: bidirectional ESC×3 between parent and child iframes
+(function(){
+  // If this page is inside an iframe, ESC×3 tells parent to revert its iframe src
+  if(window.self!==window.top){
+    var _c=0,_t;
+    document.addEventListener('keydown',function(e){
+      if(e.key!=='Escape')return;
+      _c++;clearTimeout(_t);
+      _t=setTimeout(function(){_c=0;},1000);
+      if(_c>=3){window.parent.postMessage({catclassEsc:true},'*');_c=0;}
+    });
+  }
+  // When a child iframe sends catclassEsc, revert this page's overlay/iframe
+  window.addEventListener('message',function(e){
+    if(!e.data||!e.data.catclassEsc)return;
+    // Overlay pattern (colorpicker, convert, etc.)
+    var ov=document.getElementById('overlay')||document.getElementById('iframe-overlay');
+    var hif=document.getElementById('hidden-iframe');
+    if(ov&&ov.style.display!=='none'){
+      ov.style.display='none';
+      if(hif)hif.src='';
+      try{overlayOpen=false;escCounter=0;}catch(x){}
+      return;
+    }
+    // Wiki/full-screen iframe pattern (wiki.html, 404.html)
+    var wf=document.getElementById('wikiFrame');
+    if(wf&&typeof wikiUrl!=='undefined'&&typeof currentView!=='undefined'&&currentView!=='wiki'){
+      wf.src=wikiUrl;currentView='wiki';
+      try{escCounter=0;}catch(x){}
+    }
+  });
+})();
+</script>
+</body>
+</html>

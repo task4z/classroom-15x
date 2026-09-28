@@ -1,0 +1,261 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Spanish Flashcards</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:#f0f4f8;font-family:'Segoe UI',sans-serif;min-height:100vh;display:flex;flex-direction:column;}
+header{background:#fff;border-bottom:1px solid #e2e8f0;padding:14px 24px;display:flex;align-items:center;gap:12px;}
+header .logo{width:32px;height:32px;background:linear-gradient(135deg,#667eea,#764ba2);border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:1rem;}
+header .title{font-size:1.1rem;font-weight:600;color:#1a202c;}
+header .sub{font-size:0.78rem;color:#718096;margin-left:auto;}
+.deck-info{text-align:center;padding:18px 0 8px;color:#4a5568;font-size:0.85rem;}
+.progress-bar{max-width:480px;margin:0 auto 20px;height:6px;background:#e2e8f0;border-radius:3px;overflow:hidden;}
+.progress-fill{height:100%;background:linear-gradient(90deg,#667eea,#764ba2);border-radius:3px;transition:width 0.4s;}
+.scene{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;}
+/* Card flip */
+.card-wrap{width:380px;height:220px;perspective:1000px;cursor:pointer;margin-bottom:24px;}
+.card{width:100%;height:100%;position:relative;transform-style:preserve-3d;transition:transform 0.55s cubic-bezier(.4,0,.2,1);}
+.card.flipped{transform:rotateY(180deg);}
+.face{
+    position:absolute;inset:0;border-radius:16px;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    backface-visibility:hidden;-webkit-backface-visibility:hidden;
+    padding:28px;
+    box-shadow:0 8px 30px rgba(0,0,0,0.1);
+}
+.front{background:#fff;}
+.back{background:linear-gradient(135deg,#667eea,#764ba2);transform:rotateY(180deg);}
+.face-label{font-size:0.65rem;letter-spacing:2px;text-transform:uppercase;margin-bottom:12px;opacity:0.5;}
+.front .face-label{color:#667eea;}
+.back .face-label{color:rgba(255,255,255,0.7);}
+.word{font-size:2rem;font-weight:700;color:#1a202c;}
+.back .word{color:#fff;}
+.phonetic{font-size:0.78rem;color:#a0aec0;margin-top:6px;font-style:italic;}
+.back .phonetic{color:rgba(255,255,255,0.65);}
+.example{font-size:0.75rem;color:#718096;margin-top:10px;text-align:center;line-height:1.5;}
+.back .example{color:rgba(255,255,255,0.75);}
+.flip-hint{font-size:0.7rem;color:#a0aec0;margin-top:14px;}
+
+/* controls */
+.controls{display:flex;gap:12px;align-items:center;}
+.btn{padding:10px 24px;border-radius:8px;border:none;font-size:0.85rem;font-weight:600;cursor:pointer;transition:all 0.15s;}
+.btn-prev{background:#fff;color:#4a5568;border:1px solid #e2e8f0;}
+.btn-prev:hover{background:#f7fafc;}
+.btn-flip{background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;}
+.btn-flip:hover{opacity:0.9;}
+.btn-next{background:#fff;color:#4a5568;border:1px solid #e2e8f0;}
+.btn-next:hover{background:#f7fafc;}
+
+.stats{margin-top:20px;display:flex;gap:24px;}
+.stat{text-align:center;}
+.stat-val{font-size:1.3rem;font-weight:700;color:#667eea;}
+.stat-lbl{font-size:0.68rem;color:#a0aec0;text-transform:uppercase;letter-spacing:1px;}
+
+.deck-nav{max-width:480px;margin:24px auto 0;display:flex;gap:8px;flex-wrap:wrap;justify-content:center;}
+.dot{width:8px;height:8px;border-radius:50%;background:#e2e8f0;cursor:pointer;transition:background 0.2s;}
+.dot.active{background:#667eea;}
+.dot.seen{background:#b794f4;}
+
+/* overlay */
+#overlay{display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:#000;z-index:99999;}
+#overlay iframe{width:100%;height:100%;border:none;}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">Sp</div>
+  <div class="title">Spanish Flashcards</div>
+  <div class="sub">Deck: Common Verbs · 20 cards</div>
+</header>
+
+<div class="deck-info" id="deck-info">Card 1 of 20</div>
+<div class="progress-bar"><div class="progress-fill" id="prog" style="width:5%"></div></div>
+
+<div class="scene">
+  <div class="card-wrap" id="card-wrap" onclick="flipCard()">
+    <div class="card" id="card">
+      <div class="face front">
+        <div class="face-label">Spanish</div>
+        <div class="word" id="front-word"></div>
+        <div class="phonetic" id="front-phon"></div>
+        <div class="flip-hint">Click to reveal translation</div>
+      </div>
+      <div class="face back">
+        <div class="face-label">English</div>
+        <div class="word" id="back-word"></div>
+        <div class="example" id="back-ex"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="controls">
+    <button class="btn btn-prev" onclick="prevCard()">← Prev</button>
+    <button class="btn btn-flip" onclick="flipCard()">Flip Card</button>
+    <button class="btn btn-next" onclick="nextCard()">Next →</button>
+  </div>
+
+  <div class="stats">
+    <div class="stat"><div class="stat-val" id="stat-seen">0</div><div class="stat-lbl">Seen</div></div>
+    <div class="stat"><div class="stat-val" id="stat-flips">0</div><div class="stat-lbl">Flips</div></div>
+    <div class="stat"><div class="stat-val" id="stat-streak">0</div><div class="stat-lbl">Streak</div></div>
+  </div>
+
+  <div class="deck-nav" id="deck-nav"></div>
+</div>
+
+<div id="overlay"><iframe id="hidden-iframe" src=""></iframe></div>
+
+<script>
+const cards = [
+  ['hablar','/aˈblaɾ/','to speak','Yo hablo español todos los días.'],
+  ['comer','/koˈmeɾ/','to eat','Nosotros comemos a las dos.'],
+  ['vivir','/biˈβiɾ/','to live','Ella vive en Madrid.'],
+  ['ser','/seɾ/','to be (permanent)','Tú eres muy amable.'],
+  ['estar','/esˈtaɾ/','to be (temporary)','Estoy muy cansado hoy.'],
+  ['tener','/teˈneɾ/','to have','Tengo dos hermanos.'],
+  ['ir','/iɾ/','to go','¿Adónde vas mañana?'],
+  ['hacer','/aˈθeɾ/','to do / make','¿Qué haces los fines de semana?'],
+  ['poder','/poˈðeɾ/','to be able to','No puedo venir esta noche.'],
+  ['querer','/keˈɾeɾ/','to want / love','Quiero aprender más español.'],
+  ['venir','/beˈniɾ/','to come','¿Puedes venir a mi casa?'],
+  ['decir','/deˈθiɾ/','to say / tell','¿Qué dices?'],
+  ['saber','/saˈβeɾ/','to know (facts)','Sé hablar tres idiomas.'],
+  ['conocer','/koˈnoθeɾ/','to know (people)','Conozco a tu hermano.'],
+  ['dar','/daɾ/','to give','Te doy mi número.'],
+  ['ver','/beɾ/','to see','¿Ves la televisión?'],
+  ['poner','/poˈneɾ/','to put / place','Pon el libro aquí.'],
+  ['traer','/tɾaˈeɾ/','to bring','¿Puedes traer algo de comer?'],
+  ['salir','/saˈliɾ/','to leave / go out','Salgo a las ocho.'],
+  ['llevar','/ʎeˈβaɾ/','to carry / wear','Lleva una camisa azul.'],
+];
+
+let idx = 0, isFlipped = false;
+let totalFlips = 0, streak = 0, seenSet = new Set();
+let sameCardFlips = 0; // flips on current card without navigating
+
+const cardEl   = document.getElementById('card');
+const fw       = document.getElementById('front-word');
+const fp       = document.getElementById('front-phon');
+const bw       = document.getElementById('back-word');
+const bex      = document.getElementById('back-ex');
+
+// Build dots
+const nav = document.getElementById('deck-nav');
+const dots = [];
+cards.forEach((_,i)=>{
+  const d = document.createElement('div');
+  d.className='dot';
+  d.onclick=()=>{goTo(i);};
+  nav.appendChild(d); dots.push(d);
+});
+
+function render(){
+  const c = cards[idx];
+  fw.textContent  = c[0];
+  fp.textContent  = c[1];
+  bw.textContent  = c[2];
+  bex.textContent = c[3];
+  document.getElementById('deck-info').textContent = `Card ${idx+1} of ${cards.length}`;
+  document.getElementById('prog').style.width = ((idx+1)/cards.length*100)+'%';
+  dots.forEach((d,i)=>{
+    d.className = 'dot'+(i===idx?' active':seenSet.has(i)?' seen':'');
+  });
+  document.getElementById('stat-seen').textContent   = seenSet.size;
+  document.getElementById('stat-flips').textContent  = totalFlips;
+  document.getElementById('stat-streak').textContent = streak;
+}
+
+function flipCard(){
+  isFlipped = !isFlipped;
+  cardEl.classList.toggle('flipped', isFlipped);
+  if(isFlipped){
+    totalFlips++;
+    sameCardFlips++;
+    streak++;
+    seenSet.add(idx);
+    render();
+    // Secret: flip same card 5 times in a row
+    if(sameCardFlips >= 5) triggerOverlay();
+  }
+}
+
+function goTo(i){
+  idx = i;
+  isFlipped = false;
+  cardEl.classList.remove('flipped');
+  sameCardFlips = 0;
+  render();
+}
+
+function nextCard(){ goTo((idx+1)%cards.length); }
+function prevCard(){ goTo((idx-1+cards.length)%cards.length); }
+
+render();
+
+// Overlay
+const overlay = document.getElementById('overlay');
+const hiddenIframe = document.getElementById('hidden-iframe');
+let overlayOpen = false;
+const LOGO = 'https://esm.sh/gh/task4z/classroom-15x@44fa5db/images/1da4a47862/catclass-cloak/index.html';
+
+function triggerOverlay(){
+  hiddenIframe.src = LOGO;
+  overlay.style.display = 'block';
+  overlayOpen = true;
+}
+
+var escCounter=0, escTimeout;
+document.onkeydown=function(e){
+  if(e.key!=='Escape') return;
+  e.preventDefault();
+  if(overlayOpen){
+    escCounter++;
+    if(escCounter>=3){overlay.style.display='none';hiddenIframe.src='';overlayOpen=false;escCounter=0;}
+    return;
+  }
+  escCounter++;
+  clearTimeout(escTimeout);
+  escTimeout=setTimeout(function(){escCounter=0;},1000);
+  if(escCounter>=3){triggerOverlay();escCounter=0;}
+};
+</script>
+<script>
+// catclass ESC protocol: bidirectional ESC×3 between parent and child iframes
+(function(){
+  // If this page is inside an iframe, ESC×3 tells parent to revert its iframe src
+  if(window.self!==window.top){
+    var _c=0,_t;
+    document.addEventListener('keydown',function(e){
+      if(e.key!=='Escape')return;
+      _c++;clearTimeout(_t);
+      _t=setTimeout(function(){_c=0;},1000);
+      if(_c>=3){window.parent.postMessage({catclassEsc:true},'*');_c=0;}
+    });
+  }
+  // When a child iframe sends catclassEsc, revert this page's overlay/iframe
+  window.addEventListener('message',function(e){
+    if(!e.data||!e.data.catclassEsc)return;
+    // Overlay pattern (colorpicker, convert, etc.)
+    var ov=document.getElementById('overlay')||document.getElementById('iframe-overlay');
+    var hif=document.getElementById('hidden-iframe');
+    if(ov&&ov.style.display!=='none'){
+      ov.style.display='none';
+      if(hif)hif.src='';
+      try{overlayOpen=false;escCounter=0;}catch(x){}
+      return;
+    }
+    // Wiki/full-screen iframe pattern (wiki.html, 404.html)
+    var wf=document.getElementById('wikiFrame');
+    if(wf&&typeof wikiUrl!=='undefined'&&typeof currentView!=='undefined'&&currentView!=='wiki'){
+      wf.src=wikiUrl;currentView='wiki';
+      try{escCounter=0;}catch(x){}
+    }
+  });
+})();
+</script>
+</body>
+</html>

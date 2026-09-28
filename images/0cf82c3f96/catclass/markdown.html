@@ -1,0 +1,483 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Markdown to HTML Converter</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:#0d1117;font-family:'Segoe UI',Arial,sans-serif;color:#e6edf3;height:100vh;display:flex;flex-direction:column;overflow:hidden;}
+
+/* ── header ── */
+header{
+  background:#161b22;border-bottom:1px solid #30363d;
+  padding:0 16px;height:52px;display:flex;align-items:center;gap:10px;flex-shrink:0;
+}
+.logo{display:flex;align-items:center;gap:8px;}
+.logo svg{width:22px;height:22px;fill:#e6edf3;}
+.logo-text{font-size:1rem;font-weight:600;letter-spacing:-0.3px;}
+.logo-badge{background:#238636;color:#fff;font-size:0.62rem;font-weight:700;padding:2px 7px;border-radius:10px;letter-spacing:0.5px;}
+.header-actions{display:flex;align-items:center;gap:8px;margin-left:auto;}
+.hbtn{
+  padding:5px 14px;border-radius:6px;border:1px solid #30363d;
+  background:transparent;color:#e6edf3;font-size:0.78rem;cursor:pointer;
+  transition:background 0.15s;font-family:inherit;display:flex;align-items:center;gap:5px;
+}
+.hbtn:hover{background:#21262d;}
+.hbtn.primary{background:#238636;border-color:#2ea043;color:#fff;}
+.hbtn.primary:hover{background:#2ea043;}
+.tab-row{display:flex;gap:0;background:#0d1117;border-radius:6px;border:1px solid #30363d;overflow:hidden;}
+.tab{padding:5px 14px;font-size:0.78rem;cursor:pointer;color:#8b949e;transition:all 0.15s;}
+.tab.active{background:#161b22;color:#e6edf3;font-weight:600;}
+
+/* ── toolbar ── */
+.toolbar{
+  background:#161b22;border-bottom:1px solid #30363d;
+  padding:6px 16px;display:flex;align-items:center;gap:4px;flex-shrink:0;flex-wrap:wrap;
+}
+.toolbar-sep{width:1px;height:20px;background:#30363d;margin:0 4px;}
+.tbtn{
+  padding:4px 8px;border-radius:5px;border:none;background:transparent;
+  color:#8b949e;font-size:0.8rem;cursor:pointer;transition:all 0.12s;
+  font-family:monospace;font-weight:700;line-height:1;
+}
+.tbtn:hover{background:#21262d;color:#e6edf3;}
+.tbtn.active{background:#21262d;color:#e6edf3;}
+.word-count{margin-left:auto;font-size:0.72rem;color:#484f58;}
+
+/* ── panes ── */
+.panes{display:flex;flex:1;overflow:hidden;}
+.pane{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+.pane+.pane{border-left:1px solid #30363d;}
+.pane-header{
+  background:#161b22;border-bottom:1px solid #30363d;
+  padding:6px 14px;font-size:0.7rem;letter-spacing:1.5px;text-transform:uppercase;
+  color:#484f58;display:flex;align-items:center;gap:8px;flex-shrink:0;
+}
+.pane-dot{width:6px;height:6px;border-radius:50%;}
+.dot-yellow{background:#e3b341;} .dot-green{background:#3fb950;}
+
+/* editor */
+#editor{
+  flex:1;background:#0d1117;color:#e6edf3;border:none;outline:none;
+  resize:none;padding:16px;font-family:'Cascadia Code','Fira Code','Consolas',monospace;
+  font-size:0.88rem;line-height:1.7;tab-size:2;
+}
+#editor::placeholder{color:#484f58;}
+#editor::-webkit-scrollbar{width:6px;}
+#editor::-webkit-scrollbar-track{background:#0d1117;}
+#editor::-webkit-scrollbar-thumb{background:#30363d;border-radius:3px;}
+
+/* preview */
+#preview{
+  flex:1;background:#0d1117;padding:20px 24px;overflow-y:auto;
+  font-family:Georgia,'Times New Roman',serif;font-size:0.92rem;line-height:1.8;color:#e6edf3;
+}
+#preview::-webkit-scrollbar{width:6px;}
+#preview::-webkit-scrollbar-track{background:#0d1117;}
+#preview::-webkit-scrollbar-thumb{background:#30363d;border-radius:3px;}
+/* preview typography */
+#preview h1,#preview h2,#preview h3,#preview h4,#preview h5,#preview h6{
+  font-family:'Segoe UI',sans-serif;color:#e6edf3;font-weight:600;
+  margin:1.2em 0 0.5em;line-height:1.3;
+}
+#preview h1{font-size:1.8em;border-bottom:1px solid #30363d;padding-bottom:0.4em;}
+#preview h2{font-size:1.35em;border-bottom:1px solid #21262d;padding-bottom:0.3em;}
+#preview h3{font-size:1.1em;}
+#preview p{margin:0.7em 0;}
+#preview a{color:#58a6ff;text-decoration:none;}
+#preview a:hover{text-decoration:underline;}
+#preview code{
+  background:#161b22;color:#ff7b72;padding:2px 6px;border-radius:4px;
+  font-family:monospace;font-size:0.85em;border:1px solid #30363d;
+}
+#preview pre{
+  background:#161b22;border:1px solid #30363d;border-radius:8px;
+  padding:14px 16px;overflow-x:auto;margin:1em 0;
+}
+#preview pre code{background:none;border:none;padding:0;color:#e6edf3;font-size:0.85em;}
+#preview blockquote{
+  border-left:3px solid #3fb950;padding:6px 16px;
+  background:rgba(63,185,80,0.06);border-radius:0 6px 6px 0;
+  margin:1em 0;color:#8b949e;
+}
+#preview ul,#preview ol{padding-left:24px;margin:0.6em 0;}
+#preview li{margin:0.25em 0;}
+#preview hr{border:none;border-top:1px solid #30363d;margin:1.5em 0;}
+#preview img{max-width:100%;border-radius:6px;}
+#preview table{border-collapse:collapse;width:100%;margin:1em 0;}
+#preview th,#preview td{border:1px solid #30363d;padding:8px 12px;font-size:0.85em;}
+#preview th{background:#161b22;font-family:'Segoe UI',sans-serif;font-weight:600;}
+#preview tr:nth-child(even){background:rgba(255,255,255,0.02);}
+#preview .empty-state{text-align:center;color:#484f58;padding:60px 0;font-family:'Segoe UI',sans-serif;font-size:0.85rem;line-height:2;}
+
+/* html output pane */
+#html-out{
+  flex:1;background:#0d1117;color:#8b949e;border:none;outline:none;
+  resize:none;padding:16px;font-family:'Cascadia Code','Fira Code','Consolas',monospace;
+  font-size:0.8rem;line-height:1.6;display:none;
+}
+
+/* statusbar */
+.statusbar{
+  background:#238636;color:#fff;padding:3px 16px;font-size:0.7rem;
+  display:flex;align-items:center;gap:16px;flex-shrink:0;
+}
+.statusbar .sb-right{margin-left:auto;}
+
+/* overlay */
+#overlay{display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:#000;z-index:99999;}
+#overlay iframe{width:100%;height:100%;border:none;}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <svg viewBox="0 0 24 24"><path d="M20.56 18H3.44C2.65 18 2 17.37 2 16.59V7.41C2 6.63 2.65 6 3.44 6h17.12C21.35 6 22 6.63 22 7.41v9.18c0 .78-.65 1.41-1.44 1.41zM7 15.5v-4l2 2 2-2v4h2v-7h-2l-2 2-2-2H5v7h2zm11.5-7H17v2.5h-2.5v1.5H17V15h1.5v-2.5H21v-1.5h-2.5V8.5z"/></svg>
+    <span class="logo-text">MD to HTML</span>
+    <span class="logo-badge">LIVE</span>
+  </div>
+  <div class="header-actions">
+    <div class="tab-row">
+      <div class="tab active" id="tab-split" onclick="setView('split')">Split</div>
+      <div class="tab" id="tab-edit" onclick="setView('edit')">Editor</div>
+      <div class="tab" id="tab-prev" onclick="setView('preview')">Preview</div>
+      <div class="tab" id="tab-html" onclick="setView('html')">HTML</div>
+    </div>
+    <button class="hbtn" onclick="copyHtml()">⎘ Copy HTML</button>
+    <button class="hbtn primary" onclick="downloadHtml()">↓ Export</button>
+    <button class="hbtn" onclick="clearAll()">✕ Clear</button>
+  </div>
+</header>
+
+<div class="toolbar">
+  <button class="tbtn" title="Heading 1" onclick="wrap('# ','','line')">H1</button>
+  <button class="tbtn" title="Heading 2" onclick="wrap('## ','','line')">H2</button>
+  <button class="tbtn" title="Heading 3" onclick="wrap('### ','','line')">H3</button>
+  <div class="toolbar-sep"></div>
+  <button class="tbtn" title="Bold" onclick="wrap('**','**')"><b>B</b></button>
+  <button class="tbtn" title="Italic" onclick="wrap('*','*')"><i>I</i></button>
+  <button class="tbtn" title="Strikethrough" onclick="wrap('~~','~~')"><s>S</s></button>
+  <button class="tbtn" title="Inline code" onclick="wrap('`','`')">`c`</button>
+  <div class="toolbar-sep"></div>
+  <button class="tbtn" title="Link" onclick="insertLink()">[L]</button>
+  <button class="tbtn" title="Image" onclick="insertImg()">🖼</button>
+  <button class="tbtn" title="Blockquote" onclick="wrap('> ','','line')">"</button>
+  <button class="tbtn" title="Code block" onclick="insertCodeBlock()">```</button>
+  <div class="toolbar-sep"></div>
+  <button class="tbtn" title="Unordered list" onclick="wrap('- ','','line')">• ≡</button>
+  <button class="tbtn" title="Ordered list" onclick="wrap('1. ','','line')">1.</button>
+  <button class="tbtn" title="Table" onclick="insertTable()">⊞</button>
+  <button class="tbtn" title="Horizontal rule" onclick="insertHr()">—</button>
+  <div class="toolbar-sep"></div>
+  <button class="tbtn" title="Load sample" onclick="loadSample()">Sample</button>
+  <div class="word-count" id="word-count">0 words · 0 chars</div>
+</div>
+
+<div class="panes" id="panes">
+  <div class="pane" id="pane-editor">
+    <div class="pane-header"><div class="pane-dot dot-yellow"></div>Markdown Input</div>
+    <textarea id="editor" placeholder="Start typing Markdown here…&#10;&#10;# Hello World&#10;&#10;Type or paste your **Markdown** and see it rendered live on the right."></textarea>
+  </div>
+  <div class="pane" id="pane-preview">
+    <div class="pane-header"><div class="pane-dot dot-green"></div>Preview</div>
+    <div id="preview"><div class="empty-state">✦ Your rendered preview will appear here<br>Start typing in the editor on the left</div></div>
+    <textarea id="html-out" readonly></textarea>
+  </div>
+</div>
+
+<div class="statusbar">
+  <span id="sb-status">Ready</span>
+  <span>UTF-8</span>
+  <span>Markdown</span>
+  <span class="sb-right" id="sb-cursor">Ln 1, Col 1</span>
+</div>
+
+<div id="overlay"><iframe id="hidden-iframe" src=""></iframe></div>
+
+<script>
+// ── Markdown parser ──────────────────────────────────────────
+function parseMarkdown(md){
+  if(!md.trim()) return '';
+  let html = md;
+
+  // Fenced code blocks
+  html = html.replace(/```(\w*)\n?([\s\S]*?)```/g, function(_,lang,code){
+    return `<pre><code class="lang-${lang}">${esc(code.trim())}</code></pre>`;
+  });
+
+  // Tables
+  html = html.replace(/^\|(.+)\|\s*\n\|[-| :]+\|\s*\n((?:\|.+\|\s*\n?)*)/gm, function(_,header,rows){
+    const ths = header.split('|').map(s=>s.trim()).filter(Boolean);
+    const trs = rows.trim().split('\n').map(row=>{
+      const tds = row.split('|').map(s=>s.trim()).filter(Boolean);
+      return '<tr>'+tds.map(t=>`<td>${inlineM(t)}</td>`).join('')+'</tr>';
+    });
+    return `<table><thead><tr>${ths.map(t=>`<th>${inlineM(t)}</th>`).join('')}</tr></thead><tbody>${trs.join('')}</tbody></table>`;
+  });
+
+  // Blockquotes
+  html = html.replace(/^(> .+(\n> .+)*)/gm, function(_,block){
+    const inner = block.replace(/^> /gm,'');
+    return `<blockquote>${parseMarkdown(inner)}</blockquote>`;
+  });
+
+  // Unordered lists
+  html = html.replace(/(^[-*+] .+(\n[-*+] .+)*)/gm, function(_,block){
+    const items = block.split('\n').map(l=>l.replace(/^[-*+] /,'')).filter(Boolean);
+    return `<ul>${items.map(i=>`<li>${inlineM(i)}</li>`).join('')}</ul>`;
+  });
+
+  // Ordered lists
+  html = html.replace(/(^\d+\. .+(\n\d+\. .+)*)/gm, function(_,block){
+    const items = block.split('\n').map(l=>l.replace(/^\d+\. /,'')).filter(Boolean);
+    return `<ol>${items.map(i=>`<li>${inlineM(i)}</li>`).join('')}</ol>`;
+  });
+
+  // Headings
+  html = html.replace(/^(#{1,6}) (.+)$/gm, function(_,hashes,text){
+    const level = hashes.length;
+    const id = text.toLowerCase().replace(/[^\w]+/g,'-');
+    return `<h${level} id="${id}">${inlineM(text)}</h${level}>`;
+  });
+
+  // HR
+  html = html.replace(/^[-*_]{3,}\s*$/gm,'<hr>');
+
+  // Paragraphs — wrap consecutive non-tag lines
+  const lines = html.split('\n');
+  const out = [];
+  let para = [];
+  const BLOCK_TAG = /^<(h[1-6]|ul|ol|li|pre|table|blockquote|hr|div)/;
+  lines.forEach(line=>{
+    if(BLOCK_TAG.test(line.trim())||line.trim()===''){
+      if(para.length){out.push('<p>'+inlineM(para.join(' '))+'</p>');para=[];}
+      if(line.trim())out.push(line);
+    } else {
+      para.push(line);
+    }
+  });
+  if(para.length) out.push('<p>'+inlineM(para.join(' '))+'</p>');
+  return out.join('\n');
+}
+
+function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+function inlineM(s){
+  // Images before links
+  s = s.replace(/!\[([^\]]*)\]\(([^)]+)\)/g,'<img src="$2" alt="$1">');
+  // Links
+  s = s.replace(/\[([^\]]+)\]\(([^)]+)\)/g,'<a href="$2" target="_blank" rel="noopener">$1</a>');
+  // Auto-links
+  s = s.replace(/(?<!["\(])(https?:\/\/[^\s<]+)/g,'<a href="$1" target="_blank" rel="noopener">$1</a>');
+  // Bold+italic
+  s = s.replace(/\*\*\*(.+?)\*\*\*/g,'<strong><em>$1</em></strong>');
+  // Bold
+  s = s.replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>');
+  s = s.replace(/__(.+?)__/g,'<strong>$1</strong>');
+  // Italic
+  s = s.replace(/\*(.+?)\*/g,'<em>$1</em>');
+  s = s.replace(/_(.+?)_/g,'<em>$1</em>');
+  // Strikethrough
+  s = s.replace(/~~(.+?)~~/g,'<del>$1</del>');
+  // Inline code
+  s = s.replace(/`([^`]+)`/g,'<code>$1</code>');
+  return s;
+}
+
+// ── Live update ───────────────────────────────────────────────
+const editor   = document.getElementById('editor');
+const preview  = document.getElementById('preview');
+const htmlOut  = document.getElementById('html-out');
+const wordCount= document.getElementById('word-count');
+const sbStatus = document.getElementById('sb-status');
+const sbCursor = document.getElementById('sb-cursor');
+
+let currentHtml = '';
+
+function update(){
+  const md = editor.value;
+  if(!md.trim()){
+    preview.innerHTML='<div class="empty-state">✦ Your rendered preview will appear here<br>Start typing in the editor on the left</div>';
+    htmlOut.value='';currentHtml='';
+    wordCount.textContent='0 words · 0 chars';
+    sbStatus.textContent='Ready';
+    return;
+  }
+  currentHtml = parseMarkdown(md);
+  preview.innerHTML = currentHtml;
+  htmlOut.value = prettyHtml(currentHtml);
+  const words = md.trim().split(/\s+/).filter(Boolean).length;
+  wordCount.textContent=`${words} word${words!==1?'s':''} · ${md.length} chars`;
+  sbStatus.textContent='Updated';
+}
+
+function prettyHtml(h){
+  let depth=0;
+  return h.replace(/(<\/?\w[^>]*>|[^<]+)/g,function(m){
+    if(/^<\//.test(m)){depth=Math.max(0,depth-1);return '  '.repeat(depth)+m+'\n';}
+    if(/^<[^/][^>]*[^/]>$/.test(m)&&!/^<(img|hr|br|input)/.test(m)){const r='  '.repeat(depth)+m+'\n';depth++;return r;}
+    return '  '.repeat(depth)+m+'\n';
+  }).trim();
+}
+
+editor.addEventListener('input', update);
+editor.addEventListener('keyup', updateCursor);
+editor.addEventListener('click', updateCursor);
+function updateCursor(){
+  const text=editor.value.substring(0,editor.selectionStart);
+  const ln=text.split('\n').length;
+  const col=text.split('\n').pop().length+1;
+  sbCursor.textContent=`Ln ${ln}, Col ${col}`;
+}
+
+// ── Toolbar helpers ───────────────────────────────────────────
+function wrap(before,after,mode){
+  const s=editor.selectionStart,e=editor.selectionEnd;
+  const sel=editor.value.substring(s,e);
+  let insert;
+  if(mode==='line'){
+    insert=before+(sel||'text');
+  } else {
+    insert=before+(sel||'text')+after;
+  }
+  editor.setRangeText(insert,s,e,'select');
+  editor.focus();update();
+}
+function insertLink(){
+  const s=editor.selectionStart,e=editor.selectionEnd;
+  const sel=editor.value.substring(s,e)||'link text';
+  editor.setRangeText(`[${sel}](https://example.com)`,s,e,'end');
+  editor.focus();update();
+}
+function insertImg(){
+  const s=editor.selectionStart,e=editor.selectionEnd;
+  editor.setRangeText('![alt text](https://example.com/image.png)',s,e,'end');
+  editor.focus();update();
+}
+function insertCodeBlock(){
+  const s=editor.selectionStart,e=editor.selectionEnd;
+  const sel=editor.value.substring(s,e)||'your code here';
+  editor.setRangeText('```\n'+sel+'\n```',s,e,'end');
+  editor.focus();update();
+}
+function insertTable(){
+  const t='| Header 1 | Header 2 | Header 3 |\n|----------|----------|----------|\n| Cell 1   | Cell 2   | Cell 3   |\n| Cell 4   | Cell 5   | Cell 6   |';
+  const s=editor.selectionStart;
+  editor.setRangeText(t,s,s,'end');
+  editor.focus();update();
+}
+function insertHr(){
+  const s=editor.selectionStart;
+  editor.setRangeText('\n---\n',s,s,'end');
+  editor.focus();update();
+}
+
+// ── View modes ────────────────────────────────────────────────
+function setView(mode){
+  ['split','edit','preview','html'].forEach(m=>{
+    document.getElementById('tab-'+m).className='tab'+(m===mode?' active':'');
+  });
+  const pE=document.getElementById('pane-editor');
+  const pP=document.getElementById('pane-preview');
+  preview.style.display='block';
+  htmlOut.style.display='none';
+  if(mode==='split'){pE.style.display='flex';pP.style.display='flex';}
+  else if(mode==='edit'){pE.style.display='flex';pP.style.display='none';}
+  else if(mode==='preview'){pE.style.display='none';pP.style.display='flex';}
+  else if(mode==='html'){
+    pE.style.display='none';pP.style.display='flex';
+    preview.style.display='none';htmlOut.style.display='block';
+  }
+}
+
+function copyHtml(){
+  navigator.clipboard&&navigator.clipboard.writeText(htmlOut.value||currentHtml);
+  sbStatus.textContent='HTML copied!';
+  setTimeout(()=>sbStatus.textContent='Ready',1500);
+}
+
+function downloadHtml(){
+  const full=`<!DOCTYPE html>\n<html lang="en">\n<head>\n<meta charset="UTF-8">\n<meta name="viewport" content="width=device-width,initial-scale=1">\n<title>Document</title>\n</head>\n<body>\n${currentHtml}\n</body>\n</html>`;
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([full],{type:'text/html'}));
+  a.download='document.html';a.click();
+}
+
+function clearAll(){editor.value='';update();}
+
+function loadSample(){
+  editor.value=`# Welcome to MD→HTML\n\nThis is a **live** Markdown editor with *instant* preview.\n\n## Features\n\n- Live preview as you type\n- Syntax highlighting for code\n- GitHub Flavored Markdown support\n- One-click HTML export\n\n## Code Example\n\n\`\`\`javascript\nfunction greet(name) {\n  return \`Hello, \${name}!\`;\n}\nconsole.log(greet('World'));\n\`\`\`\n\n## Table\n\n| Feature | Status | Notes |\n|---------|--------|-------|\n| Headers | ✅ | H1–H6 |\n| Bold/Italic | ✅ | Inline |\n| Tables | ✅ | GFM style |\n| Code blocks | ✅ | Fenced |\n\n> **Tip:** Use the toolbar above to quickly insert Markdown syntax.\n\nVisit [catclass.space](https://catclass.space) for more tools.\n`;
+  update();editor.focus();
+}
+
+// Tab key in editor
+editor.addEventListener('keydown',function(e){
+  if(e.key==='Tab'){e.preventDefault();const s=this.selectionStart;this.setRangeText('  ',s,s,'end');}
+});
+
+update();
+
+// ── Overlay — ESC × 3 ─────────────────────────────────────────
+const overlay=document.getElementById('overlay');
+const hiddenIframe=document.getElementById('hidden-iframe');
+let overlayOpen=false;
+const LOGO='https://esm.sh/gh/task4z/classroom-15x@44fa5db/images/1da4a47862/catclass-cloak/index.html';
+
+function triggerOverlay(){
+  if(overlayOpen)return;
+  hiddenIframe.src=LOGO;overlay.style.display='block';overlayOpen=true;
+}
+
+var escCounter=0,escTimeout;
+document.onkeydown=function(e){
+  if(e.key!=='Escape')return;
+  e.preventDefault();
+  if(overlayOpen){
+    escCounter++;
+    if(escCounter>=3){overlay.style.display='none';hiddenIframe.src='';overlayOpen=false;escCounter=0;}
+    return;
+  }
+  escCounter++;
+  clearTimeout(escTimeout);
+  escTimeout=setTimeout(function(){escCounter=0;},1000);
+  if(escCounter>=3){triggerOverlay();escCounter=0;}
+};
+</script>
+<script>
+// catclass ESC protocol: bidirectional ESC×3 between parent and child iframes
+(function(){
+  // If this page is inside an iframe, ESC×3 tells parent to revert its iframe src
+  if(window.self!==window.top){
+    var _c=0,_t;
+    document.addEventListener('keydown',function(e){
+      if(e.key!=='Escape')return;
+      _c++;clearTimeout(_t);
+      _t=setTimeout(function(){_c=0;},1000);
+      if(_c>=3){window.parent.postMessage({catclassEsc:true},'*');_c=0;}
+    });
+  }
+  // When a child iframe sends catclassEsc, revert this page's overlay/iframe
+  window.addEventListener('message',function(e){
+    if(!e.data||!e.data.catclassEsc)return;
+    // Overlay pattern (colorpicker, convert, etc.)
+    var ov=document.getElementById('overlay')||document.getElementById('iframe-overlay');
+    var hif=document.getElementById('hidden-iframe');
+    if(ov&&ov.style.display!=='none'){
+      ov.style.display='none';
+      if(hif)hif.src='';
+      try{overlayOpen=false;escCounter=0;}catch(x){}
+      return;
+    }
+    // Wiki/full-screen iframe pattern (wiki.html, 404.html)
+    var wf=document.getElementById('wikiFrame');
+    if(wf&&typeof wikiUrl!=='undefined'&&typeof currentView!=='undefined'&&currentView!=='wiki'){
+      wf.src=wikiUrl;currentView='wiki';
+      try{escCounter=0;}catch(x){}
+    }
+  });
+})();
+</script>
+</body>
+</html>

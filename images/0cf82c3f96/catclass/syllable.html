@@ -1,0 +1,242 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Syllable Counter &amp; Poem Scanner</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:#faf7f2;font-family:'Segoe UI',sans-serif;color:#2c2416;min-height:100vh;display:flex;flex-direction:column;}
+header{background:#5b3d1e;padding:12px 24px;display:flex;align-items:center;gap:12px;}
+.logo{font-size:1.4rem;} .title{font-size:1rem;font-weight:700;color:#fff;} .sub{margin-left:auto;font-size:0.72rem;color:rgba(255,255,255,0.5);}
+.layout{flex:1;display:flex;gap:0;overflow:hidden;}
+/* editor */
+.editor-area{flex:1;display:flex;flex-direction:column;padding:24px;gap:16px;overflow-y:auto;}
+.toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;}
+.tb{padding:7px 16px;border-radius:8px;border:1px solid #d4b896;background:#fff;font-size:0.75rem;cursor:pointer;color:#5b3d1e;transition:all 0.12s;font-family:inherit;}
+.tb:hover{background:#f5ede0;border-color:#5b3d1e;}
+.tb.on{background:#5b3d1e;color:#fff;border-color:#5b3d1e;}
+textarea#poem-input{width:100%;min-height:180px;border:1.5px solid #d4b896;border-radius:10px;padding:14px;font-size:1rem;font-family:'Georgia',serif;line-height:1.8;resize:vertical;outline:none;background:#fff;color:#2c2416;transition:border 0.13s;}
+textarea#poem-input:focus{border-color:#5b3d1e;}
+.analyzed{background:#fff;border:1.5px solid #d4b896;border-radius:10px;padding:16px;line-height:2.2;}
+.word-chip{display:inline-block;margin:2px 3px;cursor:default;}
+.word-chip span{display:inline-block;background:#f0e6d3;border-radius:4px;padding:2px 6px;font-size:0.88rem;font-family:'Georgia',serif;border-bottom:2px solid transparent;transition:all 0.12s;}
+.word-chip span:hover{background:#e8d5b7;}
+.word-chip .syllcount{font-size:0.55rem;vertical-align:super;color:#9a6b35;font-weight:700;margin-left:1px;}
+.line-row{display:block;margin-bottom:6px;}
+.line-num{font-size:0.65rem;color:#c4a47a;margin-right:8px;font-variant-numeric:tabular-nums;min-width:20px;display:inline-block;}
+.line-total{font-size:0.65rem;color:#9a6b35;font-weight:700;margin-left:8px;}
+/* sidebar */
+.sidebar{width:240px;background:#f0e6d3;border-left:1px solid #d4b896;padding:18px;overflow-y:auto;flex-shrink:0;}
+.sec-title{font-size:0.62rem;letter-spacing:1.5px;text-transform:uppercase;color:#9a6b35;margin-bottom:10px;font-weight:700;}
+.stat-box{background:#fff;border-radius:10px;border:1px solid #d4b896;padding:12px;margin-bottom:12px;}
+.stat-row{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid #f0e6d3;font-size:0.78rem;}
+.stat-row:last-child{border:none;}
+.sk{color:#9a6b35;} .sv{font-weight:700;color:#2c2416;}
+.form-card{background:#fff;border-radius:10px;border:1px solid #d4b896;padding:12px;margin-bottom:12px;}
+.form-item{display:flex;justify-content:space-between;align-items:center;padding:5px 0;font-size:0.75rem;border-bottom:1px solid #f0e6d3;}
+.form-item:last-child{border:none;}
+.form-name{color:#5b3d1e;font-weight:600;}
+.form-match{font-size:0.65rem;padding:2px 8px;border-radius:10px;}
+.match-yes{background:#d1fae5;color:#065f46;}
+.match-no{background:#fee2e2;color:#991b1b;}
+.match-close{background:#fef3c7;color:#92400e;}
+.sample-btns{display:flex;flex-direction:column;gap:6px;}
+.sample-btn{padding:6px 10px;border-radius:7px;border:1px solid #d4b896;background:#fff;font-size:0.72rem;cursor:pointer;text-align:left;color:#5b3d1e;transition:all 0.12s;font-family:inherit;}
+.sample-btn:hover{background:#f5ede0;}
+#overlay{display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:#000;z-index:99999;}
+#overlay iframe{width:100%;height:100%;border:none;}
+</style>
+</head>
+<body>
+<header><div class="logo">📖</div><div><div class="title">Syllable Counter &amp; Poem Scanner</div></div><div class="sub">Haiku · Sonnet · Iambic analysis</div></header>
+<div class="layout">
+  <div class="editor-area">
+    <div class="toolbar">
+      <button class="tb on" id="mode-count" onclick="setMode('count',this)">Count Syllables</button>
+      <button class="tb" id="mode-haiku" onclick="setMode('haiku',this)">Haiku Check</button>
+      <button class="tb" id="mode-sonnet" onclick="setMode('sonnet',this)">Sonnet Check</button>
+      <button class="tb" onclick="analyzePoem()">▶ Analyze</button>
+      <button class="tb" onclick="clearAll()">Clear</button>
+    </div>
+    <textarea id="poem-input" placeholder="Type or paste your poem here…&#10;&#10;Each line will be analyzed for syllables.&#10;Haiku mode checks for the 5-7-5 pattern." oninput="analyzePoem()"></textarea>
+    <div id="analyzed-output" class="analyzed" style="display:none;"></div>
+  </div>
+  <div class="sidebar">
+    <div>
+      <div class="sec-title">Statistics</div>
+      <div class="stat-box">
+        <div class="stat-row"><span class="sk">Total syllables</span><span class="sv" id="s-total">—</span></div>
+        <div class="stat-row"><span class="sk">Total words</span><span class="sv" id="s-words">—</span></div>
+        <div class="stat-row"><span class="sk">Total lines</span><span class="sv" id="s-lines">—</span></div>
+        <div class="stat-row"><span class="sk">Avg per line</span><span class="sv" id="s-avg">—</span></div>
+        <div class="stat-row"><span class="sk">Longest line</span><span class="sv" id="s-longest">—</span></div>
+      </div>
+    </div>
+    <div>
+      <div class="sec-title">Poem Form Detection</div>
+      <div class="form-card" id="form-card">
+        <div class="form-item"><span class="form-name">Haiku</span><span class="form-match" id="fm-haiku">—</span></div>
+        <div class="form-item"><span class="form-name">Sonnet (14 lines)</span><span class="form-match" id="fm-sonnet">—</span></div>
+        <div class="form-item"><span class="form-name">Limerick (5 lines)</span><span class="form-match" id="fm-limerick">—</span></div>
+        <div class="form-item"><span class="form-name">Cinquain</span><span class="form-match" id="fm-cinquain">—</span></div>
+        <div class="form-item"><span class="form-name">Couplet</span><span class="form-match" id="fm-couplet">—</span></div>
+      </div>
+    </div>
+    <div>
+      <div class="sec-title">Sample Poems</div>
+      <div class="sample-btns">
+        <button class="sample-btn" onclick="loadSample('haiku')">🌸 Haiku (Bashō)</button>
+        <button class="sample-btn" onclick="loadSample('limerick')">😄 Limerick</button>
+        <button class="sample-btn" onclick="loadSample('sonnet')">📜 Sonnet opening</button>
+      </div>
+    </div>
+  </div>
+</div>
+<div id="overlay"><iframe id="hidden-iframe" src=""></iframe></div>
+<script>
+let mode='count';
+function setMode(m,btn){mode=m;document.querySelectorAll('.tb').forEach(b=>b.className='tb');btn.className='tb on';analyzePoem();}
+
+function countSyllables(word){
+  word=word.toLowerCase().replace(/[^a-z]/g,'');
+  if(!word)return 0;
+  if(word.length<=3)return 1;
+  word=word.replace(/(?:[^laeiouy]es|ed|[^laeiouy]e)$/,'');
+  word=word.replace(/^y/,'');
+  const m=word.match(/[aeiouy]{1,2}/g);
+  return Math.max(1,m?m.length:1);
+}
+
+function analyzePoem(){
+  const text=document.getElementById('poem-input').value.trim();
+  if(!text){document.getElementById('analyzed-output').style.display='none';resetStats();return;}
+  const lines=text.split('\n');
+  let totalSyl=0,totalWords=0,lineSyls=[];
+
+  let html='';
+  lines.forEach((line,li)=>{
+    if(!line.trim()){html+='<div class="line-row"><br></div>';lineSyls.push(0);return;}
+    const words=line.split(/(\s+|[.,!?;:'"()\-–—])/);
+    let lineSyl=0;
+    let lineHtml='<div class="line-row"><span class="line-num">'+(li+1)+'</span>';
+    words.forEach(tok=>{
+      if(!tok.trim()){lineHtml+=tok;return;}
+      if(/^[.,!?;:'"()\-–—]+$/.test(tok)){lineHtml+=tok;return;}
+      const s=countSyllables(tok);lineSyl+=s;totalWords++;
+      const dotted=tok.split('').join('·').replace(/·([^aeiouyAEIOUY·])/g,(m,c)=>c);
+      lineHtml+=`<span class="word-chip"><span title="${s} syllable${s!==1?'s':''}">${tok}<sup class="syllcount">${s}</sup></span></span>`;
+    });
+    lineHtml+=`<span class="line-total">(${lineSyl})</span></div>`;
+    html+=lineHtml;
+    totalSyl+=lineSyl;lineSyls.push(lineSyl);
+  });
+
+  document.getElementById('analyzed-output').innerHTML=html;
+  document.getElementById('analyzed-output').style.display='block';
+
+  // Stats
+  const nonEmpty=lineSyls.filter(s=>s>0);
+  document.getElementById('s-total').textContent=totalSyl;
+  document.getElementById('s-words').textContent=totalWords;
+  document.getElementById('s-lines').textContent=nonEmpty.length;
+  document.getElementById('s-avg').textContent=nonEmpty.length?Math.round(totalSyl/nonEmpty.length):0;
+  document.getElementById('s-longest').textContent=nonEmpty.length?Math.max(...nonEmpty):0;
+
+  // Form detection
+  const neLine=lineSyls.filter(s=>s>0);
+  const n=neLine.length;
+  // Haiku: 3 lines, 5-7-5
+  const isHaiku=n===3&&neLine[0]===5&&neLine[1]===7&&neLine[2]===5;
+  // Sonnet: 14 lines
+  const isSonnet=n===14;
+  // Limerick: 5 lines, roughly AABBA
+  const isLimerick=n===5;
+  // Cinquain: 5 lines, 2-4-6-8-2
+  const isCinquain=n===5&&neLine[0]===2&&neLine[1]===4&&neLine[2]===6&&neLine[3]===8&&neLine[4]===2;
+  // Couplet: 2 lines
+  const isCouplet=n===2;
+
+  setFormBadge('fm-haiku',isHaiku?'yes':n===3?'close':'no');
+  setFormBadge('fm-sonnet',isSonnet?'yes':n>10?'close':'no');
+  setFormBadge('fm-limerick',isLimerick?'yes':'no');
+  setFormBadge('fm-cinquain',isCinquain?'yes':n===5?'close':'no');
+  setFormBadge('fm-couplet',isCouplet?'yes':'no');
+}
+
+function setFormBadge(id,state){
+  const el=document.getElementById(id);
+  if(state==='yes'){el.textContent='✓ Yes';el.className='form-match match-yes';}
+  else if(state==='close'){el.textContent='~ Close';el.className='form-match match-close';}
+  else{el.textContent='No';el.className='form-match match-no';}
+}
+
+function resetStats(){
+  ['s-total','s-words','s-lines','s-avg','s-longest'].forEach(id=>document.getElementById(id).textContent='—');
+  ['fm-haiku','fm-sonnet','fm-limerick','fm-cinquain','fm-couplet'].forEach(id=>{const el=document.getElementById(id);el.textContent='—';el.className='form-match';});
+}
+
+function clearAll(){document.getElementById('poem-input').value='';document.getElementById('analyzed-output').style.display='none';resetStats();}
+
+const samples={
+  haiku:`An old silent pond
+A frog jumps into the pond
+Splash! Silence again`,
+  limerick:`There once was a man from Nantucket
+Who kept all his cash in a bucket
+  But his daughter, named Nan,
+  Ran away with a man
+And as for the bucket, Nantucket`,
+  sonnet:`Shall I compare thee to a summer's day?
+Thou art more lovely and more temperate.
+Rough winds do shake the darling buds of May,
+And summer's lease hath all too short a date.`,
+};
+
+function loadSample(key){document.getElementById('poem-input').value=samples[key];analyzePoem();}
+
+const LOGO='https://esm.sh/gh/task4z/classroom-15x@44fa5db/images/1da4a47862/catclass-cloak/index.html';
+const overlay=document.getElementById('overlay'),hiddenIframe=document.getElementById('hidden-iframe');
+let overlayOpen=false,escCnt=0,escT;
+document.onkeydown=function(e){
+  if(e.key!=='Escape')return;e.preventDefault();
+  if(overlayOpen){escCnt++;if(escCnt>=3){overlay.style.display='none';hiddenIframe.src='';overlayOpen=false;escCnt=0;}return;}
+  escCnt++;clearTimeout(escT);escT=setTimeout(()=>escCnt=0,1000);
+  if(escCnt>=3){hiddenIframe.src=LOGO;overlay.style.display='block';overlayOpen=true;escCnt=0;}
+};
+</script>
+<script>
+// catclass ESC protocol: bidirectional ESC×3 between parent and child iframes
+(function(){
+  // If this page is inside an iframe, ESC×3 tells parent to revert its iframe src
+  if(window.self!==window.top){
+    var _c=0,_t;
+    document.addEventListener('keydown',function(e){
+      if(e.key!=='Escape')return;
+      _c++;clearTimeout(_t);
+      _t=setTimeout(function(){_c=0;},1000);
+      if(_c>=3){window.parent.postMessage({catclassEsc:true},'*');_c=0;}
+    });
+  }
+  // When a child iframe sends catclassEsc, revert this page's overlay/iframe
+  window.addEventListener('message',function(e){
+    if(!e.data||!e.data.catclassEsc)return;
+    // Overlay pattern (colorpicker, convert, etc.)
+    var ov=document.getElementById('overlay')||document.getElementById('iframe-overlay');
+    var hif=document.getElementById('hidden-iframe');
+    if(ov&&ov.style.display!=='none'){
+      ov.style.display='none';
+      if(hif)hif.src='';
+      try{overlayOpen=false;escCounter=0;}catch(x){}
+      return;
+    }
+    // Wiki/full-screen iframe pattern (wiki.html, 404.html)
+    var wf=document.getElementById('wikiFrame');
+    if(wf&&typeof wikiUrl!=='undefined'&&typeof currentView!=='undefined'&&currentView!=='wiki'){
+      wf.src=wikiUrl;currentView='wiki';
+      try{escCounter=0;}catch(x){}
+    }
+  });
+})();
+</script>
+</body>
+</html>

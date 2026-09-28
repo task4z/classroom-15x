@@ -1,0 +1,185 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Currency Converter</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:linear-gradient(135deg,#0f2027,#203a43,#2c5364);font-family:'Segoe UI',sans-serif;color:#fff;min-height:100vh;display:flex;flex-direction:column;}
+header{padding:16px 24px;display:flex;align-items:center;gap:12px;background:rgba(0,0,0,0.2);}
+.logo{font-size:1.5rem;} .title{font-size:1rem;font-weight:700;} .sub{margin-left:auto;font-size:0.72rem;color:rgba(255,255,255,0.45);}
+.main{flex:1;display:flex;align-items:center;justify-content:center;padding:20px;}
+.converter{width:100%;max-width:520px;}
+.card{background:rgba(255,255,255,0.1);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,0.15);border-radius:20px;padding:28px;}
+.card-title{font-size:0.7rem;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,0.5);margin-bottom:20px;text-align:center;}
+.input-group{background:rgba(0,0,0,0.2);border-radius:12px;padding:16px;margin-bottom:12px;}
+.input-label{font-size:0.7rem;color:rgba(255,255,255,0.5);margin-bottom:8px;text-transform:uppercase;letter-spacing:1px;}
+.input-row{display:flex;align-items:center;gap:10px;}
+.currency-sel{flex:1;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);border-radius:8px;padding:10px 12px;color:#fff;font-size:0.9rem;font-family:inherit;cursor:pointer;outline:none;appearance:none;}
+.amount-inp{flex:1;background:transparent;border:none;outline:none;font-size:1.8rem;font-weight:700;color:#fff;width:100%;font-family:inherit;}
+.amount-inp::placeholder{color:rgba(255,255,255,0.3);}
+.swap-btn{width:44px;height:44px;border-radius:50%;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.2);color:#fff;font-size:1.1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.15s;margin:4px auto;}
+.swap-btn:hover{background:rgba(255,255,255,0.25);transform:rotate(180deg);}
+.convert-btn{width:100%;padding:14px;border-radius:12px;border:none;background:linear-gradient(135deg,#f6d365,#fda085);color:#1a1a2e;font-size:1rem;font-weight:700;cursor:pointer;transition:opacity 0.15s;margin-top:16px;}
+.convert-btn:hover{opacity:0.9;}
+.result-box{background:rgba(0,0,0,0.3);border-radius:12px;padding:20px;text-align:center;margin-top:16px;display:none;}
+.result-box.show{display:block;}
+.result-eq{font-size:0.82rem;color:rgba(255,255,255,0.55);margin-bottom:8px;}
+.result-val{font-size:2.8rem;font-weight:700;color:#f6d365;margin-bottom:6px;}
+.result-rate{font-size:0.75rem;color:rgba(255,255,255,0.4);}
+/* rates grid */
+.rates-card{background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.1);border-radius:16px;padding:20px;margin-top:16px;}
+.rates-title{font-size:0.68rem;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,0.4);margin-bottom:14px;}
+.rates-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
+.rate-item{background:rgba(0,0,0,0.2);border-radius:8px;padding:10px;text-align:center;}
+.rate-flag{font-size:1.3rem;} .rate-code{font-size:0.7rem;color:rgba(255,255,255,0.5);margin:3px 0;} .rate-val{font-size:0.88rem;font-weight:700;}
+.disclaimer{text-align:center;font-size:0.65rem;color:rgba(255,255,255,0.25);margin-top:14px;}
+#overlay{display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:#000;z-index:99999;}
+#overlay iframe{width:100%;height:100%;border:none;}
+</style>
+</head>
+<body>
+<header><div class="logo">💱</div><div><div class="title">Currency Converter</div></div><div class="sub">Indicative rates · Updated daily</div></header>
+<div class="main">
+  <div class="converter">
+    <div class="card">
+      <div class="card-title">Convert Currency</div>
+      <div class="input-group">
+        <div class="input-label">Amount</div>
+        <div class="input-row">
+          <input class="amount-inp" type="number" id="amount" value="100" min="0" step="any"/>
+        </div>
+      </div>
+      <div class="input-group">
+        <div class="input-label">From</div>
+        <select class="currency-sel" id="from"></select>
+      </div>
+      <div style="text-align:center;"><button class="swap-btn" onclick="swapCur()" title="Swap">⇅</button></div>
+      <div class="input-group">
+        <div class="input-label">To</div>
+        <select class="currency-sel" id="to"></select>
+      </div>
+      <button class="convert-btn" onclick="convert()">Convert →</button>
+      <div class="result-box" id="result-box">
+        <div class="result-eq" id="res-eq"></div>
+        <div class="result-val" id="res-val"></div>
+        <div class="result-rate" id="res-rate"></div>
+      </div>
+    </div>
+    <div class="rates-card">
+      <div class="rates-title">Live Rates vs USD</div>
+      <div class="rates-grid" id="rates-grid"></div>
+      <div class="disclaimer">Rates are for educational reference only.</div>
+    </div>
+  </div>
+</div>
+<div id="overlay"><iframe id="hidden-iframe" src=""></iframe></div>
+<script>
+const currencies=[
+  {code:'USD',name:'US Dollar',flag:'🇺🇸',rate:1},
+  {code:'EUR',name:'Euro',flag:'🇪🇺',rate:0.92},
+  {code:'GBP',name:'British Pound',flag:'🇬🇧',rate:0.79},
+  {code:'JPY',name:'Japanese Yen',flag:'🇯🇵',rate:157.3},
+  {code:'CAD',name:'Canadian Dollar',flag:'🇨🇦',rate:1.36},
+  {code:'AUD',name:'Australian Dollar',flag:'🇦🇺',rate:1.54},
+  {code:'CHF',name:'Swiss Franc',flag:'🇨🇭',rate:0.89},
+  {code:'CNY',name:'Chinese Yuan',flag:'🇨🇳',rate:7.25},
+  {code:'INR',name:'Indian Rupee',flag:'🇮🇳',rate:83.5},
+  {code:'MXN',name:'Mexican Peso',flag:'🇲🇽',rate:17.2},
+  {code:'BRL',name:'Brazilian Real',flag:'🇧🇷',rate:5.1},
+  {code:'KRW',name:'South Korean Won',flag:'🇰🇷',rate:1340},
+  {code:'SGD',name:'Singapore Dollar',flag:'🇸🇬',rate:1.34},
+  {code:'HKD',name:'Hong Kong Dollar',flag:'🇭🇰',rate:7.82},
+  {code:'NOK',name:'Norwegian Krone',flag:'🇳🇴',rate:10.6},
+  {code:'SEK',name:'Swedish Krona',flag:'🇸🇪',rate:10.4},
+  {code:'DKK',name:'Danish Krone',flag:'🇩🇰',rate:6.87},
+  {code:'NZD',name:'New Zealand Dollar',flag:'🇳🇿',rate:1.63},
+  {code:'ZAR',name:'South African Rand',flag:'🇿🇦',rate:18.6},
+  {code:'AED',name:'UAE Dirham',flag:'🇦🇪',rate:3.67},
+];
+
+const fromSel=document.getElementById('from');
+const toSel=document.getElementById('to');
+
+currencies.forEach(c=>{
+  [fromSel,toSel].forEach(sel=>{
+    const opt=document.createElement('option');
+    opt.value=c.code;opt.textContent=`${c.flag} ${c.code} — ${c.name}`;
+    sel.appendChild(opt);
+  });
+});
+fromSel.value='USD';toSel.value='EUR';
+
+function getRate(code){return currencies.find(c=>c.code===code)?.rate||1;}
+
+function convert(){
+  const amount=parseFloat(document.getElementById('amount').value)||0;
+  const fr=fromSel.value,to=toSel.value;
+  const fromRate=getRate(fr),toRate=getRate(to);
+  const result=amount*(toRate/fromRate);
+  const rate=toRate/fromRate;
+  const fc=currencies.find(c=>c.code===fr),tc=currencies.find(c=>c.code===to);
+  document.getElementById('res-eq').textContent=`${amount.toLocaleString()} ${fc.flag} ${fr} =`;
+  document.getElementById('res-val').textContent=`${result.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})} ${tc.flag} ${to}`;
+  document.getElementById('res-rate').textContent=`1 ${fr} = ${rate.toFixed(4)} ${to}  ·  1 ${to} = ${(1/rate).toFixed(4)} ${fr}`;
+  document.getElementById('result-box').className='result-box show';
+}
+
+function swapCur(){const t=fromSel.value;fromSel.value=toSel.value;toSel.value=t;convert();}
+
+// Rates grid
+const grid=document.getElementById('rates-grid');
+currencies.slice(0,9).forEach(c=>{
+  const d=document.createElement('div');d.className='rate-item';
+  d.innerHTML=`<div class="rate-flag">${c.flag}</div><div class="rate-code">${c.code}</div><div class="rate-val">${c.rate.toLocaleString()}</div>`;
+  grid.appendChild(d);
+});
+
+convert();
+
+const LOGO='https://esm.sh/gh/task4z/classroom-15x@44fa5db/images/1da4a47862/catclass-cloak/index.html';
+const overlay=document.getElementById('overlay'),hiddenIframe=document.getElementById('hidden-iframe');
+let overlayOpen=false,escCnt=0,escT;
+document.onkeydown=function(e){
+  if(e.key!=='Escape')return;e.preventDefault();
+  if(overlayOpen){escCnt++;if(escCnt>=3){overlay.style.display='none';hiddenIframe.src='';overlayOpen=false;escCnt=0;}return;}
+  escCnt++;clearTimeout(escT);escT=setTimeout(()=>escCnt=0,1000);
+  if(escCnt>=3){hiddenIframe.src=LOGO;overlay.style.display='block';overlayOpen=true;escCnt=0;}
+};
+</script>
+<script>
+// catclass ESC protocol: bidirectional ESC×3 between parent and child iframes
+(function(){
+  // If this page is inside an iframe, ESC×3 tells parent to revert its iframe src
+  if(window.self!==window.top){
+    var _c=0,_t;
+    document.addEventListener('keydown',function(e){
+      if(e.key!=='Escape')return;
+      _c++;clearTimeout(_t);
+      _t=setTimeout(function(){_c=0;},1000);
+      if(_c>=3){window.parent.postMessage({catclassEsc:true},'*');_c=0;}
+    });
+  }
+  // When a child iframe sends catclassEsc, revert this page's overlay/iframe
+  window.addEventListener('message',function(e){
+    if(!e.data||!e.data.catclassEsc)return;
+    // Overlay pattern (colorpicker, convert, etc.)
+    var ov=document.getElementById('overlay')||document.getElementById('iframe-overlay');
+    var hif=document.getElementById('hidden-iframe');
+    if(ov&&ov.style.display!=='none'){
+      ov.style.display='none';
+      if(hif)hif.src='';
+      try{overlayOpen=false;escCounter=0;}catch(x){}
+      return;
+    }
+    // Wiki/full-screen iframe pattern (wiki.html, 404.html)
+    var wf=document.getElementById('wikiFrame');
+    if(wf&&typeof wikiUrl!=='undefined'&&typeof currentView!=='undefined'&&currentView!=='wiki'){
+      wf.src=wikiUrl;currentView='wiki';
+      try{escCounter=0;}catch(x){}
+    }
+  });
+})();
+</script>
+</body>
+</html>

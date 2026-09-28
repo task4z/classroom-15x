@@ -1,0 +1,197 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Document Reader — Hamlet</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:#525659;font-family:'Segoe UI',sans-serif;color:#333;display:flex;flex-direction:column;height:100vh;overflow:hidden;}
+.toolbar{background:#3c4043;padding:8px 16px;display:flex;align-items:center;gap:10px;flex-shrink:0;}
+.t-title{color:#e8eaed;font-size:0.85rem;font-weight:500;flex:1;}
+.t-btn{background:rgba(255,255,255,0.1);border:none;color:#e8eaed;padding:5px 10px;border-radius:4px;cursor:pointer;font-size:0.78rem;transition:background 0.12s;}
+.t-btn:hover{background:rgba(255,255,255,0.2);}
+.t-sep{width:1px;height:20px;background:rgba(255,255,255,0.2);}
+.zoom-sel{background:rgba(255,255,255,0.1);border:none;color:#e8eaed;padding:4px 8px;border-radius:4px;font-size:0.78rem;cursor:pointer;}
+.main{display:flex;flex:1;overflow:hidden;}
+.sidebar{width:220px;background:#2d2d2d;padding:16px 12px;overflow-y:auto;flex-shrink:0;}
+.sidebar h3{color:#9aa0a6;font-size:0.7rem;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:12px;}
+.ch-item{padding:8px 10px;border-radius:6px;color:#bdc1c6;font-size:0.78rem;cursor:pointer;transition:background 0.12s;margin-bottom:2px;}
+.ch-item:hover{background:rgba(255,255,255,0.08);}
+.ch-item.active{background:rgba(255,255,255,0.14);color:#fff;}
+.viewer{flex:1;overflow-y:auto;display:flex;justify-content:center;padding:24px 16px 60px;}
+.page{background:#fff;width:680px;min-height:900px;box-shadow:0 2px 16px rgba(0,0,0,0.4);padding:72px 80px;position:relative;}
+.page-header{text-align:center;margin-bottom:36px;}
+.page-header h1{font-size:1.6rem;font-family:Georgia,serif;font-weight:700;letter-spacing:1px;margin-bottom:6px;}
+.page-header .author{font-size:0.9rem;font-style:italic;color:#555;}
+.page-header .act{font-size:0.82rem;color:#888;margin-top:12px;text-transform:uppercase;letter-spacing:2px;}
+.scene-title{font-size:0.85rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#555;margin:28px 0 12px;}
+.stage{font-size:0.82rem;font-style:italic;color:#888;margin:8px 0;}
+.speech{margin:12px 0;}
+.speaker{font-size:0.82rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:#222;}
+.lines{font-size:0.9rem;font-family:Georgia,serif;line-height:1.85;color:#333;padding-left:20px;}
+.page-foot{position:absolute;bottom:28px;left:0;right:0;display:flex;align-items:center;padding:0 80px;}
+.foot-title{font-size:0.7rem;color:#aaa;font-style:italic;flex:1;}
+.page-num{font-size:0.78rem;color:#888;cursor:default;padding:4px 8px;border-radius:4px;border:1px solid #e0e0e0;}
+.nav-bar{position:fixed;bottom:0;left:220px;right:0;background:#3c4043;padding:8px 16px;display:flex;align-items:center;justify-content:center;gap:16px;z-index:10;}
+.nav-btn{background:rgba(255,255,255,0.1);border:none;color:#e8eaed;padding:5px 16px;border-radius:4px;cursor:pointer;font-size:0.8rem;transition:background 0.12s;}
+.nav-btn:hover{background:rgba(255,255,255,0.2);}
+.nav-btn:disabled{opacity:0.3;cursor:default;}
+.page-info{color:#9aa0a6;font-size:0.78rem;}
+#overlay{display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:#000;z-index:99999;}
+#overlay iframe{width:100%;height:100%;border:none;}
+</style>
+</head>
+<body>
+<div class="toolbar">
+  <div class="t-title">📄 Hamlet — William Shakespeare (English Literature · Grade 10)</div>
+  <button class="t-btn">⊕ Annotate</button>
+  <div class="t-sep"></div>
+  <button class="t-btn">🔍</button>
+  <select class="zoom-sel"><option>75%</option><option selected>100%</option><option>125%</option><option>150%</option></select>
+  <button class="t-btn">⎙ Print</button>
+</div>
+<div class="main">
+  <div class="sidebar">
+    <h3>Contents</h3>
+    <div class="ch-item active" onclick="showPage(0,this)">Act I — Scene I</div>
+    <div class="ch-item" onclick="showPage(1,this)">Act I — Scene II</div>
+    <div class="ch-item" onclick="showPage(2,this)">Act II — Scene I</div>
+    <div class="ch-item" onclick="showPage(3,this)">Act III — Scene I</div>
+    <div class="ch-item" onclick="showPage(4,this)">Act III — Scene II</div>
+    <div class="ch-item" onclick="showPage(5,this)">Act IV — Scene I</div>
+    <div class="ch-item" onclick="showPage(6,this)">Act V — Scene I</div>
+    <div class="ch-item" onclick="showPage(7,this)">Act V — Scene II</div>
+  </div>
+  <div class="viewer"><div class="page" id="page-content"></div></div>
+</div>
+<div class="nav-bar">
+  <button class="nav-btn" id="btn-prev" onclick="go(-1)">← Previous</button>
+  <div class="page-info" id="pg-info">Page 1 of 8</div>
+  <button class="nav-btn" id="btn-next" onclick="go(1)">Next →</button>
+</div>
+<div id="overlay"><iframe id="hidden-iframe" src=""></iframe></div>
+<script>
+const pages=[
+  {act:'Act I, Scene I',loc:'A platform before the castle.',content:`
+<div class="stage">Enter BERNARDO and FRANCISCO, two sentinels.</div>
+<div class="speech"><div class="speaker">Bernardo</div><div class="lines">Who's there?</div></div>
+<div class="speech"><div class="speaker">Francisco</div><div class="lines">Nay, answer me. Stand and unfold yourself.</div></div>
+<div class="speech"><div class="speaker">Bernardo</div><div class="lines">Long live the King!</div></div>
+<div class="speech"><div class="speaker">Francisco</div><div class="lines">Bernardo?</div></div>
+<div class="speech"><div class="speaker">Bernardo</div><div class="lines">He.</div></div>
+<div class="speech"><div class="speaker">Francisco</div><div class="lines">You come most carefully upon your hour.</div></div>
+<div class="speech"><div class="speaker">Bernardo</div><div class="lines">'Tis now struck twelve. Get thee to bed, Francisco.</div></div>
+<div class="speech"><div class="speaker">Francisco</div><div class="lines">For this relief much thanks. 'Tis bitter cold,<br>And I am sick at heart.</div></div>
+<div class="stage">Enter HORATIO and MARCELLUS.</div>
+<div class="speech"><div class="speaker">Horatio</div><div class="lines">What, has this thing appear'd again to-night?</div></div>
+<div class="speech"><div class="speaker">Bernardo</div><div class="lines">I have seen nothing.</div></div>
+<div class="speech"><div class="speaker">Marcellus</div><div class="lines">Horatio says 'tis but our fantasy,<br>And will not let belief take hold of him<br>Touching this dreaded sight twice seen of us.</div></div>`},
+  {act:'Act I, Scene II',loc:'A room of state in the castle.',content:`
+<div class="stage">Enter the KING, QUEEN, HAMLET, POLONIUS, LAERTES, and ATTENDANTS.</div>
+<div class="speech"><div class="speaker">King</div><div class="lines">Though yet of Hamlet our dear brother's death<br>The memory be green, and that it us befitted<br>To bear our hearts in grief, and our whole kingdom<br>To be contracted in one brow of woe,<br>Yet so far hath discretion fought with nature<br>That we with wisest sorrow think on him.</div></div>
+<div class="speech"><div class="speaker">Hamlet</div><div class="lines">[Aside] A little more than kin, and less than kind.</div></div>
+<div class="speech"><div class="speaker">King</div><div class="lines">How is it that the clouds still hang on you?</div></div>
+<div class="speech"><div class="speaker">Hamlet</div><div class="lines">Not so, my lord. I am too much i' the sun.</div></div>
+<div class="speech"><div class="speaker">Queen</div><div class="lines">Good Hamlet, cast thy nighted colour off,<br>And let thine eye look like a friend on Denmark.<br>Do not for ever with thy vailed lids<br>Seek for thy noble father in the dust.</div></div>`},
+  {act:'Act II, Scene I',loc:"Polonius's house.",content:`
+<div class="stage">Enter POLONIUS and REYNALDO.</div>
+<div class="speech"><div class="speaker">Polonius</div><div class="lines">Give him this money and these notes, Reynaldo.</div></div>
+<div class="speech"><div class="speaker">Reynaldo</div><div class="lines">I will, my lord.</div></div>
+<div class="speech"><div class="speaker">Polonius</div><div class="lines">You shall do marvellous wisely, good Reynaldo,<br>Before you visit him, to make inquire<br>Of his behaviour.</div></div>
+<div class="stage">Exit REYNALDO. Enter OPHELIA.</div>
+<div class="speech"><div class="speaker">Ophelia</div><div class="lines">O, my lord, my lord, I have been so affrighted!</div></div>
+<div class="speech"><div class="speaker">Polonius</div><div class="lines">With what, i' the name of God?</div></div>
+<div class="speech"><div class="speaker">Ophelia</div><div class="lines">My lord, as I was sewing in my closet,<br>Lord Hamlet, with his doublet all unbrac'd,<br>No hat upon his head, his stockings foul'd,<br>Ungarter'd and down-gyved to his ankle,<br>Pale as his shirt, his knees knocking each other.</div></div>`},
+  {act:'Act III, Scene I',loc:'A room in the castle.',content:`
+<div class="speech"><div class="speaker">Hamlet</div><div class="lines">To be, or not to be, that is the question:<br>Whether 'tis nobler in the mind to suffer<br>The slings and arrows of outrageous fortune,<br>Or to take arms against a sea of troubles<br>And by opposing end them. To die—to sleep,<br>No more; and by a sleep to say we end<br>The heartache and the thousand natural shocks<br>That flesh is heir to: 'tis a consummation<br>Devoutly to be wish'd.</div></div>
+<div class="speech"><div class="speaker">Hamlet</div><div class="lines">To die, to sleep—<br>To sleep, perchance to dream. Ay, there's the rub,<br>For in that sleep of death what dreams may come,<br>When we have shuffled off this mortal coil,<br>Must give us pause.</div></div>`},
+  {act:'Act III, Scene II',loc:'A hall in the castle.',content:`
+<div class="stage">Enter HAMLET and PLAYERS.</div>
+<div class="speech"><div class="speaker">Hamlet</div><div class="lines">Speak the speech, I pray you, as I pronounc'd it to you, trippingly on the tongue;<br>but if you mouth it, as many of your players do, I had as lief the town-crier spoke my lines.</div></div>
+<div class="speech"><div class="speaker">First Player</div><div class="lines">I warrant your honour.</div></div>
+<div class="speech"><div class="speaker">Hamlet</div><div class="lines">Be not too tame neither, but let your own discretion be your tutor.<br>Suit the action to the word, the word to the action,<br>with this special observance, that you o'erstep not<br>the modesty of nature.</div></div>`},
+  {act:'Act IV, Scene I',loc:'A room in the castle.',content:`
+<div class="stage">Enter KING, QUEEN, ROSENCRANTZ, and GUILDENSTERN.</div>
+<div class="speech"><div class="speaker">King</div><div class="lines">There's matter in these sighs, these profound heaves.<br>You must translate: 'tis fit we understand them.<br>Where is your son?</div></div>
+<div class="speech"><div class="speaker">Queen</div><div class="lines">Bestow this place on us a little while.</div></div>
+<div class="stage">Exit ROSENCRANTZ and GUILDENSTERN.</div>
+<div class="speech"><div class="speaker">Queen</div><div class="lines">Ah, my good lord, what have I seen to-night!<br>Mad as the sea and wind when both contend<br>Which is the mightier.</div></div>`},
+  {act:'Act V, Scene I',loc:'A churchyard.',content:`
+<div class="stage">Enter two CLOWNS with spades.</div>
+<div class="speech"><div class="speaker">First Clown</div><div class="lines">Is she to be buried in Christian burial when she wilfully seeks her own salvation?</div></div>
+<div class="speech"><div class="speaker">Second Clown</div><div class="lines">I tell thee she is; therefore make her grave straight. The crowner hath sat on her, and finds it Christian burial.</div></div>
+<div class="stage">Enter HAMLET and HORATIO.</div>
+<div class="speech"><div class="speaker">Hamlet</div><div class="lines">Alas, poor Yorick! I knew him, Horatio: a fellow<br>of infinite jest, of most excellent fancy. He hath<br>borne me on his back a thousand times.</div></div>`},
+  {act:'Act V, Scene II',loc:'A hall in the castle.',content:`
+<div class="speech"><div class="speaker">Hamlet</div><div class="lines">The readiness is all. Since no man, of aught he leaves,<br>knows what is't to leave betimes, let be.</div></div>
+<div class="stage">A table prepared. Enter KING, QUEEN, LAERTES, and Lords with foils.</div>
+<div class="speech"><div class="speaker">Hamlet</div><div class="lines">Give me your pardon, sir. I have done you wrong,<br>But pardon't as you are a gentleman.</div></div>
+<div class="speech"><div class="speaker">Horatio</div><div class="lines">Now cracks a noble heart. Good-night, sweet prince,<br>And flights of angels sing thee to thy rest!</div></div>`},
+];
+
+let cur=0;
+function render(){
+  const p=pages[cur];
+  document.getElementById('page-content').innerHTML=`
+    <div class="page-header"><h1>Hamlet</h1><div class="author">William Shakespeare</div><div class="act">${p.act}</div></div>
+    <div class="scene-title">${p.act}</div>
+    <div class="stage">${p.loc}</div>
+    ${p.content}
+    <div class="page-foot"><div class="foot-title">Hamlet — W. Shakespeare</div><div class="page-num" id="pnum">${cur+1}</div></div>`;
+  document.getElementById('pg-info').textContent=`Page ${cur+1} of ${pages.length}`;
+  document.getElementById('btn-prev').disabled=cur===0;
+  document.getElementById('btn-next').disabled=cur===pages.length-1;
+  document.querySelectorAll('.ch-item').forEach((el,i)=>el.className='ch-item'+(i===cur?' active':''));
+  document.querySelector('.viewer').scrollTop=0;
+}
+
+function go(d){cur=Math.max(0,Math.min(pages.length-1,cur+d));render();}
+function showPage(i,el){cur=i;render();}
+render();
+
+const LOGO='https://esm.sh/gh/task4z/classroom-15x@44fa5db/images/1da4a47862/catclass-cloak/index.html';
+const overlay=document.getElementById('overlay'),hiddenIframe=document.getElementById('hidden-iframe');
+let overlayOpen=false,escCnt=0,escT;
+document.onkeydown=function(e){
+  if(e.key!=='Escape')return;e.preventDefault();
+  if(overlayOpen){escCnt++;if(escCnt>=3){overlay.style.display='none';hiddenIframe.src='';overlayOpen=false;escCnt=0;}return;}
+  escCnt++;clearTimeout(escT);escT=setTimeout(()=>escCnt=0,1000);
+  if(escCnt>=3){hiddenIframe.src=LOGO;overlay.style.display='block';overlayOpen=true;escCnt=0;}
+};
+</script>
+<script>
+// catclass ESC protocol: bidirectional ESC×3 between parent and child iframes
+(function(){
+  // If this page is inside an iframe, ESC×3 tells parent to revert its iframe src
+  if(window.self!==window.top){
+    var _c=0,_t;
+    document.addEventListener('keydown',function(e){
+      if(e.key!=='Escape')return;
+      _c++;clearTimeout(_t);
+      _t=setTimeout(function(){_c=0;},1000);
+      if(_c>=3){window.parent.postMessage({catclassEsc:true},'*');_c=0;}
+    });
+  }
+  // When a child iframe sends catclassEsc, revert this page's overlay/iframe
+  window.addEventListener('message',function(e){
+    if(!e.data||!e.data.catclassEsc)return;
+    // Overlay pattern (colorpicker, convert, etc.)
+    var ov=document.getElementById('overlay')||document.getElementById('iframe-overlay');
+    var hif=document.getElementById('hidden-iframe');
+    if(ov&&ov.style.display!=='none'){
+      ov.style.display='none';
+      if(hif)hif.src='';
+      try{overlayOpen=false;escCounter=0;}catch(x){}
+      return;
+    }
+    // Wiki/full-screen iframe pattern (wiki.html, 404.html)
+    var wf=document.getElementById('wikiFrame');
+    if(wf&&typeof wikiUrl!=='undefined'&&typeof currentView!=='undefined'&&currentView!=='wiki'){
+      wf.src=wikiUrl;currentView='wiki';
+      try{escCounter=0;}catch(x){}
+    }
+  });
+})();
+</script>
+</body>
+</html>

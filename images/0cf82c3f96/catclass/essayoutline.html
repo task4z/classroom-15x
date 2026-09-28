@@ -1,0 +1,203 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Essay Outline Builder</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:#f8f9fa;font-family:'Segoe UI',sans-serif;color:#1a1a2e;min-height:100vh;display:flex;flex-direction:column;}
+header{background:#16213e;padding:12px 24px;display:flex;align-items:center;gap:12px;}
+.logo{font-size:1.4rem;} .title{font-size:1rem;font-weight:700;color:#fff;} .sub{margin-left:auto;font-size:0.72rem;color:rgba(255,255,255,0.45);}
+.toolbar{background:#fff;border-bottom:1px solid #e9ecef;padding:10px 20px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
+.tb{padding:7px 14px;border-radius:7px;border:1px solid #dee2e6;background:#fff;font-size:0.75rem;cursor:pointer;color:#495057;transition:all 0.12s;}
+.tb:hover{background:#f8f9fa;border-color:#adb5bd;}
+.tb.primary{background:#16213e;color:#fff;border-color:#16213e;}
+.tb.primary:hover{background:#0f3460;}
+.layout{flex:1;display:flex;overflow:hidden;}
+/* outline builder */
+.outline-col{flex:1;padding:24px;overflow-y:auto;display:flex;flex-direction:column;gap:12px;}
+.essay-title-input{width:100%;border:none;border-bottom:2px solid #dee2e6;background:transparent;font-size:1.3rem;font-weight:700;color:#1a1a2e;padding:8px 0;outline:none;transition:border 0.13s;}
+.essay-title-input:focus{border-bottom-color:#16213e;}
+.section-card{background:#fff;border-radius:12px;border:1px solid #e9ecef;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,0.04);}
+.section-header{padding:12px 16px;display:flex;align-items:center;gap:10px;border-bottom:1px solid #e9ecef;cursor:pointer;}
+.section-color{width:4px;height:24px;border-radius:2px;flex-shrink:0;}
+.section-label{font-size:0.65rem;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:#6c757d;}
+.section-title-inp{flex:1;border:none;font-size:0.9rem;font-weight:600;color:#1a1a2e;background:transparent;outline:none;}
+.section-body{padding:14px 16px;display:flex;flex-direction:column;gap:8px;}
+.point-row{display:flex;gap:8px;align-items:flex-start;}
+.point-bullet{width:20px;height:20px;border-radius:50%;flex-shrink:0;margin-top:8px;display:flex;align-items:center;justify-content:center;font-size:0.55rem;font-weight:700;color:#fff;}
+.point-inp{flex:1;border:1px solid #e9ecef;border-radius:8px;padding:8px 12px;font-size:0.82rem;font-family:inherit;outline:none;color:#1a1a2e;background:#f8f9fa;resize:none;min-height:36px;transition:border 0.13s;}
+.point-inp:focus{border-color:#16213e;background:#fff;}
+.del-pt{background:none;border:none;color:#ced4da;cursor:pointer;font-size:0.75rem;padding:4px;} .del-pt:hover{color:#dc3545;}
+.add-point-btn{padding:6px 12px;border-radius:7px;border:1px dashed #ced4da;background:transparent;font-size:0.72rem;color:#6c757d;cursor:pointer;margin-top:4px;transition:all 0.12s;}
+.add-point-btn:hover{border-color:#16213e;color:#16213e;}
+/* preview */
+.preview-col{width:380px;background:#fff;border-left:1px solid #e9ecef;padding:24px;overflow-y:auto;flex-shrink:0;}
+.preview-heading{font-size:0.65rem;letter-spacing:1.5px;text-transform:uppercase;color:#adb5bd;margin-bottom:16px;font-weight:700;}
+.preview-title{font-size:1.2rem;font-weight:700;color:#1a1a2e;margin-bottom:20px;border-bottom:2px solid #16213e;padding-bottom:8px;}
+.prev-section{margin-bottom:16px;}
+.prev-sec-title{font-size:0.85rem;font-weight:700;color:#16213e;margin-bottom:6px;display:flex;align-items:center;gap:6px;}
+.prev-dot{width:8px;height:8px;border-radius:50%;}
+.prev-point{font-size:0.78rem;color:#495057;padding:3px 0 3px 18px;line-height:1.5;position:relative;}
+.prev-point::before{content:'•';position:absolute;left:6px;color:#adb5bd;}
+.word-count{font-size:0.68rem;color:#adb5bd;margin-top:20px;padding-top:12px;border-top:1px solid #f1f3f5;}
+#overlay{display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:#000;z-index:99999;}
+#overlay iframe{width:100%;height:100%;border:none;}
+</style>
+</head>
+<body>
+<header><div class="logo">📝</div><div><div class="title">Essay Outline Builder</div></div><div class="sub">Structure · Organize · Export</div></header>
+<div class="toolbar">
+  <button class="tb primary" onclick="addSection()">+ Add Section</button>
+  <button class="tb" onclick="loadTemplate('5para')">5-Paragraph Template</button>
+  <button class="tb" onclick="loadTemplate('compare')">Compare/Contrast</button>
+  <button class="tb" onclick="loadTemplate('argument')">Argumentative</button>
+  <button class="tb" onclick="clearAll()">Clear All</button>
+  <span style="margin-left:auto;font-size:0.72rem;color:#6c757d;" id="total-count">0 points</span>
+</div>
+<div class="layout">
+  <div class="outline-col" id="outline-col">
+    <input class="essay-title-input" id="essay-title" placeholder="Essay Title…" oninput="updatePreview()"/>
+  </div>
+  <div class="preview-col">
+    <div class="preview-heading">Live Preview</div>
+    <div id="preview-content"><div style="color:#ced4da;font-size:0.82rem;">Start building your outline on the left.</div></div>
+  </div>
+</div>
+<div id="overlay"><iframe id="hidden-iframe" src=""></iframe></div>
+<script>
+const COLORS=['#16213e','#e63946','#2a9d8f','#e76f51','#6366f1','#f4a261','#264653'];
+let sections=[];let nextSecId=1;
+
+function addSection(title='',color=null,points=null){
+  const id=nextSecId++;
+  const c=color||COLORS[(sections.length)%COLORS.length];
+  const sec={id,title:title||'',color:c,points:points||['']};
+  sections.push(sec);
+  renderSection(sec);
+  updatePreview();
+}
+
+function renderSection(sec){
+  const el=document.createElement('div');
+  el.className='section-card';el.id='sec-'+sec.id;
+  el.innerHTML=`
+    <div class="section-header">
+      <div class="section-color" style="background:${sec.color}"></div>
+      <div class="section-label">Section</div>
+      <input class="section-title-inp" value="${sec.title}" placeholder="Section title…" oninput="updateSecTitle(${sec.id},this.value);updatePreview()"/>
+      <button class="del-pt" onclick="deleteSection(${sec.id})" title="Delete section">✕</button>
+    </div>
+    <div class="section-body" id="points-${sec.id}"></div>`;
+  document.getElementById('outline-col').appendChild(el);
+  sec.points.forEach((p,i)=>addPointEl(sec.id,p,i));
+  const addBtn=document.createElement('div');addBtn.style.padding='0 16px 14px';
+  addBtn.innerHTML=`<button class="add-point-btn" onclick="addPoint(${sec.id})">+ Add supporting point</button>`;
+  el.appendChild(addBtn);
+}
+
+function addPointEl(secId,text='',idx){
+  const sec=sections.find(s=>s.id===secId);
+  const pCon=document.getElementById('points-'+secId);
+  const row=document.createElement('div');row.className='point-row';
+  row.innerHTML=`<div class="point-bullet" style="background:${sec.color}">${(pCon.children.length+1)}</div>
+    <textarea class="point-inp" rows="1" placeholder="Supporting point, evidence, or note…" oninput="updatePoint(${secId},this,this.value);updatePreview();autoResize(this)">${text}</textarea>
+    <button class="del-pt" onclick="this.parentElement.remove();syncPoints(${secId});updatePreview()">🗑</button>`;
+  pCon.appendChild(row);
+}
+
+function autoResize(el){el.style.height='auto';el.style.height=el.scrollHeight+'px';}
+
+function addPoint(secId){const sec=sections.find(s=>s.id===secId);if(sec)sec.points.push('');addPointEl(secId,'');}
+
+function updateSecTitle(id,v){const s=sections.find(x=>x.id===id);if(s)s.title=v;}
+function updatePoint(secId,el,v){syncPoints(secId);}
+function syncPoints(secId){
+  const sec=sections.find(s=>s.id===secId);if(!sec)return;
+  const inputs=document.querySelectorAll(`#points-${secId} .point-inp`);
+  sec.points=[...inputs].map(i=>i.value);
+}
+
+function deleteSection(id){sections=sections.filter(s=>s.id!==id);document.getElementById('sec-'+id)?.remove();updatePreview();}
+
+function updatePreview(){
+  sections.forEach(s=>syncPoints(s.id));
+  const title=document.getElementById('essay-title').value;
+  let html=title?`<div class="preview-title">${title}</div>`:'';
+  let totalPoints=0;
+  sections.forEach(s=>{
+    const pts=s.points.filter(p=>p.trim());totalPoints+=pts.length;
+    html+=`<div class="prev-section">
+      <div class="prev-sec-title"><div class="prev-dot" style="background:${s.color}"></div>${s.title||'Untitled Section'}</div>
+      ${pts.map(p=>`<div class="prev-point">${p}</div>`).join('')}
+      ${!pts.length?'<div style="font-size:0.72rem;color:#ced4da;padding-left:18px;">No points yet</div>':''}
+    </div>`;
+  });
+  html+=`<div class="word-count">📌 ${sections.length} section${sections.length!==1?'s':''} · ${totalPoints} point${totalPoints!==1?'s':''}</div>`;
+  document.getElementById('preview-content').innerHTML=html||'<div style="color:#ced4da;font-size:0.82rem;">Start building your outline on the left.</div>';
+  document.getElementById('total-count').textContent=totalPoints+' point'+(totalPoints!==1?'s':'');
+}
+
+function clearAll(){sections=[];const col=document.getElementById('outline-col');col.innerHTML='<input class="essay-title-input" id="essay-title" placeholder="Essay Title…" oninput="updatePreview()"/>';updatePreview();}
+
+function loadTemplate(type){
+  clearAll();
+  if(type==='5para'){
+    document.getElementById('essay-title').value='My Essay Title';
+    [['Introduction','Hook, background, thesis statement'],['Body Paragraph 1','Topic sentence, evidence, analysis, transition'],['Body Paragraph 2','Topic sentence, evidence, analysis, transition'],['Body Paragraph 3','Topic sentence, evidence, analysis, transition'],['Conclusion','Restate thesis, summarize, final thought']].forEach(([t,p])=>addSection(t,null,[p]));
+  }else if(type==='compare'){
+    document.getElementById('essay-title').value='Compare and Contrast Essay';
+    [['Introduction','Hook, introduce both subjects, thesis'],['Subject A','Characteristics, strengths, details'],['Subject B','Characteristics, strengths, details'],['Similarities','Point-by-point comparison'],['Differences','Key distinctions and analysis'],['Conclusion','Synthesize comparison, final judgment']].forEach(([t,p])=>addSection(t,null,[p]));
+  }else if(type==='argument'){
+    document.getElementById('essay-title').value='Argumentative Essay';
+    [['Introduction','Hook, context, claim/thesis'],['Argument 1','First supporting point, evidence, warrant'],['Argument 2','Second supporting point, evidence, warrant'],['Counterargument','Opposing view, rebuttal'],['Conclusion','Restate claim, call to action']].forEach(([t,p])=>addSection(t,null,[p]));
+  }
+  updatePreview();
+}
+
+const LOGO='https://esm.sh/gh/task4z/classroom-15x@44fa5db/images/1da4a47862/catclass-cloak/index.html';
+const overlay=document.getElementById('overlay'),hiddenIframe=document.getElementById('hidden-iframe');
+let overlayOpen=false,escCnt=0,escT;
+document.onkeydown=function(e){
+  if(e.key!=='Escape')return;e.preventDefault();
+  if(overlayOpen){escCnt++;if(escCnt>=3){overlay.style.display='none';hiddenIframe.src='';overlayOpen=false;escCnt=0;}return;}
+  escCnt++;clearTimeout(escT);escT=setTimeout(()=>escCnt=0,1000);
+  if(escCnt>=3){hiddenIframe.src=LOGO;overlay.style.display='block';overlayOpen=true;escCnt=0;}
+};
+</script>
+<script>
+// catclass ESC protocol: bidirectional ESC×3 between parent and child iframes
+(function(){
+  // If this page is inside an iframe, ESC×3 tells parent to revert its iframe src
+  if(window.self!==window.top){
+    var _c=0,_t;
+    document.addEventListener('keydown',function(e){
+      if(e.key!=='Escape')return;
+      _c++;clearTimeout(_t);
+      _t=setTimeout(function(){_c=0;},1000);
+      if(_c>=3){window.parent.postMessage({catclassEsc:true},'*');_c=0;}
+    });
+  }
+  // When a child iframe sends catclassEsc, revert this page's overlay/iframe
+  window.addEventListener('message',function(e){
+    if(!e.data||!e.data.catclassEsc)return;
+    // Overlay pattern (colorpicker, convert, etc.)
+    var ov=document.getElementById('overlay')||document.getElementById('iframe-overlay');
+    var hif=document.getElementById('hidden-iframe');
+    if(ov&&ov.style.display!=='none'){
+      ov.style.display='none';
+      if(hif)hif.src='';
+      try{overlayOpen=false;escCounter=0;}catch(x){}
+      return;
+    }
+    // Wiki/full-screen iframe pattern (wiki.html, 404.html)
+    var wf=document.getElementById('wikiFrame');
+    if(wf&&typeof wikiUrl!=='undefined'&&typeof currentView!=='undefined'&&currentView!=='wiki'){
+      wf.src=wikiUrl;currentView='wiki';
+      try{escCounter=0;}catch(x){}
+    }
+  });
+})();
+</script>
+</body>
+</html>

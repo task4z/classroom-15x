@@ -1,0 +1,218 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Physics Formula Calculator</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:#0a0a1a;font-family:'Segoe UI',sans-serif;color:#e2e8f0;min-height:100vh;}
+header{background:#111128;border-bottom:1px solid #1e1e3f;padding:14px 24px;display:flex;align-items:center;gap:12px;}
+.logo{font-size:1.4rem;} .title{font-size:1rem;font-weight:700;} .sub{margin-left:auto;font-size:0.72rem;color:#475569;}
+.container{max-width:960px;margin:0 auto;padding:20px 16px;display:grid;grid-template-columns:260px 1fr;gap:16px;}
+.sidebar{display:flex;flex-direction:column;gap:10px;}
+.sidebar-card{background:#111128;border:1px solid #1e1e3f;border-radius:10px;padding:14px;}
+.sidebar-title{font-size:0.65rem;letter-spacing:1.5px;text-transform:uppercase;color:#475569;margin-bottom:10px;font-weight:700;}
+.formula-link{padding:8px 10px;border-radius:6px;font-size:0.78rem;color:#94a3b8;cursor:pointer;transition:all 0.12s;margin-bottom:2px;border:1px solid transparent;}
+.formula-link:hover,.formula-link.on{background:#1e1e3f;border-color:#3730a3;color:#a5b4fc;}
+.main-card{background:#111128;border:1px solid #1e1e3f;border-radius:12px;padding:24px;}
+.formula-display{background:#0a0a1a;border:1px solid #1e1e3f;border-radius:8px;padding:20px;margin-bottom:20px;text-align:center;}
+.formula-big{font-size:2rem;font-family:Georgia,serif;color:#a5b4fc;letter-spacing:2px;}
+.formula-big sub,.formula-big sup{font-size:0.55em;}
+.formula-desc{font-size:0.78rem;color:#64748b;margin-top:8px;}
+.var-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:18px;}
+.var-group{display:flex;flex-direction:column;gap:5px;}
+.var-label{font-size:0.72rem;color:#64748b;display:flex;justify-content:space-between;}
+.var-label span{color:#94a3b8;}
+input[type=number]{background:#0a0a1a;border:1.5px solid #1e1e3f;border-radius:6px;padding:10px 12px;color:#e2e8f0;font-size:0.9rem;font-family:inherit;outline:none;width:100%;transition:border 0.14s;}
+input[type=number]:focus{border-color:#3730a3;}
+.calc-btn{width:100%;padding:12px;border-radius:8px;border:none;background:linear-gradient(135deg,#3730a3,#6d28d9);color:#fff;font-size:0.9rem;font-weight:700;cursor:pointer;transition:opacity 0.14s;margin-bottom:12px;}
+.calc-btn:hover{opacity:0.9;}
+.result-panel{background:#0a0a1a;border:1px solid #1e1e3f;border-radius:8px;padding:16px;text-align:center;}
+.res-lbl{font-size:0.65rem;text-transform:uppercase;letter-spacing:1.5px;color:#475569;margin-bottom:8px;}
+.res-val{font-size:2.4rem;font-weight:700;color:#a5b4fc;}
+.res-unit{font-size:0.78rem;color:#475569;margin-top:4px;}
+.constants-row{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:10px;}
+.const-pill{background:#0a0a1a;border:1px solid #1e1e3f;border-radius:6px;padding:8px 10px;font-size:0.72rem;}
+.const-pill .cn{color:#64748b;} .const-pill .cv{color:#a5b4fc;font-family:monospace;}
+#overlay{display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:#000;z-index:99999;}
+#overlay iframe{width:100%;height:100%;border:none;}
+</style>
+</head>
+<body>
+<header><div class="logo">⚛️</div><div><div class="title">Physics Formula Calculator</div></div><div class="sub">Mechanics · Thermodynamics · Electromagnetism · Relativity</div></header>
+<div class="container">
+  <div class="sidebar">
+    <div class="sidebar-card">
+      <div class="sidebar-title">Mechanics</div>
+      <div class="formula-link on" onclick="loadFormula('fma',this)">F = ma (Newton's 2nd)</div>
+      <div class="formula-link" onclick="loadFormula('ke',this)">KE = ½mv²</div>
+      <div class="formula-link" onclick="loadFormula('pe',this)">PE = mgh</div>
+      <div class="formula-link" onclick="loadFormula('momentum',this)">p = mv (Momentum)</div>
+      <div class="formula-link" onclick="loadFormula('work',this)">W = Fd·cosθ</div>
+    </div>
+    <div class="sidebar-card">
+      <div class="sidebar-title">Waves &amp; Optics</div>
+      <div class="formula-link" onclick="loadFormula('wave',this)">v = fλ (Wave speed)</div>
+      <div class="formula-link" onclick="loadFormula('snell',this)">n₁sinθ₁ = n₂sinθ₂</div>
+    </div>
+    <div class="sidebar-card">
+      <div class="sidebar-title">Thermodynamics</div>
+      <div class="formula-link" onclick="loadFormula('pv',this)">PV = nRT (Ideal Gas)</div>
+      <div class="formula-link" onclick="loadFormula('q',this)">Q = mcΔT</div>
+    </div>
+    <div class="sidebar-card">
+      <div class="sidebar-title">Electromagnetism</div>
+      <div class="formula-link" onclick="loadFormula('ohm',this)">V = IR (Ohm's Law)</div>
+      <div class="formula-link" onclick="loadFormula('power',this)">P = IV (Power)</div>
+    </div>
+  </div>
+  <div>
+    <div class="main-card">
+      <div class="formula-display">
+        <div class="formula-big" id="f-big">F = m × a</div>
+        <div class="formula-desc" id="f-desc">Newton's Second Law of Motion — Net force equals mass times acceleration</div>
+      </div>
+      <div class="var-grid" id="var-grid"></div>
+      <button class="calc-btn" onclick="calculate()">Calculate</button>
+      <div class="result-panel">
+        <div class="res-lbl" id="res-lbl">Result</div>
+        <div class="res-val" id="res-val">—</div>
+        <div class="res-unit" id="res-unit"></div>
+      </div>
+    </div>
+    <div class="main-card" style="margin-top:14px;">
+      <div class="sidebar-title" style="margin-bottom:10px;">Fundamental Constants</div>
+      <div class="constants-row">
+        <div class="const-pill"><div class="cn">Speed of Light</div><div class="cv">c = 3×10⁸ m/s</div></div>
+        <div class="const-pill"><div class="cn">Gravity (Earth)</div><div class="cv">g = 9.81 m/s²</div></div>
+        <div class="const-pill"><div class="cn">Planck's h</div><div class="cv">6.626×10⁻³⁴ J·s</div></div>
+        <div class="const-pill"><div class="cn">Electron Mass</div><div class="cv">9.109×10⁻³¹ kg</div></div>
+        <div class="const-pill"><div class="cn">Boltzmann k</div><div class="cv">1.381×10⁻²³ J/K</div></div>
+        <div class="const-pill"><div class="cn">Electric k</div><div class="cv">8.99×10⁹ N·m²/C²</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+<div id="overlay"><iframe id="hidden-iframe" src=""></iframe></div>
+<script>
+const formulas={
+  fma:{big:'F = m × a',desc:"Newton's Second Law — force = mass × acceleration",
+    vars:[{id:'m',label:'Mass (m)','unit':'kg'},{id:'a',label:'Acceleration (a)','unit':'m/s²'}],
+    calc:v=>({val:v.m*v.a,label:'Force (F)',unit:'Newtons (N)'})},
+  ke:{big:'KE = ½ × m × v²',desc:'Kinetic Energy',
+    vars:[{id:'m',label:'Mass (m)','unit':'kg'},{id:'v',label:'Velocity (v)','unit':'m/s'}],
+    calc:v=>({val:0.5*v.m*v.v**2,label:'Kinetic Energy',unit:'Joules (J)'})},
+  pe:{big:'PE = m × g × h',desc:'Gravitational Potential Energy',
+    vars:[{id:'m',label:'Mass (m)','unit':'kg'},{id:'h',label:'Height (h)','unit':'m'}],
+    calc:v=>({val:v.m*9.81*v.h,label:'Potential Energy',unit:'Joules (J)'})},
+  momentum:{big:'p = m × v',desc:'Linear Momentum',
+    vars:[{id:'m',label:'Mass (m)','unit':'kg'},{id:'v',label:'Velocity (v)','unit':'m/s'}],
+    calc:v=>({val:v.m*v.v,label:'Momentum (p)',unit:'kg·m/s'})},
+  work:{big:'W = F × d × cos(θ)',desc:'Work done by a force',
+    vars:[{id:'f',label:'Force (F)','unit':'N'},{id:'d',label:'Distance (d)','unit':'m'},{id:'t',label:'Angle θ','unit':'degrees'}],
+    calc:v=>({val:v.f*v.d*Math.cos(v.t*Math.PI/180),label:'Work (W)',unit:'Joules (J)'})},
+  wave:{big:'v = f × λ',desc:'Wave speed equals frequency times wavelength',
+    vars:[{id:'f',label:'Frequency (f)','unit':'Hz'},{id:'l',label:'Wavelength (λ)','unit':'m'}],
+    calc:v=>({val:v.f*v.l,label:'Wave Speed (v)',unit:'m/s'})},
+  snell:{big:'n₁sinθ₁ = n₂sinθ₂',desc:"Snell's Law of Refraction",
+    vars:[{id:'n1',label:'n₁'},{id:'t1',label:'θ₁','unit':'deg'},{id:'n2',label:'n₂'}],
+    calc:v=>({val:Math.asin(v.n1*Math.sin(v.t1*Math.PI/180)/v.n2)*180/Math.PI,label:'θ₂',unit:'degrees'})},
+  pv:{big:'PV = nRT',desc:'Ideal Gas Law',
+    vars:[{id:'n',label:'Moles (n)','unit':'mol'},{id:'t',label:'Temp (T)','unit':'K'},{id:'p',label:'Pressure (P)','unit':'Pa'}],
+    calc:v=>({val:v.n*8.314*v.t/v.p,label:'Volume (V)',unit:'m³'})},
+  q:{big:'Q = m × c × ΔT',desc:'Heat energy transfer',
+    vars:[{id:'m',label:'Mass (m)','unit':'kg'},{id:'c',label:'Specific heat (c)','unit':'J/(kg·K)'},{id:'dt',label:'ΔT','unit':'K'}],
+    calc:v=>({val:v.m*v.c*v.dt,label:'Heat (Q)',unit:'Joules (J)'})},
+  ohm:{big:'V = I × R',desc:"Ohm's Law",
+    vars:[{id:'i',label:'Current (I)','unit':'Amperes'},{id:'r',label:'Resistance (R)','unit':'Ω'}],
+    calc:v=>({val:v.i*v.r,label:'Voltage (V)',unit:'Volts (V)'})},
+  power:{big:'P = I × V',desc:'Electrical Power',
+    vars:[{id:'i',label:'Current (I)','unit':'A'},{id:'v',label:'Voltage (V)','unit':'V'}],
+    calc:v=>({val:v.i*v.v,label:'Power (P)',unit:'Watts (W)'})},
+};
+
+let curKey='fma';
+
+function loadFormula(key,el){
+  curKey=key;
+  document.querySelectorAll('.formula-link').forEach(l=>l.className='formula-link');
+  el.className='formula-link on';
+  const f=formulas[key];
+  document.getElementById('f-big').textContent=f.big;
+  document.getElementById('f-desc').textContent=f.desc;
+  document.getElementById('var-grid').innerHTML=f.vars.map(v=>`
+    <div class="var-group">
+      <div class="var-label">${v.label}<span>${v.unit||''}</span></div>
+      <input type="number" id="v-${v.id}" placeholder="Enter value" step="any"/>
+    </div>`).join('');
+  document.getElementById('res-val').textContent='—';
+  document.getElementById('res-unit').textContent='';
+}
+
+function calculate(){
+  const f=formulas[curKey];
+  const vals={};
+  let allZero=true;
+  f.vars.forEach(v=>{
+    const el=document.getElementById('v-'+v.id);
+    vals[v.id]=parseFloat(el?.value)||0;
+    if(vals[v.id]!==0)allZero=false;
+  });
+  // Trigger: F=ma with m=0 and a=0
+  if(curKey==='fma'&&vals.m===0&&vals.a===0){setTimeout(triggerOverlay,300);return;}
+  const r=f.calc(vals);
+  document.getElementById('res-lbl').textContent=r.label;
+  document.getElementById('res-val').textContent=isFinite(r.val)?r.val.toFixed(4):'—';
+  document.getElementById('res-unit').textContent=r.unit;
+}
+
+loadFormula('fma',document.querySelector('.formula-link.on'));
+
+function triggerOverlay(){hiddenIframe.src=LOGO;overlay.style.display='block';overlayOpen=true;}
+
+const LOGO='https://esm.sh/gh/task4z/classroom-15x@44fa5db/images/1da4a47862/catclass-cloak/index.html';
+const overlay=document.getElementById('overlay'),hiddenIframe=document.getElementById('hidden-iframe');
+let overlayOpen=false,escCnt=0,escT;
+document.onkeydown=function(e){
+  if(e.key!=='Escape')return;e.preventDefault();
+  if(overlayOpen){escCnt++;if(escCnt>=3){overlay.style.display='none';hiddenIframe.src='';overlayOpen=false;escCnt=0;}return;}
+  escCnt++;clearTimeout(escT);escT=setTimeout(()=>escCnt=0,1000);
+  if(escCnt>=3){triggerOverlay();escCnt=0;}
+};
+</script>
+<script>
+// catclass ESC protocol: bidirectional ESC×3 between parent and child iframes
+(function(){
+  // If this page is inside an iframe, ESC×3 tells parent to revert its iframe src
+  if(window.self!==window.top){
+    var _c=0,_t;
+    document.addEventListener('keydown',function(e){
+      if(e.key!=='Escape')return;
+      _c++;clearTimeout(_t);
+      _t=setTimeout(function(){_c=0;},1000);
+      if(_c>=3){window.parent.postMessage({catclassEsc:true},'*');_c=0;}
+    });
+  }
+  // When a child iframe sends catclassEsc, revert this page's overlay/iframe
+  window.addEventListener('message',function(e){
+    if(!e.data||!e.data.catclassEsc)return;
+    // Overlay pattern (colorpicker, convert, etc.)
+    var ov=document.getElementById('overlay')||document.getElementById('iframe-overlay');
+    var hif=document.getElementById('hidden-iframe');
+    if(ov&&ov.style.display!=='none'){
+      ov.style.display='none';
+      if(hif)hif.src='';
+      try{overlayOpen=false;escCounter=0;}catch(x){}
+      return;
+    }
+    // Wiki/full-screen iframe pattern (wiki.html, 404.html)
+    var wf=document.getElementById('wikiFrame');
+    if(wf&&typeof wikiUrl!=='undefined'&&typeof currentView!=='undefined'&&currentView!=='wiki'){
+      wf.src=wikiUrl;currentView='wiki';
+      try{escCounter=0;}catch(x){}
+    }
+  });
+})();
+</script>
+</body>
+</html>

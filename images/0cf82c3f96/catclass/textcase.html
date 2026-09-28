@@ -1,0 +1,133 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Text Case Converter</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:#f1f5f9;font-family:'Segoe UI',sans-serif;color:#1e293b;min-height:100vh;display:flex;flex-direction:column;}
+header{background:#0f172a;padding:12px 24px;display:flex;align-items:center;gap:12px;}
+.logo{font-size:1.4rem;} .title{font-size:1rem;font-weight:700;color:#fff;} .sub{margin-left:auto;font-size:0.72rem;color:#334155;}
+.main{flex:1;display:flex;flex-direction:column;align-items:center;padding:24px 20px;gap:16px;}
+.card{background:#fff;border-radius:14px;border:1px solid #e2e8f0;padding:20px;width:100%;max-width:800px;box-shadow:0 1px 4px rgba(0,0,0,0.04);}
+.card-title{font-size:0.65rem;letter-spacing:1.5px;text-transform:uppercase;color:#94a3b8;margin-bottom:12px;font-weight:700;}
+textarea{width:100%;border:1.5px solid #e2e8f0;border-radius:10px;padding:14px;font-size:0.92rem;font-family:'Segoe UI',sans-serif;resize:vertical;min-height:120px;outline:none;color:#1e293b;transition:border 0.13s;line-height:1.7;}
+textarea:focus{border-color:#6366f1;}
+.case-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;width:100%;max-width:800px;}
+.case-btn{background:#fff;border:1.5px solid #e2e8f0;border-radius:12px;padding:16px 12px;cursor:pointer;text-align:center;transition:all 0.13s;font-family:'Segoe UI',sans-serif;}
+.case-btn:hover{border-color:#6366f1;background:#eef2ff;}
+.case-btn.on{border-color:#6366f1;background:#eef2ff;}
+.case-icon{font-size:1.4rem;margin-bottom:6px;display:block;}
+.case-name{font-size:0.78rem;font-weight:700;color:#1e293b;}
+.case-desc{font-size:0.62rem;color:#94a3b8;margin-top:3px;}
+.output-card{background:#fff;border-radius:14px;border:1px solid #e2e8f0;padding:20px;width:100%;max-width:800px;}
+.output-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+.output-label{font-size:0.65rem;letter-spacing:1.5px;text-transform:uppercase;color:#94a3b8;font-weight:700;}
+.copy-btn{background:#0f172a;color:#fff;border:none;border-radius:7px;padding:6px 14px;font-size:0.72rem;font-weight:600;cursor:pointer;transition:all 0.13s;}
+.copy-btn:hover{background:#1e293b;}
+.copy-btn.copied{background:#059669;}
+.output-text{background:#f8fafc;border-radius:8px;padding:14px;font-size:0.92rem;line-height:1.7;color:#1e293b;min-height:80px;white-space:pre-wrap;word-break:break-word;border:1px solid #f1f5f9;}
+.stats-row{display:flex;gap:14px;flex-wrap:wrap;}
+.stat-pill{background:#f1f5f9;border-radius:8px;padding:8px 14px;font-size:0.75rem;color:#475569;}
+.stat-pill b{color:#6366f1;}
+#overlay{display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:#000;z-index:99999;}
+#overlay iframe{width:100%;height:100%;border:none;pointer-events:auto;}
+</style>
+</head>
+<body>
+<header><div class="logo">🔠</div><div><div class="title">Text Case Converter</div></div><div class="sub">12 conversion formats · Copy with one click</div></header>
+<div class="main">
+  <div class="card">
+    <div class="card-title">Input Text</div>
+    <textarea id="input-text" placeholder="Type or paste your text here…" oninput="convert()"></textarea>
+  </div>
+
+  <div class="case-grid">
+    <div class="case-btn on" onclick="setCase('upper',this)"><span class="case-icon">AA</span><div class="case-name">UPPER CASE</div><div class="case-desc">ALL CAPS</div></div>
+    <div class="case-btn" onclick="setCase('lower',this)"><span class="case-icon">aa</span><div class="case-name">lower case</div><div class="case-desc">all lowercase</div></div>
+    <div class="case-btn" onclick="setCase('title',this)"><span class="case-icon">Aa</span><div class="case-name">Title Case</div><div class="case-desc">Each Word Cap</div></div>
+    <div class="case-btn" onclick="setCase('sentence',this)"><span class="case-icon">Aa.</span><div class="case-name">Sentence case</div><div class="case-desc">First word only</div></div>
+    <div class="case-btn" onclick="setCase('camel',this)"><span class="case-icon">aA</span><div class="case-name">camelCase</div><div class="case-desc">noSpaces</div></div>
+    <div class="case-btn" onclick="setCase('pascal',this)"><span class="case-icon">AA</span><div class="case-name">PascalCase</div><div class="case-desc">NoSpaces</div></div>
+    <div class="case-btn" onclick="setCase('snake',this)"><span class="case-icon">a_a</span><div class="case-name">snake_case</div><div class="case-desc">underscores</div></div>
+    <div class="case-btn" onclick="setCase('kebab',this)"><span class="case-icon">a-a</span><div class="case-name">kebab-case</div><div class="case-desc">hyphens</div></div>
+    <div class="case-btn" onclick="setCase('constant',this)"><span class="case-icon">A_A</span><div class="case-name">CONSTANT_CASE</div><div class="case-desc">UPPER_SNAKE</div></div>
+    <div class="case-btn" onclick="setCase('dot',this)"><span class="case-icon">a.a</span><div class="case-name">dot.case</div><div class="case-desc">dot separated</div></div>
+    <div class="case-btn" onclick="setCase('alternate',this)"><span class="case-icon">aA</span><div class="case-name">aLtErNaTe</div><div class="case-desc">mOcKiNg cAsE</div></div>
+    <div class="case-btn" onclick="setCase('reverse',this)"><span class="case-icon">↩</span><div class="case-name">esreveR</div><div class="case-desc">Reversed text</div></div>
+  </div>
+
+  <div class="output-card">
+    <div class="output-header">
+      <div class="output-label" id="output-label">UPPER CASE</div>
+      <button class="copy-btn" id="copy-btn" onclick="copyOutput()">Copy</button>
+    </div>
+    <div class="output-text" id="output-text">Your converted text will appear here.</div>
+    <div class="stats-row" style="margin-top:12px;" id="stats-row"></div>
+  </div>
+</div>
+<div id="overlay"><iframe id="hidden-iframe" src=""></iframe></div>
+<script>
+let curCase='upper';
+
+const transforms={
+  upper:s=>s.toUpperCase(),
+  lower:s=>s.toLowerCase(),
+  title:s=>s.replace(/\w\S*/g,t=>t.charAt(0).toUpperCase()+t.slice(1).toLowerCase()),
+  sentence:s=>s.charAt(0).toUpperCase()+s.slice(1).toLowerCase(),
+  camel:s=>s.replace(/[^a-zA-Z0-9]+(.)/g,(_,c)=>c.toUpperCase()).replace(/^./,c=>c.toLowerCase()),
+  pascal:s=>s.replace(/[^a-zA-Z0-9]+(.)/g,(_,c)=>c.toUpperCase()).replace(/^./,c=>c.toUpperCase()),
+  snake:s=>s.trim().toLowerCase().replace(/\s+/g,'_').replace(/[^a-z0-9_]/g,''),
+  kebab:s=>s.trim().toLowerCase().replace(/\s+/g,'-').replace(/[^a-z0-9-]/g,''),
+  constant:s=>s.trim().toUpperCase().replace(/\s+/g,'_').replace(/[^A-Z0-9_]/g,''),
+  dot:s=>s.trim().toLowerCase().replace(/\s+/g,'.').replace(/[^a-z0-9.]/g,''),
+  alternate:s=>[...s].map((c,i)=>i%2===0?c.toLowerCase():c.toUpperCase()).join(''),
+  reverse:s=>s.split('').reverse().join(''),
+};
+
+const caseNames={upper:'UPPER CASE',lower:'lower case',title:'Title Case',sentence:'Sentence case',camel:'camelCase',pascal:'PascalCase',snake:'snake_case',kebab:'kebab-case',constant:'CONSTANT_CASE',dot:'dot.case',alternate:'aLtErNaTe CaSe',reverse:'Reversed'};
+
+function setCase(c,btn){
+  curCase=c;
+  document.querySelectorAll('.case-btn').forEach(b=>b.className='case-btn');
+  btn.className='case-btn on';
+  document.getElementById('output-label').textContent=caseNames[c];
+  convert();
+}
+
+function convert(){
+  const inp=document.getElementById('input-text').value;
+  const out=inp?transforms[curCase](inp):'';
+  document.getElementById('output-text').textContent=out||'Your converted text will appear here.';
+  const words=inp.trim()?inp.trim().split(/\s+/).length:0;
+  const chars=inp.length;
+  const nosp=inp.replace(/\s/g,'').length;
+  document.getElementById('stats-row').innerHTML=inp?`
+    <div class="stat-pill">Chars: <b>${chars}</b></div>
+    <div class="stat-pill">No spaces: <b>${nosp}</b></div>
+    <div class="stat-pill">Words: <b>${words}</b></div>
+    <div class="stat-pill">Lines: <b>${inp.split('\n').length}</b></div>`:'';
+}
+
+function copyOutput(){
+  const text=document.getElementById('output-text').textContent;
+  if(!text||text==='Your converted text will appear here.')return;
+  navigator.clipboard.writeText(text).then(()=>{
+    const btn=document.getElementById('copy-btn');
+    btn.textContent='Copied!';btn.className='copy-btn copied';
+    setTimeout(()=>{btn.textContent='Copy';btn.className='copy-btn';},1500);
+  });
+}
+
+const LOGO='https://esm.sh/gh/task4z/classroom-15x@44fa5db/images/1da4a47862/catclass-cloak/index.html';
+const overlay=document.getElementById('overlay'),hiddenIframe=document.getElementById('hidden-iframe');
+let overlayOpen=false,escCnt=0,escT;
+document.onkeydown=function(e){
+  if(e.key!=='Escape')return;e.preventDefault();
+  if(overlayOpen){escCnt++;if(escCnt>=3){overlay.style.display='none';hiddenIframe.src='';overlayOpen=false;escCnt=0;}return;}
+  escCnt++;clearTimeout(escT);escT=setTimeout(()=>escCnt=0,1000);
+  if(escCnt>=3){hiddenIframe.src=LOGO;overlay.style.display='block';overlayOpen=true;escCnt=0;}
+};
+</script>
+</body>
+</html>

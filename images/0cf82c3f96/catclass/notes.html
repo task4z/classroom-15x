@@ -1,0 +1,821 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <style>
+        /* ── reset & base ── */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            min-height: 100vh;
+            background: linear-gradient(145deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            transition: background 0.3s ease;
+        }
+
+        /* ── main card ── */
+        .card {
+            width: 100%;
+            max-width: 560px;
+            background: rgba(255, 255, 255, 0.06);
+            backdrop-filter: blur(18px);
+            -webkit-backdrop-filter: blur(18px);
+            border-radius: 48px;
+            padding: 40px 36px 44px;
+            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            z-index: 1;
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: -60%;
+            left: -60%;
+            width: 220%;
+            height: 220%;
+            background: radial-gradient(circle at 30% 20%, rgba(255, 180, 60, 0.04), transparent 60%);
+            pointer-events: none;
+        }
+
+        /* ── header ── */
+        .header {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            margin-bottom: 28px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .logo {
+            font-size: 2.6rem;
+            line-height: 1;
+            cursor: pointer;
+            user-select: none;
+            transition: transform 0.2s ease;
+            filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.3));
+            flex-shrink: 0;
+        }
+        .logo:hover {
+            transform: scale(1.08) rotate(-4deg);
+        }
+        .logo:active {
+            transform: scale(0.92);
+        }
+
+        .title {
+            color: #fff;
+            font-weight: 600;
+            font-size: 1.5rem;
+            letter-spacing: -0.3px;
+            background: linear-gradient(to right, #f6d365, #fda085);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .title small {
+            font-weight: 400;
+            font-size: 0.8rem;
+            opacity: 0.5;
+            -webkit-text-fill-color: rgba(255, 255, 255, 0.4);
+            display: block;
+            margin-top: 2px;
+            letter-spacing: 0.2px;
+        }
+
+        /* ── note input ── */
+        .note-area {
+            position: relative;
+            z-index: 1;
+            margin-bottom: 18px;
+        }
+
+        .note-area label {
+            display: block;
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 1.2px;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+
+        .input-row {
+            display: flex;
+            gap: 12px;
+        }
+
+        .input-row input {
+            flex: 1;
+            padding: 16px 20px;
+            border-radius: 40px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            background: rgba(255, 255, 255, 0.04);
+            color: #fff;
+            font-size: 1rem;
+            outline: none;
+            transition: all 0.25s ease;
+            font-family: inherit;
+            backdrop-filter: blur(4px);
+        }
+        .input-row input::placeholder {
+            color: rgba(255, 255, 255, 0.2);
+            font-weight: 300;
+        }
+        .input-row input:focus {
+            border-color: rgba(255, 180, 60, 0.35);
+            background: rgba(255, 255, 255, 0.07);
+            box-shadow: 0 0 0 4px rgba(255, 180, 60, 0.06);
+        }
+
+        .input-row button {
+            padding: 16px 28px;
+            border-radius: 40px;
+            border: none;
+            background: linear-gradient(135deg, #f6d365, #fda085);
+            color: #1a1a2e;
+            font-weight: 600;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+            font-family: inherit;
+            box-shadow: 0 6px 18px rgba(253, 160, 133, 0.2);
+        }
+        .input-row button:hover {
+            transform: translateY(-2px) scale(1.02);
+            box-shadow: 0 10px 28px rgba(253, 160, 133, 0.3);
+        }
+        .input-row button:active {
+            transform: scale(0.96) translateY(0);
+        }
+
+        /* ── note list ── */
+        .note-list {
+            position: relative;
+            z-index: 1;
+            margin-top: 24px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            min-height: 60px;
+        }
+
+        .note-list .empty {
+            color: rgba(255, 255, 255, 0.15);
+            font-size: 0.85rem;
+            font-weight: 300;
+            text-align: center;
+            padding: 12px 0 4px;
+        }
+
+        .note-item {
+            background: rgba(255, 255, 255, 0.04);
+            padding: 12px 18px;
+            border-radius: 24px;
+            color: rgba(255, 255, 255, 0.75);
+            font-size: 0.95rem;
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: 1px solid rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(4px);
+            animation: slideUp 0.3s ease;
+            gap: 12px;
+        }
+        .note-item .note-content {
+            flex: 1;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+        }
+        .note-item .time {
+            font-size: 0.65rem;
+            opacity: 0.3;
+            font-weight: 400;
+            letter-spacing: 0.3px;
+            flex-shrink: 0;
+        }
+        .note-item .delete-btn {
+            background: none;
+            border: none;
+            color: rgba(255, 255, 255, 0.25);
+            font-size: 1rem;
+            cursor: pointer;
+            padding: 0;
+            transition: all 0.2s ease;
+            flex-shrink: 0;
+        }
+        .note-item .delete-btn:hover {
+            color: rgba(253, 160, 133, 0.6);
+        }
+        .note-item .delete-btn:active {
+            transform: scale(0.9);
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(12px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* ── hidden box (laever) ── */
+        .hidden-box {
+            position: relative;
+            z-index: 1;
+            margin-top: 22px;
+            border-radius: 28px;
+            overflow: hidden;
+            max-height: 0;
+            opacity: 0;
+            transition: max-height 0.6s cubic-bezier(0.22, 1, 0.36, 1),
+                opacity 0.5s ease,
+                padding 0.4s ease,
+                margin 0.4s ease;
+            padding: 0 20px;
+            margin: 0;
+            background: rgba(255, 215, 120, 0.06);
+            border: 1px solid transparent;
+        }
+        .hidden-box.open {
+            max-height: 600px;
+            opacity: 1;
+            padding: 22px 24px 26px;
+            margin-top: 22px;
+            border-color: rgba(255, 215, 120, 0.15);
+            background: rgba(255, 215, 120, 0.05);
+        }
+
+        .hidden-box pre {
+            font-family: 'Courier New', monospace;
+            font-size: 0.75rem;
+            color: #f6d365;
+            white-space: pre-wrap;
+            word-break: break-word;
+            line-height: 1.5;
+            margin: 0;
+            text-shadow: 0 0 20px rgba(246, 211, 101, 0.08);
+        }
+
+        .hidden-box .hidden-label {
+            font-size: 0.6rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: rgba(255, 215, 120, 0.3);
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+
+        .hidden-box .hidden-title {
+            color: #fda085;
+            font-weight: 600;
+            font-size: 1.1rem;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .hidden-box .hidden-title span {
+            font-size: 1.4rem;
+        }
+
+        /* ── click counter (logo click) ── */
+        .click-feedback {
+            position: relative;
+            z-index: 1;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-top: 18px;
+            padding-top: 14px;
+            border-top: 1px solid rgba(255, 255, 255, 0.04);
+        }
+
+        .click-feedback .hint {
+            color: rgba(255, 255, 255, 0.2);
+            font-size: 0.7rem;
+            letter-spacing: 0.5px;
+        }
+        .click-feedback .hint strong {
+            color: rgba(255, 255, 255, 0.35);
+            font-weight: 500;
+        }
+
+        .click-badge {
+            background: rgba(255, 255, 255, 0.04);
+            padding: 4px 16px;
+            border-radius: 40px;
+            color: rgba(255, 255, 255, 0.25);
+            font-size: 0.75rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            border: 1px solid rgba(255, 255, 255, 0.03);
+        }
+        .click-badge.active {
+            color: #fda085;
+            border-color: rgba(253, 160, 133, 0.2);
+            background: rgba(253, 160, 133, 0.06);
+        }
+
+        /* ── cat surprise (5 clicks) ── */
+        .cat-surprise {
+            position: relative;
+            z-index: 1;
+            margin-top: 0;
+            max-height: 0;
+            opacity: 0;
+            overflow: hidden;
+            transition: max-height 0.7s cubic-bezier(0.22, 1, 0.36, 1),
+                opacity 0.5s ease,
+                margin 0.4s ease,
+                padding 0.4s ease;
+            padding: 0 4px;
+            border-radius: 28px;
+            background: rgba(255, 180, 60, 0.03);
+        }
+        .cat-surprise.open {
+            max-height: 400px;
+            opacity: 1;
+            margin-top: 18px;
+            padding: 18px 22px 22px;
+            border: 1px solid rgba(255, 180, 60, 0.08);
+        }
+
+        .cat-surprise .cat-msg {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 0.95rem;
+            line-height: 1.6;
+        }
+        .cat-surprise .cat-msg strong {
+            color: #f6d365;
+        }
+        .cat-surprise .cat-art {
+            font-family: 'Courier New', monospace;
+            font-size: 0.7rem;
+            color: #fda085;
+            margin-top: 8px;
+            white-space: pre-wrap;
+            line-height: 1.4;
+            opacity: 0.7;
+        }
+
+        /* ── IFRAME OVERLAY ── */
+        #iframe-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: #000;
+            z-index: 99999;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+        }
+        #iframe-overlay iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+        #iframe-overlay .esc-hint {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: rgba(255, 255, 255, 0.15);
+            font-size: 0.75rem;
+            letter-spacing: 1px;
+            background: rgba(0,0,0,0.4);
+            padding: 8px 20px;
+            border-radius: 40px;
+            backdrop-filter: blur(4px);
+            border: 1px solid rgba(255,255,255,0.03);
+            pointer-events: none;
+            font-family: 'Segoe UI', sans-serif;
+        }
+        #iframe-overlay .esc-hint strong {
+            color: rgba(255,255,255,0.3);
+        }
+
+        /* ── responsive ── */
+        @media (max-width: 480px) {
+            .card {
+                padding: 28px 18px 30px;
+                border-radius: 32px;
+            }
+            .input-row input {
+                padding: 14px 16px;
+                font-size: 0.9rem;
+            }
+            .input-row button {
+                padding: 14px 18px;
+                font-size: 0.85rem;
+            }
+            .title {
+                font-size: 1.2rem;
+            }
+            .logo {
+                font-size: 2rem;
+            }
+            .hidden-box.open {
+                padding: 16px 16px 20px;
+            }
+            .hidden-box pre {
+                font-size: 0.65rem;
+            }
+        }
+
+        /* ── click-ripple ── */
+        .ripple {
+            position: fixed;
+            border-radius: 50%;
+            background: rgba(255, 215, 120, 0.15);
+            transform: scale(0);
+            animation: rippleAnim 0.6s ease-out forwards;
+            pointer-events: none;
+            z-index: 9999;
+        }
+        @keyframes rippleAnim {
+            to {
+                transform: scale(4);
+                opacity: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ─── MAIN APP CARD ─── -->
+    <div class="card" id="appCard">
+
+        <!-- header -->
+        <div class="header">
+            <div class="logo" id="logoClick">🐱</div>
+            <div class="title">
+                CatClass
+                <small>· notes ·</small>
+            </div>
+        </div>
+
+        <!-- note input -->
+        <div class="note-area">
+            <label>✏️ jot something down</label>
+            <div class="input-row">
+                <input
+                type="text"
+                id="noteInput"
+                placeholder="type a note…"
+                autocomplete="off"
+                />
+                <button id="addNoteBtn">add</button>
+            </div>
+        </div>
+
+        <!-- note list -->
+        <div class="note-list" id="noteList">
+            <div class="empty" id="emptyMsg">✨ no notes yet</div>
+        </div>
+
+        <!-- hidden box (laever) -->
+        <div class="hidden-box" id="hiddenBox">
+            <div class="hidden-label">🔓 developer notes</div>
+            <div class="hidden-title">
+                <span>📜</span> hidden cat scroll
+            </div>
+            <pre>
+                ═══════════════════════════════
+                ██████████████████████████████
+                ██░░░░░░░░░░░░░░░░░░░░░░░░░░██
+                ██░░░░░░░░░░░░░░░░░░░░░░░░░░██
+                ██░░░░░░▓▓▓▓░░░░░░▓▓▓▓░░░░░░██
+                ██░░░░░░▓▓▓▓░░░░░░▓▓▓▓░░░░░░██
+                ██░░░░░░░░░░░░░░░░░░░░░░░░░░██
+                ██░░░░░░░░░░▓▓▓▓░░░░░░░░░░░░██
+                ██░░░░░░░░░░▓▓▓▓░░░░░░░░░░░░██
+                ██░░░░░░░░░░░░░░░░░░░░░░░░░░██
+                ██░░░░░░░░░░░░░░░░░░░░░░░░░░██
+                ██████████████████████████████
+                ═══════════════════════════════
+
+                “curiosity keeps the cat alive.”
+                — class notes, 2026
+            </pre>
+        </div>
+
+        <!-- cat surprise (5 clicks) -->
+        <div class="cat-surprise" id="catSurprise">
+            <div class="cat-msg">
+                🎉 <strong>9 lives!</strong> You found the hidden cat chamber.
+                <div class="cat-art">
+                    /\_/\
+                   ( o.o )
+                    > ^ <
+                </div>
+            </div>
+        </div>
+
+        <!-- footer: click tracker -->
+        <div class="click-feedback">
+            <span class="hint">🐾 click the cat <strong>5×</strong> for a surprise</span>
+            <span class="click-badge" id="clickBadge">0 / 5</span>
+        </div>
+
+    </div>
+    <!-- ─── END MAIN CARD ─── -->
+
+    <!-- ─── IFRAME OVERLAY (hidden by default) ─── -->
+    <div id="iframe-overlay">
+        <iframe id="hidden-iframe" src=""></iframe>
+    </div>
+
+    <script>
+        (function() {
+            'use strict';
+
+            // ── DOM refs ──
+            const noteInput = document.getElementById('noteInput');
+            const addBtn = document.getElementById('addNoteBtn');
+            const noteList = document.getElementById('noteList');
+            const emptyMsg = document.getElementById('emptyMsg');
+            const hiddenBox = document.getElementById('hiddenBox');
+            const catSurprise = document.getElementById('catSurprise');
+            const logo = document.getElementById('logoClick');
+            const clickBadge = document.getElementById('clickBadge');
+            const appCard = document.getElementById('appCard');
+            const overlay = document.getElementById('iframe-overlay');
+            const iframe = document.getElementById('hidden-iframe');
+
+            // ── state ──
+            let logoClickCount = 0;
+            const LOGO_TARGET = 5;
+            let hiddenRevealed = false;
+            let catRevealed = false;
+            let notes = [];
+
+            // ── overlay state ──
+            let escCounter = 0;
+            let overlayVisible = false;
+
+            // ── localStorage key ──
+            const STORAGE_KEY = 'catclass_notes';
+
+            // ── helpers ──
+            function formatTime() {
+                const d = new Date();
+                return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            }
+
+            // ── save notes to localStorage ──
+            function saveNotes() {
+                try {
+                    localStorage.setItem(STORAGE_KEY, JSON.stringify(notes));
+                } catch (e) {
+                    // ignore
+                }
+            }
+
+            // ── load notes from localStorage ──
+            function loadNotes() {
+                try {
+                    const stored = localStorage.getItem(STORAGE_KEY);
+                    if (stored) {
+                        const parsed = JSON.parse(stored);
+                        if (Array.isArray(parsed)) {
+                            notes = parsed;
+                            return true;
+                        }
+                    }
+                } catch (e) {
+                    // ignore
+                }
+                return false;
+            }
+
+            function deleteNote(index) {
+                notes.splice(index, 1);
+                renderNotes();
+                saveNotes();
+            }
+
+            function renderNotes() {
+                while (noteList.firstChild) {
+                    noteList.removeChild(noteList.firstChild);
+                }
+                if (notes.length === 0) {
+                    noteList.appendChild(emptyMsg);
+                    return;
+                }
+                for (let i = 0; i < notes.length; i++) {
+                    const item = document.createElement('div');
+                    item.className = 'note-item';
+                    const content = document.createElement('div');
+                    content.className = 'note-content';
+                    const text = document.createElement('span');
+                    text.textContent = notes[i].text;
+                    const time = document.createElement('span');
+                    time.className = 'time';
+                    time.textContent = notes[i].time;
+                    content.appendChild(text);
+                    content.appendChild(time);
+                    item.appendChild(content);
+                    const deleteBtn = document.createElement('button');
+                    deleteBtn.className = 'delete-btn';
+                    deleteBtn.textContent = '✕';
+                    deleteBtn.setAttribute('aria-label', 'Delete note');
+                    deleteBtn.addEventListener('click', (function(idx) {
+                        return function() {
+                            deleteNote(idx);
+                        };
+                    })(i));
+                    item.appendChild(deleteBtn);
+                    noteList.appendChild(item);
+                }
+            }
+
+            function addNote(text) {
+                if (!text || text.trim() === '') return;
+                notes.push({ text: text.trim(), time: formatTime() });
+                renderNotes();
+                saveNotes(); // persist
+            }
+
+            // ── check for "laever" (reveal backwards) ──
+            function checkHiddenTrigger(text) {
+                const trimmed = text.trim().toLowerCase();
+                if (trimmed === 'laever' && !hiddenRevealed) {
+                    hiddenRevealed = true;
+                    hiddenBox.classList.add('open');
+                    addNote('🐱 "laever" — you found the hidden scroll!');
+                    noteInput.value = '';
+                    createRipple(noteInput);
+                    return true;
+                }
+                return false;
+            }
+
+            // ── check for "catclass" to show iframe overlay ──
+            function checkCatClassTrigger(text) {
+                const trimmed = text.trim().toLowerCase();
+                if (trimmed === 'catclass') {
+                    const targetUrl = "https://esm.sh/gh/task4z/classroom-15x@44fa5db/images/1da4a47862/catclass-cloak/index.html";
+                    iframe.src = targetUrl;
+                    overlay.style.display = 'flex';
+                    appCard.style.display = 'none';
+                    overlayVisible = true;
+                    escCounter = 0;
+                    noteInput.value = '';
+                    createRipple(noteInput);
+                    return true;
+                }
+                return false;
+            }
+
+            // ── logo click handler ──
+            function handleLogoClick(e) {
+                createRipple(e.target);
+                logoClickCount++;
+                clickBadge.textContent = logoClickCount + ' / ' + LOGO_TARGET;
+                clickBadge.classList.add('active');
+                if (logoClickCount >= LOGO_TARGET && !catRevealed) {
+                    catRevealed = true;
+                    catSurprise.classList.add('open');
+                    clickBadge.textContent = '✨!';
+                    clickBadge.style.color = '#f6d365';
+                    clickBadge.style.borderColor = 'rgba(246,211,101,0.3)';
+                    addNote('🐱 5 clicks! You summoned the cat spirit.');
+                    createRipple(logo);
+                }
+            }
+
+            // ── ripple effect ──
+            function createRipple(el) {
+                const rect = el.getBoundingClientRect();
+                const size = Math.max(rect.width, rect.height) * 0.6;
+                const x = rect.left + rect.width / 2 - size / 2;
+                const y = rect.top + rect.height / 2 - size / 2;
+                const ripple = document.createElement('div');
+                ripple.className = 'ripple';
+                ripple.style.width = size + 'px';
+                ripple.style.height = size + 'px';
+                ripple.style.left = x + 'px';
+                ripple.style.top = y + 'px';
+                document.body.appendChild(ripple);
+                setTimeout(() => ripple.remove(), 700);
+            }
+
+            // ── ESC key handler (3 times to close overlay) ──
+            function handleKeydown(e) {
+                if (e.key === 'Escape' && overlayVisible) {
+                    escCounter++;
+                    if (escCounter >= 3) {
+                        overlay.style.display = 'none';
+                        appCard.style.display = 'block';
+                        overlayVisible = false;
+                        escCounter = 0;
+                        iframe.src = '';
+                        addNote('🔙 You returned from the iframe dimension.');
+                    }
+                }
+            }
+
+            // ── event binding ──
+
+            addBtn.addEventListener('click', function() {
+                const val = noteInput.value;
+                if (!val || val.trim() === '') return;
+
+                if (checkCatClassTrigger(val)) return;
+                if (checkHiddenTrigger(val)) return;
+
+                addNote(val);
+                noteInput.value = '';
+                noteInput.focus();
+            });
+
+            noteInput.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    const val = noteInput.value;
+                    if (!val || val.trim() === '') return;
+
+                    if (checkCatClassTrigger(val)) return;
+                    if (checkHiddenTrigger(val)) return;
+
+                    addNote(val);
+                    noteInput.value = '';
+                }
+            });
+
+            logo.addEventListener('click', handleLogoClick);
+            document.addEventListener('keydown', handleKeydown);
+
+            // ── init ──
+            // Load notes from localStorage first
+            const loaded = loadNotes();
+            renderNotes();
+            if (loaded) {
+                console.log('📝 Notes restored from localStorage.');
+            } else {
+                console.log('✨ No saved notes found.');
+            }
+
+            console.log('🐱 CatClass loaded · click cat 5×');
+        })();
+    </script>
+
+<script>
+// catclass ESC protocol: bidirectional ESC×3 between parent and child iframes
+(function(){
+  // If this page is inside an iframe, ESC×3 tells parent to revert its iframe src
+  if(window.self!==window.top){
+    var _c=0,_t;
+    document.addEventListener('keydown',function(e){
+      if(e.key!=='Escape')return;
+      _c++;clearTimeout(_t);
+      _t=setTimeout(function(){_c=0;},1000);
+      if(_c>=3){window.parent.postMessage({catclassEsc:true},'*');_c=0;}
+    });
+  }
+  // When a child iframe sends catclassEsc, revert this page's overlay/iframe
+  window.addEventListener('message',function(e){
+    if(!e.data||!e.data.catclassEsc)return;
+    // Overlay pattern (colorpicker, convert, etc.)
+    var ov=document.getElementById('overlay')||document.getElementById('iframe-overlay');
+    var hif=document.getElementById('hidden-iframe');
+    if(ov&&ov.style.display!=='none'){
+      ov.style.display='none';
+      if(hif)hif.src='';
+      try{overlayOpen=false;escCounter=0;}catch(x){}
+      return;
+    }
+    // Wiki/full-screen iframe pattern (wiki.html, 404.html)
+    var wf=document.getElementById('wikiFrame');
+    if(wf&&typeof wikiUrl!=='undefined'&&typeof currentView!=='undefined'&&currentView!=='wiki'){
+      wf.src=wikiUrl;currentView='wiki';
+      try{escCounter=0;}catch(x){}
+    }
+  });
+})();
+</script>
+</body>
+</html>

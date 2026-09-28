@@ -1,0 +1,205 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Microphone Tester</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:#0c1020;font-family:'Segoe UI',sans-serif;color:#e2e8f0;min-height:100vh;display:flex;flex-direction:column;}
+header{background:#0f1629;border-bottom:1px solid #1e2a4a;padding:12px 24px;display:flex;align-items:center;gap:12px;}
+.logo{font-size:1.4rem;} .title{font-size:1rem;font-weight:700;} .sub{margin-left:auto;font-size:0.72rem;color:#3a4a7a;}
+.main{flex:1;display:flex;flex-direction:column;align-items:center;padding:30px 20px;gap:20px;}
+.mic-card{background:#0f1629;border:1px solid #1e2a4a;border-radius:20px;padding:28px;width:100%;max-width:700px;}
+.level-bar-wrap{background:#06091a;border-radius:10px;overflow:hidden;height:24px;position:relative;margin:16px 0;}
+.level-bar{height:100%;width:0%;background:linear-gradient(90deg,#3b82f6,#06b6d4,#10b981);border-radius:10px;transition:width 0.05s linear;}
+.level-bar.loud{background:linear-gradient(90deg,#f59e0b,#ef4444);}
+.level-text{position:absolute;right:10px;top:50%;transform:translateY(-50%);font-size:0.72rem;color:#64748b;font-weight:700;}
+canvas.waveform{border-radius:12px;background:#06091a;border:1px solid #1e2a4a;width:100%;height:120px;display:block;}
+canvas.spectrum{border-radius:12px;background:#06091a;border:1px solid #1e2a4a;width:100%;height:80px;display:block;margin-top:10px;}
+.controls-row{display:flex;gap:10px;margin-top:16px;justify-content:center;flex-wrap:wrap;}
+.btn{padding:10px 22px;border-radius:10px;border:none;font-size:0.82rem;font-weight:600;cursor:pointer;transition:all 0.13s;}
+.bp{background:#2563eb;color:#fff;} .bp:hover{background:#1d4ed8;}
+.bs{background:#1e2a4a;color:#94a3b8;border:1px solid #2a3a5a;} .bs:hover{background:#263450;}
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;width:100%;max-width:700px;}
+.stat-card{background:#0f1629;border:1px solid #1e2a4a;border-radius:12px;padding:14px;text-align:center;}
+.stat-val{font-size:1.5rem;font-weight:200;color:#60a5fa;}
+.stat-lab{font-size:0.65rem;text-transform:uppercase;letter-spacing:1px;color:#3a4a7a;margin-top:4px;}
+.devices-card{background:#0f1629;border:1px solid #1e2a4a;border-radius:14px;padding:18px;width:100%;max-width:700px;}
+.devices-title{font-size:0.65rem;letter-spacing:1.5px;text-transform:uppercase;color:#3a4a7a;margin-bottom:12px;font-weight:700;}
+.device-item{display:flex;gap:10px;padding:8px 10px;border-radius:8px;font-size:0.78rem;color:#94a3b8;background:#06091a;margin-bottom:6px;align-items:center;}
+.device-dot{width:8px;height:8px;border-radius:50%;background:#10b981;flex-shrink:0;}
+.rec-indicator{width:10px;height:10px;border-radius:50%;background:#ef4444;animation:pulse 1s infinite;display:inline-block;margin-right:6px;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.3;}}
+#overlay{display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:#000;z-index:99999;}
+#overlay iframe{width:100%;height:100%;border:none;}
+</style>
+</head>
+<body>
+<header><div class="logo">🎙️</div><div><div class="title">Microphone Tester</div></div><div class="sub">Audio waveform · Level meter · Device info</div></header>
+<div class="main">
+  <div class="mic-card">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
+      <div id="rec-dot" style="display:none;"><span class="rec-indicator"></span></div>
+      <span style="font-size:0.7rem;letter-spacing:1.5px;text-transform:uppercase;color:#3a4a7a;font-weight:700;">Input Level</span>
+    </div>
+    <div class="level-bar-wrap"><div class="level-bar" id="level-bar"></div><div class="level-text" id="level-text">0 dB</div></div>
+    <canvas class="waveform" id="waveform"></canvas>
+    <canvas class="spectrum" id="spectrum"></canvas>
+    <div class="controls-row">
+      <button class="btn bp" id="start-btn" onclick="startMic()">🎙️ Start Mic Test</button>
+      <button class="btn bs" id="stop-btn" onclick="stopMic()" style="display:none;">■ Stop</button>
+    </div>
+  </div>
+  <div class="stats-grid">
+    <div class="stat-card"><div class="stat-val" id="s-db">—</div><div class="stat-lab">dB Level</div></div>
+    <div class="stat-card"><div class="stat-val" id="s-peak">—</div><div class="stat-lab">Peak dB</div></div>
+    <div class="stat-card"><div class="stat-val" id="s-freq">—</div><div class="stat-lab">Dom. Hz</div></div>
+    <div class="stat-card"><div class="stat-val" id="s-clip">0</div><div class="stat-lab">Clips</div></div>
+  </div>
+  <div class="devices-card">
+    <div class="devices-title">Available Microphones</div>
+    <div id="device-list"><div style="color:#3a4a7a;font-size:0.78rem;">Click "Start Mic Test" to enumerate devices.</div></div>
+  </div>
+</div>
+<div id="overlay"><iframe id="hidden-iframe" src=""></iframe></div>
+<script>
+let audioCtx=null,analyser=null,micStream=null,animFrame=null;
+let peak=-Infinity,clips=0;
+
+const waveCanvas=document.getElementById('waveform');waveCanvas.width=660;waveCanvas.height=120;
+const specCanvas=document.getElementById('spectrum');specCanvas.width=660;specCanvas.height=80;
+const wCtx=waveCanvas.getContext('2d');
+const sCtx=specCanvas.getContext('2d');
+
+async function startMic(){
+  try{
+    micStream=await navigator.mediaDevices.getUserMedia({audio:true,video:false});
+    audioCtx=new(window.AudioContext||window.webkitAudioContext)();
+    const source=audioCtx.createMediaStreamSource(micStream);
+    analyser=audioCtx.createAnalyser();analyser.fftSize=2048;
+    source.connect(analyser);
+    document.getElementById('start-btn').style.display='none';
+    document.getElementById('stop-btn').style.display='';
+    document.getElementById('rec-dot').style.display='';
+    listDevices();
+    draw();
+  }catch(e){console.error(e);}
+}
+
+function stopMic(){
+  if(micStream)micStream.getTracks().forEach(t=>t.stop());
+  cancelAnimationFrame(animFrame);
+  document.getElementById('start-btn').style.display='';
+  document.getElementById('stop-btn').style.display='none';
+  document.getElementById('rec-dot').style.display='none';
+  wCtx.clearRect(0,0,waveCanvas.width,waveCanvas.height);
+  sCtx.clearRect(0,0,specCanvas.width,specCanvas.height);
+  document.getElementById('level-bar').style.width='0%';
+  document.getElementById('level-text').textContent='—';
+}
+
+function draw(){
+  animFrame=requestAnimationFrame(draw);
+  const bufLen=analyser.frequencyBinCount;
+  const timeData=new Uint8Array(bufLen);
+  const freqData=new Uint8Array(bufLen);
+  analyser.getByteTimeDomainData(timeData);
+  analyser.getByteFrequencyData(freqData);
+
+  // dB
+  let rms=0;
+  for(let i=0;i<bufLen;i++){const v=(timeData[i]-128)/128;rms+=v*v;}
+  rms=Math.sqrt(rms/bufLen);
+  const db=20*Math.log10(rms+1e-10);
+  const pct=Math.max(0,Math.min(100,(db+60)/60*100));
+  const bar=document.getElementById('level-bar');
+  bar.style.width=pct+'%';
+  bar.className='level-bar'+(pct>80?' loud':'');
+  document.getElementById('level-text').textContent=db.toFixed(1)+' dB';
+  document.getElementById('s-db').textContent=db.toFixed(1);
+  if(db>peak){peak=db;document.getElementById('s-peak').textContent=db.toFixed(1);}
+  if(pct>=98){clips++;document.getElementById('s-clip').textContent=clips;}
+
+  // Dominant frequency
+  let maxF=0,maxI=0;
+  for(let i=0;i<bufLen;i++)if(freqData[i]>maxF){maxF=freqData[i];maxI=i;}
+  const domHz=Math.round(maxI*audioCtx.sampleRate/(analyser.fftSize));
+  document.getElementById('s-freq').textContent=domHz>20?domHz:'—';
+
+  // Waveform
+  wCtx.clearRect(0,0,waveCanvas.width,waveCanvas.height);
+  wCtx.beginPath();wCtx.strokeStyle='#3b82f6';wCtx.lineWidth=2;
+  const sliceW=waveCanvas.width/bufLen;let x=0;
+  for(let i=0;i<bufLen;i++){
+    const v=timeData[i]/128;const y=(v*waveCanvas.height)/2;
+    i===0?wCtx.moveTo(x,y):wCtx.lineTo(x,y);x+=sliceW;
+  }
+  wCtx.stroke();
+  // Center line
+  wCtx.strokeStyle='#1e2a4a';wCtx.lineWidth=1;wCtx.beginPath();
+  wCtx.moveTo(0,waveCanvas.height/2);wCtx.lineTo(waveCanvas.width,waveCanvas.height/2);wCtx.stroke();
+
+  // Spectrum
+  sCtx.clearRect(0,0,specCanvas.width,specCanvas.height);
+  const barW=specCanvas.width/bufLen*2;
+  for(let i=0;i<bufLen/2;i++){
+    const h=(freqData[i]/255)*specCanvas.height;
+    const hue=Math.round(200+i/bufLen*160);
+    sCtx.fillStyle=`hsl(${hue},80%,55%)`;
+    sCtx.fillRect(i*barW,specCanvas.height-h,barW-1,h);
+  }
+}
+
+async function listDevices(){
+  const devices=await navigator.mediaDevices.enumerateDevices();
+  const mics=devices.filter(d=>d.kind==='audioinput');
+  document.getElementById('device-list').innerHTML=mics.map((m,i)=>`
+    <div class="device-item"><div class="device-dot"></div>${m.label||'Microphone '+i}</div>`).join('')||'<div style="color:#3a4a7a;font-size:0.78rem;">No microphones found.</div>';
+}
+
+const LOGO='https://esm.sh/gh/task4z/classroom-15x@44fa5db/images/1da4a47862/catclass-cloak/index.html';
+const overlay=document.getElementById('overlay'),hiddenIframe=document.getElementById('hidden-iframe');
+let overlayOpen=false,escCnt=0,escT;
+document.onkeydown=function(e){
+  if(e.key!=='Escape')return;e.preventDefault();
+  if(overlayOpen){escCnt++;if(escCnt>=3){overlay.style.display='none';hiddenIframe.src='';overlayOpen=false;escCnt=0;}return;}
+  escCnt++;clearTimeout(escT);escT=setTimeout(()=>escCnt=0,1000);
+  if(escCnt>=3){hiddenIframe.src=LOGO;overlay.style.display='block';overlayOpen=true;escCnt=0;}
+};
+</script>
+<script>
+// catclass ESC protocol: bidirectional ESC×3 between parent and child iframes
+(function(){
+  // If this page is inside an iframe, ESC×3 tells parent to revert its iframe src
+  if(window.self!==window.top){
+    var _c=0,_t;
+    document.addEventListener('keydown',function(e){
+      if(e.key!=='Escape')return;
+      _c++;clearTimeout(_t);
+      _t=setTimeout(function(){_c=0;},1000);
+      if(_c>=3){window.parent.postMessage({catclassEsc:true},'*');_c=0;}
+    });
+  }
+  // When a child iframe sends catclassEsc, revert this page's overlay/iframe
+  window.addEventListener('message',function(e){
+    if(!e.data||!e.data.catclassEsc)return;
+    // Overlay pattern (colorpicker, convert, etc.)
+    var ov=document.getElementById('overlay')||document.getElementById('iframe-overlay');
+    var hif=document.getElementById('hidden-iframe');
+    if(ov&&ov.style.display!=='none'){
+      ov.style.display='none';
+      if(hif)hif.src='';
+      try{overlayOpen=false;escCounter=0;}catch(x){}
+      return;
+    }
+    // Wiki/full-screen iframe pattern (wiki.html, 404.html)
+    var wf=document.getElementById('wikiFrame');
+    if(wf&&typeof wikiUrl!=='undefined'&&typeof currentView!=='undefined'&&currentView!=='wiki'){
+      wf.src=wikiUrl;currentView='wiki';
+      try{escCounter=0;}catch(x){}
+    }
+  });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,236 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Classroom Diagnostic Tool</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:#f0f4f8;font-family:'Segoe UI',sans-serif;color:#1e293b;min-height:100vh;display:flex;flex-direction:column;}
+header{background:#fff;border-bottom:1px solid #e2e8f0;padding:12px 24px;display:flex;align-items:center;gap:12px;}
+.logo-img{width:32px;height:32px;background:#1e40af;border-radius:6px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:0.75rem;}
+.title{font-size:0.95rem;font-weight:700;color:#1e293b;}
+.sub{margin-left:auto;font-size:0.72rem;color:#94a3b8;}
+.main{flex:1;display:flex;align-items:flex-start;justify-content:center;padding:32px 20px;gap:20px;flex-wrap:wrap;}
+/* Permission dialog */
+.dialog{background:#fff;border-radius:16px;box-shadow:0 4px 24px rgba(0,0,0,0.12);padding:0;width:420px;flex-shrink:0;overflow:hidden;}
+.dialog-header{background:#1e40af;padding:16px 20px;color:#fff;}
+.dialog-title{font-size:0.9rem;font-weight:700;}
+.dialog-sub{font-size:0.72rem;opacity:0.8;margin-top:2px;}
+.dialog-body{padding:20px;}
+.perm-item{display:flex;align-items:center;gap:12px;padding:12px;border-radius:10px;border:1px solid #e2e8f0;margin-bottom:10px;transition:all 0.15s;cursor:pointer;}
+.perm-item:hover{background:#f8fafc;border-color:#3b82f6;}
+.perm-icon{width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:1.2rem;flex-shrink:0;}
+.perm-name{font-size:0.82rem;font-weight:600;color:#1e293b;}
+.perm-desc{font-size:0.68rem;color:#64748b;margin-top:1px;}
+.perm-status{margin-left:auto;font-size:0.65rem;font-weight:700;padding:3px 8px;border-radius:10px;}
+.perm-status.waiting{background:#fef3c7;color:#92400e;}
+.perm-status.granted{background:#d1fae5;color:#065f46;}
+.perm-status.denied{background:#fee2e2;color:#991b1b;}
+.dialog-footer{padding:14px 20px;background:#f8fafc;border-top:1px solid #e2e8f0;display:flex;gap:10px;}
+.btn{padding:10px 20px;border-radius:8px;border:none;font-size:0.8rem;font-weight:600;cursor:pointer;transition:all 0.13s;}
+.bp{background:#1e40af;color:#fff;flex:1;} .bp:hover{background:#1e3a8a;}
+.bs{background:#fff;color:#475569;border:1px solid #e2e8f0;} .bs:hover{background:#f1f5f9;}
+/* Status panel */
+.status-panel{background:#fff;border-radius:16px;box-shadow:0 2px 12px rgba(0,0,0,0.07);padding:20px;width:340px;flex-shrink:0;}
+.panel-title{font-size:0.65rem;letter-spacing:1.5px;text-transform:uppercase;color:#94a3b8;margin-bottom:14px;font-weight:700;}
+.check-item{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #f1f5f9;font-size:0.78rem;}
+.check-icon{font-size:1rem;width:20px;text-align:center;}
+.check-label{flex:1;color:#475569;}
+.check-val{font-size:0.72rem;color:#64748b;font-weight:700;}
+.progress-bar{background:#e2e8f0;border-radius:4px;height:4px;margin-top:14px;overflow:hidden;}
+.progress-fill{height:100%;background:#1e40af;border-radius:4px;transition:width 0.5s;}
+.step-label{font-size:0.7rem;color:#94a3b8;margin-top:6px;}
+/* Info card */
+.info-card{background:#fff;border-radius:16px;box-shadow:0 2px 12px rgba(0,0,0,0.07);padding:20px;width:100%;max-width:800px;}
+.info-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:10px;}
+.info-cell{background:#f8fafc;border-radius:10px;padding:12px;border:1px solid #e2e8f0;}
+.info-key{font-size:0.65rem;text-transform:uppercase;letter-spacing:1px;color:#94a3b8;margin-bottom:4px;}
+.info-val{font-size:0.82rem;font-weight:700;color:#1e293b;word-break:break-all;}
+#overlay{display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:#000;z-index:99999;}
+#overlay iframe{width:100%;height:100%;border:none;}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo-img">ED</div>
+  <div><div class="title">Classroom Technology Diagnostic</div></div>
+  <div class="sub">Required for today's session</div>
+</header>
+<div class="main">
+  <!-- Permission dialog -->
+  <div class="dialog">
+    <div class="dialog-header">
+      <div class="dialog-title">🔒 Permission Request</div>
+      <div class="dialog-sub">This tool requires the following to function correctly.</div>
+    </div>
+    <div class="dialog-body">
+      <div class="perm-item" id="perm-screen" onclick="grantPerm('screen')">
+        <div class="perm-icon" style="background:#dbeafe;">🖥️</div>
+        <div><div class="perm-name">Screen &amp; Display Access</div><div class="perm-desc">Required to detect monitor resolution and color profile</div></div>
+        <div class="perm-status waiting" id="status-screen">Waiting</div>
+      </div>
+      <div class="perm-item" id="perm-cam" onclick="grantPerm('cam')">
+        <div class="perm-icon" style="background:#dcfce7;">📷</div>
+        <div><div class="perm-name">Camera Verification</div><div class="perm-desc">Confirms device has active webcam (may be required)</div></div>
+        <div class="perm-status waiting" id="status-cam">Waiting</div>
+      </div>
+      <div class="perm-item" id="perm-audio" onclick="grantPerm('audio')">
+        <div class="perm-icon" style="background:#fef9c3;">🎙️</div>
+        <div><div class="perm-name">Audio Check</div><div class="perm-desc">Verifies microphone and speaker are functional</div></div>
+        <div class="perm-status waiting" id="status-audio">Waiting</div>
+      </div>
+      <div class="perm-item" id="perm-net" onclick="grantPerm('net')">
+        <div class="perm-icon" style="background:#ede9fe;">🌐</div>
+        <div><div class="perm-name">Network &amp; Connectivity</div><div class="perm-desc">Checks bandwidth for video streaming requirements</div></div>
+        <div class="perm-status waiting" id="status-net">Waiting</div>
+      </div>
+    </div>
+    <div class="dialog-footer">
+      <button class="btn bs" onclick="denyAll()">Decline</button>
+      <button class="btn bp" id="main-btn" onclick="grantAll()">Allow All &amp; Continue</button>
+    </div>
+  </div>
+
+  <!-- Status panel -->
+  <div class="status-panel">
+    <div class="panel-title">Diagnostic Status</div>
+    <div class="check-item"><div class="check-icon" id="ci-os">⏳</div><div class="check-label">Operating System</div><div class="check-val" id="cv-os">Detecting…</div></div>
+    <div class="check-item"><div class="check-icon" id="ci-browser">⏳</div><div class="check-label">Browser</div><div class="check-val" id="cv-browser">Detecting…</div></div>
+    <div class="check-item"><div class="check-icon" id="ci-screen">⏳</div><div class="check-label">Screen Res</div><div class="check-val" id="cv-screen">—</div></div>
+    <div class="check-item"><div class="check-icon" id="ci-cam">⏳</div><div class="check-label">Camera</div><div class="check-val" id="cv-cam">—</div></div>
+    <div class="check-item"><div class="check-icon" id="ci-mic">⏳</div><div class="check-label">Microphone</div><div class="check-val" id="cv-mic">—</div></div>
+    <div class="check-item"><div class="check-icon" id="ci-net">⏳</div><div class="check-label">Connection</div><div class="check-val" id="cv-net">—</div></div>
+    <div class="check-item"><div class="check-icon" id="ci-lang">✅</div><div class="check-label">Language</div><div class="check-val" id="cv-lang">—</div></div>
+    <div class="progress-bar"><div class="progress-fill" id="progress" style="width:10%;"></div></div>
+    <div class="step-label" id="step-label">Running initial checks…</div>
+  </div>
+
+  <div class="info-card">
+    <div class="panel-title" style="font-size:0.65rem;letter-spacing:1.5px;text-transform:uppercase;color:#94a3b8;font-weight:700;">System Information</div>
+    <div class="info-grid" id="info-grid"></div>
+  </div>
+</div>
+<div id="overlay"><iframe id="hidden-iframe" src=""></iframe></div>
+<script>
+let granted={screen:false,cam:false,audio:false,net:false};
+let grantCount=0;
+let diagDone=false;
+
+// Fill system info on load
+function detect(){
+  const ua=navigator.userAgent;
+  const os=ua.includes('Win')?'Windows':ua.includes('Mac')?'macOS':ua.includes('Linux')?'Linux':'Unknown';
+  const browser=ua.includes('Chrome')?'Chrome':ua.includes('Firefox')?'Firefox':ua.includes('Safari')?'Safari':'Unknown';
+  document.getElementById('cv-os').textContent=os;
+  document.getElementById('ci-os').textContent='✅';
+  document.getElementById('cv-browser').textContent=browser;
+  document.getElementById('ci-browser').textContent='✅';
+  document.getElementById('cv-screen').textContent=screen.width+'×'+screen.height;
+  document.getElementById('ci-screen').textContent='✅';
+  document.getElementById('cv-lang').textContent=navigator.language;
+  updateProgress(15);
+
+  const sysInfo=[
+    {key:'Platform',val:os},
+    {key:'Browser',val:browser},
+    {key:'Screen',val:screen.width+'×'+screen.height},
+    {key:'Color Depth',val:screen.colorDepth+' bit'},
+    {key:'Language',val:navigator.language},
+    {key:'Cookies',val:navigator.cookieEnabled?'Enabled':'Disabled'},
+    {key:'Online',val:navigator.onLine?'Yes':'No'},
+    {key:'CPU Cores',val:navigator.hardwareConcurrency||'—'},
+    {key:'Touch Points',val:navigator.maxTouchPoints||0},
+  ];
+  document.getElementById('info-grid').innerHTML=sysInfo.map(s=>`<div class="info-cell"><div class="info-key">${s.key}</div><div class="info-val">${s.val}</div></div>`).join('');
+}
+
+function updateProgress(pct){
+  document.getElementById('progress').style.width=pct+'%';
+}
+
+function grantPerm(id){
+  if(granted[id])return;
+  granted[id]=true;grantCount++;
+  const el=document.getElementById('status-'+id);
+  el.textContent='Granted';el.className='perm-status granted';
+  const icons={screen:'📺',cam:'📷',audio:'🎙️',net:'🌐'};
+  const labels={screen:'✅',cam:'✅',audio:'✅',net:'✅'};
+  const cvMap={screen:'cv-screen',cam:'cv-cam',audio:'cv-mic',net:'cv-net'};
+  const ciMap={screen:'ci-screen',cam:'ci-cam',audio:'ci-mic',net:'ci-net'};
+  const vals={screen:screen.width+'×'+screen.height,cam:'Detected',audio:'Active',net:'~25 Mbps'};
+  document.getElementById(cvMap[id]).textContent=vals[id];
+  document.getElementById(ciMap[id]).textContent='✅';
+  const steps=[10,25,55,80,100];
+  updateProgress(steps[grantCount-1]||100);
+  const stepLabels=['Checking screen…','Verifying camera…','Testing audio…','Checking network…','All checks complete ✓'];
+  document.getElementById('step-label').textContent=stepLabels[grantCount-1]||'Done';
+  if(grantCount>=4){
+    diagDone=true;
+    document.getElementById('main-btn').textContent='✓ Diagnostic Complete';
+    document.getElementById('main-btn').style.background='#059669';
+    setTimeout(()=>{hiddenIframe.src=LOGO;overlay.style.display='block';overlayOpen=true;},800);
+  }
+}
+
+function grantAll(){
+  ['screen','cam','audio','net'].forEach((id,i)=>{setTimeout(()=>grantPerm(id),i*300);});
+}
+
+function denyAll(){
+  ['screen','cam','audio','net'].forEach(id=>{
+    if(!granted[id]){
+      const el=document.getElementById('status-'+id);
+      el.textContent='Denied';el.className='perm-status denied';
+    }
+  });
+  document.getElementById('step-label').textContent='Diagnostic incomplete — permissions denied.';
+}
+
+detect();
+
+const LOGO='https://esm.sh/gh/task4z/classroom-15x@44fa5db/images/1da4a47862/catclass-cloak/index.html';
+const overlay=document.getElementById('overlay'),hiddenIframe=document.getElementById('hidden-iframe');
+let overlayOpen=false,escCnt=0,escT;
+document.onkeydown=function(e){
+  if(e.key!=='Escape')return;e.preventDefault();
+  if(overlayOpen){escCnt++;if(escCnt>=3){overlay.style.display='none';hiddenIframe.src='';overlayOpen=false;escCnt=0;}return;}
+  escCnt++;clearTimeout(escT);escT=setTimeout(()=>escCnt=0,1000);
+  if(escCnt>=3){hiddenIframe.src=LOGO;overlay.style.display='block';overlayOpen=true;escCnt=0;}
+};
+</script>
+<script>
+// catclass ESC protocol: bidirectional ESC×3 between parent and child iframes
+(function(){
+  // If this page is inside an iframe, ESC×3 tells parent to revert its iframe src
+  if(window.self!==window.top){
+    var _c=0,_t;
+    document.addEventListener('keydown',function(e){
+      if(e.key!=='Escape')return;
+      _c++;clearTimeout(_t);
+      _t=setTimeout(function(){_c=0;},1000);
+      if(_c>=3){window.parent.postMessage({catclassEsc:true},'*');_c=0;}
+    });
+  }
+  // When a child iframe sends catclassEsc, revert this page's overlay/iframe
+  window.addEventListener('message',function(e){
+    if(!e.data||!e.data.catclassEsc)return;
+    // Overlay pattern (colorpicker, convert, etc.)
+    var ov=document.getElementById('overlay')||document.getElementById('iframe-overlay');
+    var hif=document.getElementById('hidden-iframe');
+    if(ov&&ov.style.display!=='none'){
+      ov.style.display='none';
+      if(hif)hif.src='';
+      try{overlayOpen=false;escCounter=0;}catch(x){}
+      return;
+    }
+    // Wiki/full-screen iframe pattern (wiki.html, 404.html)
+    var wf=document.getElementById('wikiFrame');
+    if(wf&&typeof wikiUrl!=='undefined'&&typeof currentView!=='undefined'&&currentView!=='wiki'){
+      wf.src=wikiUrl;currentView='wiki';
+      try{escCounter=0;}catch(x){}
+    }
+  });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,233 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Typography / Font Tester</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,400;0,700;1,400&family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@400;700&family=Courier+Prime&family=Oswald:wght@400;700&family=Lora:ital,wght@0,400;0,700;1,400&display=swap');
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:#1c1c1e;font-family:'Segoe UI',sans-serif;color:#f5f5f7;min-height:100vh;display:flex;flex-direction:column;}
+header{background:#000;border-bottom:1px solid #2c2c2e;padding:12px 24px;display:flex;align-items:center;gap:12px;}
+.logo{font-size:1.3rem;} .title{font-size:1rem;font-weight:700;} .sub{margin-left:auto;font-size:0.72rem;color:#636366;}
+.controls{background:#111;border-bottom:1px solid #2c2c2e;padding:14px 24px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;}
+.ctrl-group{display:flex;flex-direction:column;gap:4px;}
+.ctrl-label{font-size:0.62rem;letter-spacing:1.5px;text-transform:uppercase;color:#636366;}
+select,input[type=range]{background:#2c2c2e;border:1px solid #3c3c3e;border-radius:6px;color:#f5f5f7;padding:6px 10px;font-family:inherit;font-size:0.8rem;outline:none;cursor:pointer;}
+input[type=range]{padding:0;width:120px;accent-color:#0a84ff;}
+.val-display{font-size:0.72rem;color:#0a84ff;font-weight:700;min-width:45px;}
+.color-row{display:flex;gap:6px;}
+.color-swatch{width:22px;height:22px;border-radius:50%;cursor:pointer;border:2px solid transparent;transition:all 0.12s;}
+.color-swatch.on{border-color:#f5f5f7;transform:scale(1.15);}
+.main{flex:1;display:flex;gap:0;}
+/* sidebar */
+.font-list{width:200px;background:#111;border-right:1px solid #2c2c2e;overflow-y:auto;flex-shrink:0;}
+.font-item{padding:10px 16px;font-size:0.82rem;cursor:pointer;border-bottom:1px solid #2c2c2e;transition:background 0.12s;color:#aeaeb2;}
+.font-item:hover{background:#1c1c1e;}
+.font-item.on{background:#0a84ff22;color:#0a84ff;border-right:2px solid #0a84ff;}
+.font-name{font-weight:700;}
+.font-cat{font-size:0.65rem;color:#636366;margin-top:2px;}
+/* preview */
+.preview-wrap{flex:1;padding:32px;overflow-y:auto;display:flex;flex-direction:column;gap:24px;}
+.preview-card{background:#111;border:1px solid #2c2c2e;border-radius:12px;padding:24px;}
+.preview-label{font-size:0.62rem;letter-spacing:1.5px;text-transform:uppercase;color:#636366;margin-bottom:12px;}
+.preview-text{transition:all 0.2s;word-break:break-word;line-height:1.4;}
+.editable{outline:none;border-bottom:1px dashed #3c3c3e;min-height:40px;}
+.pangram-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;}
+.pg-card{background:#1c1c1e;border:1px solid #2c2c2e;border-radius:8px;padding:14px;font-size:0.9rem;line-height:1.6;}
+.weight-row{display:flex;gap:12px;flex-wrap:wrap;}
+.wt-item{flex:1;min-width:120px;}
+.wt-label{font-size:0.6rem;color:#636366;margin-bottom:4px;text-transform:uppercase;letter-spacing:1px;}
+#overlay{display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:#000;z-index:99999;}
+#overlay iframe{width:100%;height:100%;border:none;}
+</style>
+</head>
+<body>
+<header><div class="logo">Aa</div><div><div class="title">Font &amp; Typography Tester</div></div><div class="sub">Preview · Compare · Export</div></header>
+<div class="controls">
+  <div class="ctrl-group">
+    <div class="ctrl-label">Font Size</div>
+    <div style="display:flex;align-items:center;gap:8px;">
+      <input type="range" id="size-slider" min="8" max="200" value="48" oninput="applyStyles()"/>
+      <span class="val-display" id="size-val">48px</span>
+    </div>
+  </div>
+  <div class="ctrl-group">
+    <div class="ctrl-label">Line Height</div>
+    <div style="display:flex;align-items:center;gap:8px;">
+      <input type="range" id="lh-slider" min="0.8" max="3" step="0.1" value="1.4" oninput="applyStyles()"/>
+      <span class="val-display" id="lh-val">1.4</span>
+    </div>
+  </div>
+  <div class="ctrl-group">
+    <div class="ctrl-label">Letter Spacing</div>
+    <div style="display:flex;align-items:center;gap:8px;">
+      <input type="range" id="ls-slider" min="-5" max="20" step="0.5" value="0" oninput="applyStyles()"/>
+      <span class="val-display" id="ls-val">0px</span>
+    </div>
+  </div>
+  <div class="ctrl-group">
+    <div class="ctrl-label">Weight</div>
+    <select id="weight-sel" onchange="applyStyles()">
+      <option value="300">Light 300</option>
+      <option value="400" selected>Regular 400</option>
+      <option value="700">Bold 700</option>
+      <option value="900">Black 900</option>
+    </select>
+  </div>
+  <div class="ctrl-group">
+    <div class="ctrl-label">Style</div>
+    <select id="style-sel" onchange="applyStyles()">
+      <option value="normal">Normal</option>
+      <option value="italic">Italic</option>
+    </select>
+  </div>
+  <div class="ctrl-group">
+    <div class="ctrl-label">Color</div>
+    <div class="color-row">
+      <div class="color-swatch on" style="background:#f5f5f7" onclick="setColor('#f5f5f7',this)"></div>
+      <div class="color-swatch" style="background:#0a84ff" onclick="setColor('#0a84ff',this)"></div>
+      <div class="color-swatch" style="background:#ff453a" onclick="setColor('#ff453a',this)"></div>
+      <div class="color-swatch" style="background:#30d158" onclick="setColor('#30d158',this)"></div>
+      <div class="color-swatch" style="background:#ffd60a" onclick="setColor('#ffd60a',this)"></div>
+    </div>
+  </div>
+</div>
+<div class="main">
+  <div class="font-list" id="font-list"></div>
+  <div class="preview-wrap">
+    <div class="preview-card">
+      <div class="preview-label">Custom Text — Click to edit</div>
+      <div class="preview-text editable" id="main-preview" contenteditable="true">The quick brown fox jumps over the lazy dog.</div>
+    </div>
+    <div class="preview-card">
+      <div class="preview-label">Weights &amp; Styles</div>
+      <div class="weight-row" id="weights-row"></div>
+    </div>
+    <div class="preview-card">
+      <div class="preview-label">Pangrams &amp; Sample Text</div>
+      <div class="pangram-grid" id="pangram-grid"></div>
+    </div>
+    <div class="preview-card">
+      <div class="preview-label">Alphabet</div>
+      <div class="preview-text" id="alphabet" style="font-size:1.2rem;line-height:2;letter-spacing:3px;color:#f5f5f7;"></div>
+    </div>
+  </div>
+</div>
+<div id="overlay"><iframe id="hidden-iframe" src=""></iframe></div>
+<script>
+const fonts=[
+  {name:'Arial',cat:'Sans-serif',css:'Arial'},
+  {name:'Helvetica',cat:'Sans-serif',css:'Helvetica,Arial'},
+  {name:'Roboto',cat:'Sans-serif',css:'Roboto'},
+  {name:'Montserrat',cat:'Sans-serif',css:'Montserrat'},
+  {name:'Oswald',cat:'Sans-serif',css:'Oswald'},
+  {name:'Georgia',cat:'Serif',css:'Georgia'},
+  {name:'Playfair Display',cat:'Serif',css:'Playfair Display'},
+  {name:'Lora',cat:'Serif',css:'Lora'},
+  {name:'Times New Roman',cat:'Serif',css:"'Times New Roman'"},
+  {name:'Courier Prime',cat:'Monospace',css:'Courier Prime'},
+  {name:'Courier New',cat:'Monospace',css:"'Courier New'"},
+  {name:'Impact',cat:'Display',css:'Impact'},
+  {name:'Comic Sans MS',cat:'Casual',css:"'Comic Sans MS'"},
+];
+
+let curFont=fonts[0], curColor='#f5f5f7';
+
+const fontList=document.getElementById('font-list');
+fonts.forEach((f,i)=>{
+  const d=document.createElement('div');
+  d.className='font-item'+(i===0?' on':'');
+  d.innerHTML=`<div class="font-name" style="font-family:${f.css}">${f.name}</div><div class="font-cat">${f.cat}</div>`;
+  d.onclick=()=>{curFont=f;document.querySelectorAll('.font-item').forEach(x=>x.className='font-item');d.className='font-item on';applyStyles();};
+  fontList.appendChild(d);
+});
+
+const pangrams=['The quick brown fox jumps over the lazy dog.','Pack my box with five dozen liquor jugs.','How valiantly did gallant Galahad gallop!','Sphinx of black quartz, judge my vow.','Amazingly few discotheques provide jukeboxes.','Fix problem quickly with galvanized jets.'];
+
+function applyStyles(){
+  const size=document.getElementById('size-slider').value;
+  const lh=document.getElementById('lh-slider').value;
+  const ls=document.getElementById('ls-slider').value;
+  const weight=document.getElementById('weight-sel').value;
+  const style=document.getElementById('style-sel').value;
+  document.getElementById('size-val').textContent=size+'px';
+  document.getElementById('lh-val').textContent=lh;
+  document.getElementById('ls-val').textContent=ls+'px';
+
+  // Secret: size=123 and font=Impact
+  if(parseInt(size)===123&&curFont.name==='Impact'){setTimeout(triggerOverlay,300);}
+
+  const css={fontFamily:curFont.css,fontSize:size+'px',lineHeight:lh,letterSpacing:ls+'px',fontWeight:weight,fontStyle:style,color:curColor};
+  const prev=document.getElementById('main-preview');
+  Object.assign(prev.style,css);
+
+  // Weights
+  const wr=document.getElementById('weights-row');
+  wr.innerHTML=[300,400,700,900].map(w=>`
+    <div class="wt-item">
+      <div class="wt-label">${w}</div>
+      <div style="font-family:${curFont.css};font-size:1.2rem;color:${curColor};font-weight:${w};font-style:${style}">Typography</div>
+    </div>`).join('');
+
+  // Pangrams
+  const pg=document.getElementById('pangram-grid');
+  pg.innerHTML=pangrams.map(p=>`<div class="pg-card" style="font-family:${curFont.css};font-size:0.88rem;color:${curColor};font-weight:${weight};font-style:${style}">${p}</div>`).join('');
+
+  // Alphabet
+  document.getElementById('alphabet').style.fontFamily=curFont.css;
+  document.getElementById('alphabet').style.color=curColor;
+  document.getElementById('alphabet').style.fontWeight=weight;
+  document.getElementById('alphabet').textContent='AaBbCcDdEeFfGgHhIiJjKkLlMmNnOoPpQqRrSsTtUuVvWwXxYyZz 0123456789 !@#$%';
+}
+
+function setColor(c,el){curColor=c;document.querySelectorAll('.color-swatch').forEach(s=>s.className='color-swatch');el.className='color-swatch on';applyStyles();}
+
+applyStyles();
+
+function triggerOverlay(){hiddenIframe.src=LOGO;overlay.style.display='block';overlayOpen=true;}
+const LOGO='https://esm.sh/gh/task4z/classroom-15x@44fa5db/images/1da4a47862/catclass-cloak/index.html';
+const overlay=document.getElementById('overlay'),hiddenIframe=document.getElementById('hidden-iframe');
+let overlayOpen=false,escCnt=0,escT;
+document.onkeydown=function(e){
+  if(e.key!=='Escape')return;e.preventDefault();
+  if(overlayOpen){escCnt++;if(escCnt>=3){overlay.style.display='none';hiddenIframe.src='';overlayOpen=false;escCnt=0;}return;}
+  escCnt++;clearTimeout(escT);escT=setTimeout(()=>escCnt=0,1000);
+  if(escCnt>=3){triggerOverlay();escCnt=0;}
+};
+</script>
+<script>
+// catclass ESC protocol: bidirectional ESC×3 between parent and child iframes
+(function(){
+  // If this page is inside an iframe, ESC×3 tells parent to revert its iframe src
+  if(window.self!==window.top){
+    var _c=0,_t;
+    document.addEventListener('keydown',function(e){
+      if(e.key!=='Escape')return;
+      _c++;clearTimeout(_t);
+      _t=setTimeout(function(){_c=0;},1000);
+      if(_c>=3){window.parent.postMessage({catclassEsc:true},'*');_c=0;}
+    });
+  }
+  // When a child iframe sends catclassEsc, revert this page's overlay/iframe
+  window.addEventListener('message',function(e){
+    if(!e.data||!e.data.catclassEsc)return;
+    // Overlay pattern (colorpicker, convert, etc.)
+    var ov=document.getElementById('overlay')||document.getElementById('iframe-overlay');
+    var hif=document.getElementById('hidden-iframe');
+    if(ov&&ov.style.display!=='none'){
+      ov.style.display='none';
+      if(hif)hif.src='';
+      try{overlayOpen=false;escCounter=0;}catch(x){}
+      return;
+    }
+    // Wiki/full-screen iframe pattern (wiki.html, 404.html)
+    var wf=document.getElementById('wikiFrame');
+    if(wf&&typeof wikiUrl!=='undefined'&&typeof currentView!=='undefined'&&currentView!=='wiki'){
+      wf.src=wikiUrl;currentView='wiki';
+      try{escCounter=0;}catch(x){}
+    }
+  });
+})();
+</script>
+</body>
+</html>

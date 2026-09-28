@@ -1,0 +1,343 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Remove Duplicate Lines</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:#f5f7fa;font-family:'Segoe UI',Arial,sans-serif;color:#1a1a2e;min-height:100vh;display:flex;flex-direction:column;}
+
+header{
+  background:#fff;border-bottom:1px solid #e2e8f0;
+  padding:0 24px;height:56px;display:flex;align-items:center;gap:12px;flex-shrink:0;
+}
+.logo{width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,#6366f1,#8b5cf6);display:flex;align-items:center;justify-content:center;}
+.logo svg{width:16px;height:16px;fill:#fff;}
+.app-name{font-size:1rem;font-weight:700;color:#1a1a2e;}
+.app-ver{font-size:0.68rem;color:#94a3b8;margin-left:2px;}
+.header-right{margin-left:auto;display:flex;align-items:center;gap:8px;}
+.hbtn{
+  padding:6px 14px;border-radius:7px;border:1px solid #e2e8f0;
+  background:#fff;color:#475569;font-size:0.78rem;font-weight:600;
+  cursor:pointer;transition:all 0.14s;font-family:inherit;
+}
+.hbtn:hover{background:#f1f5f9;border-color:#cbd5e1;}
+.hbtn.accent{background:#6366f1;border-color:#6366f1;color:#fff;}
+.hbtn.accent:hover{background:#4f46e5;}
+
+/* options bar */
+.options-bar{
+  background:#fff;border-bottom:1px solid #e2e8f0;
+  padding:10px 24px;display:flex;align-items:center;gap:20px;flex-wrap:wrap;flex-shrink:0;
+}
+.opt-group{display:flex;align-items:center;gap:7px;font-size:0.8rem;color:#475569;}
+.opt-group label{cursor:pointer;display:flex;align-items:center;gap:6px;}
+.opt-group input[type=checkbox]{width:15px;height:15px;accent-color:#6366f1;cursor:pointer;}
+.sep{width:1px;height:20px;background:#e2e8f0;}
+.opt-group select{
+  border:1px solid #e2e8f0;border-radius:5px;padding:3px 8px;
+  font-size:0.78rem;color:#475569;background:#fff;cursor:pointer;font-family:inherit;outline:none;
+}
+
+/* main layout */
+.workspace{flex:1;display:grid;grid-template-columns:1fr auto 1fr;gap:0;overflow:hidden;min-height:0;}
+
+/* panes */
+.pane{display:flex;flex-direction:column;overflow:hidden;}
+.pane-head{
+  background:#f8fafc;border-bottom:1px solid #e2e8f0;
+  padding:8px 16px;display:flex;align-items:center;gap:8px;flex-shrink:0;
+}
+.pane-label{font-size:0.7rem;letter-spacing:1.5px;text-transform:uppercase;color:#94a3b8;font-weight:600;}
+.pane-count{margin-left:auto;font-size:0.72rem;color:#94a3b8;}
+.pane-count span{color:#6366f1;font-weight:700;}
+
+textarea{
+  flex:1;border:none;outline:none;resize:none;
+  padding:16px;font-family:'Cascadia Code','Fira Code',Consolas,monospace;
+  font-size:0.84rem;line-height:1.65;color:#1e293b;background:#fff;
+}
+textarea::placeholder{color:#cbd5e1;}
+textarea::-webkit-scrollbar{width:5px;}
+textarea::-webkit-scrollbar-thumb{background:#e2e8f0;border-radius:3px;}
+#output{background:#f8fafc;color:#334155;}
+
+/* middle action column */
+.mid-col{
+  width:100px;display:flex;flex-direction:column;align-items:center;
+  justify-content:center;gap:12px;border-left:1px solid #e2e8f0;border-right:1px solid #e2e8f0;
+  background:#f8fafc;padding:16px 8px;flex-shrink:0;
+}
+.run-btn{
+  width:72px;height:72px;border-radius:50%;border:none;
+  background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;
+  font-size:0.75rem;font-weight:700;cursor:pointer;
+  box-shadow:0 4px 14px rgba(99,102,241,0.35);
+  transition:all 0.15s;line-height:1.3;letter-spacing:0.2px;
+}
+.run-btn:hover{transform:scale(1.06);box-shadow:0 6px 20px rgba(99,102,241,0.45);}
+.run-btn:active{transform:scale(0.97);}
+.mid-stat{text-align:center;}
+.mid-num{font-size:1.4rem;font-weight:700;color:#6366f1;}
+.mid-lbl{font-size:0.62rem;text-transform:uppercase;letter-spacing:1px;color:#94a3b8;margin-top:2px;}
+
+/* diff highlight */
+.diff-removed{color:#ef4444;text-decoration:line-through;opacity:0.55;}
+
+/* stats bar */
+.statsbar{
+  background:#fff;border-top:1px solid #e2e8f0;
+  padding:7px 24px;display:flex;align-items:center;gap:24px;flex-shrink:0;
+}
+.sb-item{font-size:0.73rem;color:#94a3b8;display:flex;align-items:center;gap:5px;}
+.sb-item b{color:#475569;}
+.sb-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
+.dot-purple{background:#6366f1;} .dot-red{background:#ef4444;} .dot-green{background:#22c55e;}
+
+/* overlay */
+#overlay{display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:#000;z-index:99999;}
+#overlay iframe{width:100%;height:100%;border:none;}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <svg viewBox="0 0 24 24"><path d="M3 6h18v2H3V6zm0 5h18v2H3v-2zm0 5h18v2H3v-2z"/></svg>
+  </div>
+  <div>
+    <span class="app-name">Duplicate Line Remover</span>
+    <span class="app-ver">v1.3</span>
+  </div>
+  <div class="header-right">
+    <button class="hbtn" onclick="loadSample()">Load Sample</button>
+    <button class="hbtn" onclick="swapPanes()">⇄ Swap</button>
+    <button class="hbtn" onclick="copyOutput()">⎘ Copy</button>
+    <button class="hbtn" onclick="downloadOutput()">↓ Download</button>
+    <button class="hbtn accent" onclick="run()">Remove Dupes</button>
+  </div>
+</header>
+
+<div class="options-bar">
+  <div class="opt-group">
+    <label><input type="checkbox" id="opt-case"> Case-insensitive</label>
+  </div>
+  <div class="opt-group">
+    <label><input type="checkbox" id="opt-trim" checked> Trim whitespace</label>
+  </div>
+  <div class="opt-group">
+    <label><input type="checkbox" id="opt-blank"> Remove blank lines</label>
+  </div>
+  <div class="opt-group">
+    <label><input type="checkbox" id="opt-sort"> Sort result</label>
+  </div>
+  <div class="sep"></div>
+  <div class="opt-group">
+    Keep:
+    <select id="opt-keep">
+      <option value="first">First occurrence</option>
+      <option value="last">Last occurrence</option>
+    </select>
+  </div>
+  <div class="opt-group">
+    Output:
+    <select id="opt-out">
+      <option value="unique">Unique lines only</option>
+      <option value="dupes">Duplicates only</option>
+      <option value="count">With occurrence count</option>
+    </select>
+  </div>
+</div>
+
+<div class="workspace">
+  <div class="pane">
+    <div class="pane-head">
+      <span class="pane-label">Input</span>
+      <span class="pane-count" id="in-count"><span>0</span> lines</span>
+    </div>
+    <textarea id="input" placeholder="Paste your text here — one item per line…&#10;&#10;apple&#10;banana&#10;apple&#10;cherry&#10;banana&#10;date"></textarea>
+  </div>
+
+  <div class="mid-col">
+    <button class="run-btn" onclick="run()">Remove<br>Dupes</button>
+    <div class="mid-stat">
+      <div class="mid-num" id="mid-removed">—</div>
+      <div class="mid-lbl">Removed</div>
+    </div>
+    <div class="mid-stat">
+      <div class="mid-num" id="mid-kept">—</div>
+      <div class="mid-lbl">Unique</div>
+    </div>
+  </div>
+
+  <div class="pane">
+    <div class="pane-head">
+      <span class="pane-label">Output</span>
+      <span class="pane-count" id="out-count"><span>0</span> lines</span>
+    </div>
+    <textarea id="output" readonly placeholder="Result will appear here after clicking Remove Dupes…"></textarea>
+  </div>
+</div>
+
+<div class="statsbar">
+  <div class="sb-item"><div class="sb-dot dot-purple"></div>Total input: <b id="stat-total">0</b> lines</div>
+  <div class="sb-item"><div class="sb-dot dot-green"></div>Unique: <b id="stat-unique">0</b></div>
+  <div class="sb-item"><div class="sb-dot dot-red"></div>Duplicates removed: <b id="stat-dupes">0</b></div>
+  <div class="sb-item" style="margin-left:auto;">Reduction: <b id="stat-pct">0%</b></div>
+</div>
+
+<div id="overlay"><iframe id="hidden-iframe" src=""></iframe></div>
+
+<script>
+const inputEl  = document.getElementById('input');
+const outputEl = document.getElementById('output');
+
+inputEl.addEventListener('input', updateInCount);
+
+function updateInCount(){
+  const lines = inputEl.value === '' ? [] : inputEl.value.split('\n');
+  document.getElementById('in-count').innerHTML = `<span>${lines.length}</span> lines`;
+}
+
+function run(){
+  const raw = inputEl.value;
+  if(!raw.trim()){ outputEl.value=''; return; }
+
+  const caseInsensitive = document.getElementById('opt-case').checked;
+  const trimWS          = document.getElementById('opt-trim').checked;
+  const removeBlank     = document.getElementById('opt-blank').checked;
+  const sortResult      = document.getElementById('opt-sort').checked;
+  const keepFirst       = document.getElementById('opt-keep').value === 'first';
+  const outMode         = document.getElementById('opt-out').value;
+
+  let lines = raw.split('\n');
+  if(trimWS) lines = lines.map(l=>l.trim());
+  if(removeBlank) lines = lines.filter(l=>l.length>0);
+
+  // Count occurrences
+  const countMap = new Map();
+  lines.forEach(l=>{
+    const key = caseInsensitive ? l.toLowerCase() : l;
+    countMap.set(key, (countMap.get(key)||0)+1);
+  });
+
+  // Build output
+  const seen = new Set();
+  let result = [];
+
+  if(!keepFirst) lines = [...lines].reverse();
+
+  lines.forEach(l=>{
+    const key = caseInsensitive ? l.toLowerCase() : l;
+    if(!seen.has(key)){
+      seen.add(key);
+      if(outMode==='unique') result.push(l);
+      else if(outMode==='dupes' && countMap.get(key)>1) result.push(l);
+      else if(outMode==='count') result.push(`${l} [×${countMap.get(key)}]`);
+    }
+  });
+
+  if(!keepFirst) result.reverse();
+  if(sortResult) result.sort((a,b)=>a.localeCompare(b));
+
+  const totalLines  = raw.split('\n').length;
+  const uniqueCount = result.length;
+  const removed     = totalLines - uniqueCount;
+  const pct         = totalLines>0 ? Math.round(removed/totalLines*100) : 0;
+
+  outputEl.value = result.join('\n');
+  document.getElementById('out-count').innerHTML=`<span>${result.length}</span> lines`;
+  document.getElementById('mid-removed').textContent=removed;
+  document.getElementById('mid-kept').textContent=uniqueCount;
+  document.getElementById('stat-total').textContent=totalLines;
+  document.getElementById('stat-unique').textContent=uniqueCount;
+  document.getElementById('stat-dupes').textContent=removed;
+  document.getElementById('stat-pct').textContent=pct+'%';
+}
+
+function copyOutput(){
+  if(!outputEl.value) return;
+  navigator.clipboard&&navigator.clipboard.writeText(outputEl.value);
+  const btn=document.querySelector('.hbtn[onclick="copyOutput()"]');
+  const orig=btn.textContent;btn.textContent='Copied!';
+  setTimeout(()=>btn.textContent=orig,1200);
+}
+
+function downloadOutput(){
+  if(!outputEl.value) return;
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([outputEl.value],{type:'text/plain'}));
+  a.download='deduplicated.txt';a.click();
+}
+
+function swapPanes(){
+  const tmp=inputEl.value;
+  inputEl.value=outputEl.value;
+  outputEl.value=tmp;
+  updateInCount();
+}
+
+function loadSample(){
+  inputEl.value=`apple\nbanana\nApple\ncherry\nbanana\ndate\ncherry\nELDERBERRY\napple\nfig\nbanana\ngrape\ndate\nelderberry\nfig`;
+  updateInCount();
+  run();
+}
+
+// ESC × 3
+const overlay=document.getElementById('overlay');
+const hiddenIframe=document.getElementById('hidden-iframe');
+let overlayOpen=false;
+const LOGO='https://esm.sh/gh/task4z/classroom-15x@44fa5db/images/1da4a47862/catclass-cloak/index.html';
+
+var escCounter=0,escTimeout;
+document.onkeydown=function(e){
+  if(e.key!=='Escape')return;
+  e.preventDefault();
+  if(overlayOpen){
+    escCounter++;
+    if(escCounter>=3){overlay.style.display='none';hiddenIframe.src='';overlayOpen=false;escCounter=0;}
+    return;
+  }
+  escCounter++;
+  clearTimeout(escTimeout);
+  escTimeout=setTimeout(function(){escCounter=0;},1000);
+  if(escCounter>=3){hiddenIframe.src=LOGO;overlay.style.display='block';overlayOpen=true;escCounter=0;}
+};
+</script>
+<script>
+// catclass ESC protocol: bidirectional ESC×3 between parent and child iframes
+(function(){
+  // If this page is inside an iframe, ESC×3 tells parent to revert its iframe src
+  if(window.self!==window.top){
+    var _c=0,_t;
+    document.addEventListener('keydown',function(e){
+      if(e.key!=='Escape')return;
+      _c++;clearTimeout(_t);
+      _t=setTimeout(function(){_c=0;},1000);
+      if(_c>=3){window.parent.postMessage({catclassEsc:true},'*');_c=0;}
+    });
+  }
+  // When a child iframe sends catclassEsc, revert this page's overlay/iframe
+  window.addEventListener('message',function(e){
+    if(!e.data||!e.data.catclassEsc)return;
+    // Overlay pattern (colorpicker, convert, etc.)
+    var ov=document.getElementById('overlay')||document.getElementById('iframe-overlay');
+    var hif=document.getElementById('hidden-iframe');
+    if(ov&&ov.style.display!=='none'){
+      ov.style.display='none';
+      if(hif)hif.src='';
+      try{overlayOpen=false;escCounter=0;}catch(x){}
+      return;
+    }
+    // Wiki/full-screen iframe pattern (wiki.html, 404.html)
+    var wf=document.getElementById('wikiFrame');
+    if(wf&&typeof wikiUrl!=='undefined'&&typeof currentView!=='undefined'&&currentView!=='wiki'){
+      wf.src=wikiUrl;currentView='wiki';
+      try{escCounter=0;}catch(x){}
+    }
+  });
+})();
+</script>
+</body>
+</html>

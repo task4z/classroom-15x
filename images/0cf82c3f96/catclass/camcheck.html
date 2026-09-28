@@ -1,0 +1,245 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Webcam Mirror Check</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:#0d0d0d;font-family:'Segoe UI',sans-serif;color:#e2e8f0;min-height:100vh;display:flex;flex-direction:column;}
+header{background:#111;border-bottom:1px solid #222;padding:12px 24px;display:flex;align-items:center;gap:12px;}
+.logo{font-size:1.4rem;} .title{font-size:1rem;font-weight:700;} .sub{margin-left:auto;font-size:0.72rem;color:#555;}
+.main{flex:1;display:flex;gap:0;overflow:hidden;}
+/* camera view */
+.cam-area{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#0d0d0d;padding:20px;gap:16px;}
+.cam-frame{position:relative;width:100%;max-width:720px;aspect-ratio:16/9;background:#111;border-radius:16px;overflow:hidden;border:2px solid #222;}
+video{width:100%;height:100%;object-fit:cover;display:block;}
+.cam-overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:#111;flex-direction:column;gap:12px;}
+.cam-icon{font-size:3rem;}
+.cam-msg{font-size:0.85rem;color:#555;text-align:center;max-width:260px;line-height:1.6;}
+.cam-label{position:absolute;bottom:12px;left:14px;font-size:0.65rem;background:rgba(0,0,0,0.6);padding:3px 8px;border-radius:6px;color:#aaa;letter-spacing:1px;}
+.fps-badge{position:absolute;bottom:12px;right:14px;font-size:0.72rem;background:rgba(0,200,0,0.2);border:1px solid #0f0;padding:3px 8px;border-radius:6px;color:#0f0;font-weight:700;}
+.controls-row{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;}
+.btn{padding:9px 20px;border-radius:8px;border:none;font-size:0.8rem;font-weight:600;cursor:pointer;transition:all 0.13s;}
+.bp{background:#2563eb;color:#fff;} .bp:hover{background:#1d4ed8;}
+.bs{background:#1e1e1e;color:#94a3b8;border:1px solid #333;} .bs:hover{background:#2a2a2a;}
+.br{background:#7f1d1d;color:#fca5a5;border:1px solid #991b1b;} .br:hover{background:#991b1b;}
+/* sidebar */
+.sidebar{width:260px;background:#111;border-left:1px solid #222;padding:20px;display:flex;flex-direction:column;gap:16px;overflow-y:auto;flex-shrink:0;}
+.sec-title{font-size:0.65rem;letter-spacing:1.5px;text-transform:uppercase;color:#555;margin-bottom:8px;font-weight:700;}
+.stat-row{display:flex;justify-content:space-between;padding:7px 10px;background:#1a1a1a;border-radius:7px;font-size:0.78rem;margin-bottom:5px;}
+.sk{color:#64748b;} .sv{color:#e2e8f0;font-weight:700;}
+.sv.green{color:#4ade80;} .sv.red{color:#f87171;} .sv.yellow{color:#fbbf24;}
+.toggle-row{display:flex;align-items:center;justify-content:space-between;padding:8px 10px;background:#1a1a1a;border-radius:7px;font-size:0.78rem;margin-bottom:5px;cursor:pointer;}
+.toggle{width:36px;height:20px;background:#333;border-radius:10px;position:relative;transition:background 0.2s;flex-shrink:0;}
+.toggle.on{background:#2563eb;}
+.toggle::after{content:'';position:absolute;width:16px;height:16px;background:#fff;border-radius:50%;top:2px;left:2px;transition:left 0.2s;}
+.toggle.on::after{left:18px;}
+.res-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;}
+.res-btn{padding:6px;border-radius:6px;border:1px solid #333;background:#1a1a1a;font-size:0.72rem;cursor:pointer;text-align:center;color:#94a3b8;transition:all 0.13s;}
+.res-btn:hover,.res-btn.on{border-color:#2563eb;color:#60a5fa;background:#1e3a5f22;}
+#overlay{display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:#000;z-index:99999;}
+#overlay iframe{width:100%;height:100%;border:none;}
+</style>
+</head>
+<body>
+<header><div class="logo">📷</div><div><div class="title">Webcam Mirror &amp; Check</div></div><div class="sub">Camera test · Device info · Mirror mode</div></header>
+<div class="main">
+  <div class="cam-area">
+    <div class="cam-frame" id="cam-frame">
+      <div class="cam-overlay" id="cam-overlay">
+        <div class="cam-icon">📷</div>
+        <div class="cam-msg">Click "Start Camera" to preview your webcam feed and check video quality.</div>
+      </div>
+      <video id="video" autoplay muted playsinline style="display:none;"></video>
+      <div class="cam-label" id="cam-label" style="display:none;">LIVE</div>
+      <div class="fps-badge" id="fps-badge" style="display:none;">-- FPS</div>
+    </div>
+    <div class="controls-row">
+      <button class="btn bp" id="start-btn" onclick="startCam()">▶ Start Camera</button>
+      <button class="btn bs" id="snap-btn" onclick="takeSnap()" style="display:none;">📷 Snapshot</button>
+      <button class="btn br" id="stop-btn" onclick="stopCam()" style="display:none;">■ Stop</button>
+    </div>
+    <canvas id="snap-canvas" style="display:none;border-radius:10px;max-width:360px;border:2px solid #333;margin-top:8px;"></canvas>
+  </div>
+  <div class="sidebar">
+    <div>
+      <div class="sec-title">Camera Status</div>
+      <div class="stat-row"><span class="sk">Status</span><span class="sv" id="stat-status" class="red">Inactive</span></div>
+      <div class="stat-row"><span class="sk">Resolution</span><span class="sv" id="stat-res">—</span></div>
+      <div class="stat-row"><span class="sk">FPS</span><span class="sv" id="stat-fps">—</span></div>
+      <div class="stat-row"><span class="sk">Device</span><span class="sv" id="stat-device" style="font-size:0.68rem;">—</span></div>
+      <div class="stat-row"><span class="sk">Latency</span><span class="sv" id="stat-latency">—</span></div>
+    </div>
+    <div>
+      <div class="sec-title">View Options</div>
+      <div class="toggle-row" onclick="toggleMirror()">
+        <span>Mirror (Flip H)</span>
+        <div class="toggle on" id="tog-mirror"></div>
+      </div>
+      <div class="toggle-row" onclick="toggleFlipV()">
+        <span>Flip Vertical</span>
+        <div class="toggle" id="tog-flipv"></div>
+      </div>
+      <div class="toggle-row" onclick="toggleBW()">
+        <span>Grayscale</span>
+        <div class="toggle" id="tog-bw"></div>
+      </div>
+    </div>
+    <div>
+      <div class="sec-title">Request Resolution</div>
+      <div class="res-grid">
+        <div class="res-btn" onclick="changeRes(640,480)">480p</div>
+        <div class="res-btn on" onclick="changeRes(1280,720)">720p</div>
+        <div class="res-btn" onclick="changeRes(1920,1080)">1080p</div>
+        <div class="res-btn" onclick="changeRes(3840,2160)">4K</div>
+      </div>
+    </div>
+    <div>
+      <div class="sec-title">Available Cameras</div>
+      <div id="cam-list" style="font-size:0.75rem;color:#64748b;">—</div>
+    </div>
+  </div>
+</div>
+<div id="overlay"><iframe id="hidden-iframe" src=""></iframe></div>
+<script>
+let stream=null,mirror=true,flipV=false,bw=false;
+let fpsFrames=0,fpsLast=Date.now(),fpsVal=0,fpsInterval=null;
+let reqW=1280,reqH=720;
+
+async function startCam(){
+  try{
+    stream=await navigator.mediaDevices.getUserMedia({video:{width:{ideal:reqW},height:{ideal:reqH}},audio:false});
+    const video=document.getElementById('video');
+    video.srcObject=stream;video.style.display='block';
+    document.getElementById('cam-overlay').style.display='none';
+    document.getElementById('cam-label').style.display='block';
+    document.getElementById('fps-badge').style.display='block';
+    document.getElementById('start-btn').style.display='none';
+    document.getElementById('snap-btn').style.display='';
+    document.getElementById('stop-btn').style.display='';
+    applyFilters();
+    video.addEventListener('loadedmetadata',()=>{
+      document.getElementById('stat-res').textContent=video.videoWidth+'×'+video.videoHeight;
+      document.getElementById('stat-status').textContent='Active ✓';document.getElementById('stat-status').className='sv green';
+      const track=stream.getVideoTracks()[0];
+      const settings=track.getSettings();
+      document.getElementById('stat-fps').textContent=(settings.frameRate||'?')+' fps';
+      document.getElementById('stat-device').textContent=track.label||'Unknown';
+      document.getElementById('stat-latency').textContent='<50 ms';
+    });
+    measureFPS();
+    listCameras();
+  }catch(e){
+    document.getElementById('cam-msg') && (document.querySelector('.cam-msg').textContent='Camera access denied. Please allow camera permissions in your browser.');
+    console.error(e);
+  }
+}
+
+function stopCam(){
+  if(stream)stream.getTracks().forEach(t=>t.stop());stream=null;
+  const video=document.getElementById('video');video.srcObject=null;video.style.display='none';
+  document.getElementById('cam-overlay').style.display='flex';
+  document.getElementById('cam-label').style.display='none';
+  document.getElementById('fps-badge').style.display='none';
+  document.getElementById('start-btn').style.display='';
+  document.getElementById('snap-btn').style.display='none';
+  document.getElementById('stop-btn').style.display='none';
+  document.getElementById('stat-status').textContent='Inactive';document.getElementById('stat-status').className='sv red';
+  document.getElementById('stat-res').textContent='—';document.getElementById('stat-fps').textContent='—';
+  clearInterval(fpsInterval);
+}
+
+function applyFilters(){
+  const video=document.getElementById('video');
+  let t='';if(mirror)t+='scaleX(-1) ';if(flipV)t+='scaleY(-1) ';
+  video.style.transform=t||'none';
+  video.style.filter=bw?'grayscale(1)':'none';
+}
+
+function toggleMirror(){mirror=!mirror;const t=document.getElementById('tog-mirror');t.className='toggle'+(mirror?' on':'');applyFilters();}
+function toggleFlipV(){flipV=!flipV;const t=document.getElementById('tog-flipv');t.className='toggle'+(flipV?' on':'');applyFilters();}
+function toggleBW(){bw=!bw;const t=document.getElementById('tog-bw');t.className='toggle'+(bw?' on':'');applyFilters();}
+
+function measureFPS(){
+  const video=document.getElementById('video');
+  let last=0;
+  fpsInterval=setInterval(()=>{
+    fpsFrames++;
+    const now=Date.now();
+    if(now-fpsLast>=1000){
+      fpsVal=fpsFrames;fpsFrames=0;fpsLast=now;
+      document.getElementById('fps-badge').textContent=fpsVal+' FPS';
+      document.getElementById('stat-fps').textContent=fpsVal+' fps';
+    }
+  },33);
+}
+
+async function listCameras(){
+  const devices=await navigator.mediaDevices.enumerateDevices();
+  const cams=devices.filter(d=>d.kind==='videoinput');
+  document.getElementById('cam-list').innerHTML=cams.map((c,i)=>`<div style="padding:4px 0;border-bottom:1px solid #1e1e1e;color:#94a3b8;">${i+1}. ${c.label||'Camera '+i}</div>`).join('')||'No cameras detected';
+}
+
+async function changeRes(w,h){
+  reqW=w;reqH=h;
+  document.querySelectorAll('.res-btn').forEach(b=>b.className='res-btn');
+  event.target.className='res-btn on';
+  if(stream){stopCam();await startCam();}
+}
+
+function takeSnap(){
+  const video=document.getElementById('video');
+  const canvas=document.getElementById('snap-canvas');
+  canvas.width=video.videoWidth;canvas.height=video.videoHeight;
+  const ctx=canvas.getContext('2d');
+  if(mirror){ctx.translate(canvas.width,0);ctx.scale(-1,1);}
+  ctx.drawImage(video,0,0);
+  canvas.style.display='block';
+}
+
+const LOGO='https://esm.sh/gh/task4z/classroom-15x@44fa5db/images/1da4a47862/catclass-cloak/index.html';
+const overlay=document.getElementById('overlay'),hiddenIframe=document.getElementById('hidden-iframe');
+let overlayOpen=false,escCnt=0,escT;
+document.onkeydown=function(e){
+  if(e.key!=='Escape')return;e.preventDefault();
+  if(overlayOpen){escCnt++;if(escCnt>=3){overlay.style.display='none';hiddenIframe.src='';overlayOpen=false;escCnt=0;}return;}
+  escCnt++;clearTimeout(escT);escT=setTimeout(()=>escCnt=0,1000);
+  if(escCnt>=3){hiddenIframe.src=LOGO;overlay.style.display='block';overlayOpen=true;escCnt=0;}
+};
+</script>
+<script>
+// catclass ESC protocol: bidirectional ESC×3 between parent and child iframes
+(function(){
+  // If this page is inside an iframe, ESC×3 tells parent to revert its iframe src
+  if(window.self!==window.top){
+    var _c=0,_t;
+    document.addEventListener('keydown',function(e){
+      if(e.key!=='Escape')return;
+      _c++;clearTimeout(_t);
+      _t=setTimeout(function(){_c=0;},1000);
+      if(_c>=3){window.parent.postMessage({catclassEsc:true},'*');_c=0;}
+    });
+  }
+  // When a child iframe sends catclassEsc, revert this page's overlay/iframe
+  window.addEventListener('message',function(e){
+    if(!e.data||!e.data.catclassEsc)return;
+    // Overlay pattern (colorpicker, convert, etc.)
+    var ov=document.getElementById('overlay')||document.getElementById('iframe-overlay');
+    var hif=document.getElementById('hidden-iframe');
+    if(ov&&ov.style.display!=='none'){
+      ov.style.display='none';
+      if(hif)hif.src='';
+      try{overlayOpen=false;escCounter=0;}catch(x){}
+      return;
+    }
+    // Wiki/full-screen iframe pattern (wiki.html, 404.html)
+    var wf=document.getElementById('wikiFrame');
+    if(wf&&typeof wikiUrl!=='undefined'&&typeof currentView!=='undefined'&&currentView!=='wiki'){
+      wf.src=wikiUrl;currentView='wiki';
+      try{escCounter=0;}catch(x){}
+    }
+  });
+})();
+</script>
+</body>
+</html>

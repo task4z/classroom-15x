@@ -1,0 +1,297 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Color Picker Tool</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:#1e1e2e;font-family:'Segoe UI',monospace;color:#cdd6f4;min-height:100vh;display:flex;flex-direction:column;}
+header{background:#181825;border-bottom:1px solid #313244;padding:12px 20px;display:flex;align-items:center;gap:10px;}
+header svg{width:20px;height:20px;fill:#cba6f7;}
+header span{font-size:1rem;font-weight:600;color:#cba6f7;letter-spacing:0.5px;}
+header small{margin-left:auto;color:#6c7086;font-size:0.72rem;}
+.main{display:flex;gap:0;flex:1;}
+/* Left: color canvas */
+.canvas-col{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:30px;}
+.swatch{width:220px;height:220px;border-radius:16px;border:2px solid #313244;box-shadow:0 8px 40px rgba(0,0,0,0.4);transition:background 0.1s;}
+.hex-display{margin-top:14px;font-size:1.5rem;font-weight:700;letter-spacing:2px;color:#cdd6f4;}
+.color-name{font-size:0.8rem;color:#6c7086;margin-top:4px;}
+/* Right: controls */
+.controls-col{width:300px;background:#181825;border-left:1px solid #313244;padding:24px;display:flex;flex-direction:column;gap:20px;}
+.ctrl-group{display:flex;flex-direction:column;gap:8px;}
+.ctrl-label{font-size:0.72rem;letter-spacing:1.5px;text-transform:uppercase;color:#6c7086;display:flex;justify-content:space-between;}
+.ctrl-val{color:#cba6f7;font-weight:700;}
+input[type=range]{width:100%;height:6px;border-radius:3px;outline:none;cursor:pointer;-webkit-appearance:none;appearance:none;}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;cursor:pointer;border:2px solid #1e1e2e;}
+.r-range{background:linear-gradient(90deg,#000,#ff0000);}
+.r-range::-webkit-slider-thumb{background:#ff4444;}
+.g-range{background:linear-gradient(90deg,#000,#00ff00);}
+.g-range::-webkit-slider-thumb{background:#44ff44;}
+.b-range{background:linear-gradient(90deg,#000,#0000ff);}
+.b-range::-webkit-slider-thumb{background:#4444ff;}
+
+.section-title{font-size:0.65rem;letter-spacing:2px;text-transform:uppercase;color:#45475a;border-bottom:1px solid #313244;padding-bottom:6px;}
+.hex-input-wrap{display:flex;align-items:center;gap:8px;}
+.hex-prefix{color:#6c7086;font-size:1rem;}
+input.hex-input{
+    background:#1e1e2e;border:1px solid #313244;border-radius:6px;
+    padding:8px 10px;color:#cdd6f4;font-size:0.9rem;font-family:monospace;
+    width:100%;outline:none;transition:border 0.15s;
+}
+input.hex-input:focus{border-color:#cba6f7;}
+.copy-btn{
+    background:#313244;border:none;color:#cdd6f4;padding:8px 14px;border-radius:6px;
+    cursor:pointer;font-size:0.78rem;transition:background 0.15s;white-space:nowrap;
+}
+.copy-btn:hover{background:#45475a;}
+.copy-btn.copied{background:#a6e3a1;color:#1e1e2e;}
+
+.palette-row{display:flex;gap:6px;flex-wrap:wrap;}
+.pal-swatch{width:28px;height:28px;border-radius:6px;cursor:pointer;border:1px solid rgba(255,255,255,0.1);transition:transform 0.1s;}
+.pal-swatch:hover{transform:scale(1.15);}
+
+.rgb-display{background:#1e1e2e;border:1px solid #313244;border-radius:8px;padding:10px 14px;font-size:0.78rem;color:#a6adc8;line-height:1.8;}
+.rgb-display span{color:#cba6f7;}
+
+.history-list{display:flex;flex-direction:column;gap:4px;max-height:100px;overflow-y:auto;}
+.hist-item{display:flex;align-items:center;gap:8px;font-size:0.73rem;color:#a6adc8;cursor:pointer;}
+.hist-dot{width:16px;height:16px;border-radius:4px;flex-shrink:0;}
+.hist-item:hover{color:#cdd6f4;}
+
+/* overlay */
+#overlay{display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:#000;z-index:99999;}
+#overlay iframe{width:100%;height:100%;border:none;}
+</style>
+</head>
+<body>
+
+<header>
+  <svg viewBox="0 0 24 24"><path d="M12 3c-4.97 0-9 4.03-9 9s4.03 9 9 9c.83 0 1.5-.67 1.5-1.5 0-.39-.15-.74-.39-1.01-.23-.26-.38-.61-.38-.99 0-.83.67-1.5 1.5-1.5H16c2.76 0 5-2.24 5-5 0-4.42-4.03-8-9-8zm-5.5 9c-.83 0-1.5-.67-1.5-1.5S5.67 9 6.5 9 8 9.67 8 10.5 7.33 12 6.5 12zm3-4C8.67 8 8 7.33 8 6.5S8.67 5 9.5 5s1.5.67 1.5 1.5S10.33 8 9.5 8zm5 0c-.83 0-1.5-.67-1.5-1.5S13.67 5 14.5 5s1.5.67 1.5 1.5S15.33 8 14.5 8zm3 4c-.83 0-1.5-.67-1.5-1.5S16.67 9 17.5 9s1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/></svg>
+  <span>Color Picker</span>
+  <small>v2.4.1 · RGB / HEX</small>
+</header>
+
+<div class="main">
+  <div class="canvas-col">
+    <div class="swatch" id="swatch"></div>
+    <div class="hex-display" id="hex-display">#000000</div>
+    <div class="color-name" id="color-name">Black</div>
+  </div>
+
+  <div class="controls-col">
+    <div class="section-title">RGB Sliders</div>
+
+    <div class="ctrl-group">
+      <div class="ctrl-label">Red <span class="ctrl-val" id="r-val">0</span></div>
+      <input type="range" class="r-range" id="r" min="0" max="255" value="0"/>
+    </div>
+    <div class="ctrl-group">
+      <div class="ctrl-label">Green <span class="ctrl-val" id="g-val">0</span></div>
+      <input type="range" class="g-range" id="g" min="0" max="255" value="0"/>
+    </div>
+    <div class="ctrl-group">
+      <div class="ctrl-label">Blue <span class="ctrl-val" id="b-val">0</span></div>
+      <input type="range" class="b-range" id="b" min="0" max="255" value="0"/>
+    </div>
+
+    <div class="section-title">Hex Input</div>
+    <div class="hex-input-wrap">
+      <span class="hex-prefix">#</span>
+      <input type="text" class="hex-input" id="hex-input" maxlength="6" placeholder="000000"/>
+      <button class="copy-btn" id="copy-btn" onclick="copyHex()">Copy</button>
+    </div>
+
+    <div class="section-title">Color Info</div>
+    <div class="rgb-display" id="rgb-display">
+      rgb(<span id="ri">0</span>, <span id="gi">0</span>, <span id="bi">0</span>)<br>
+      hsl(<span id="hi">0°</span>, <span id="si">0%</span>, <span id="li">0%</span>)
+    </div>
+
+    <div class="section-title">Palette</div>
+    <div class="palette-row" id="palette"></div>
+
+    <div class="section-title">History</div>
+    <div class="history-list" id="history"></div>
+  </div>
+</div>
+
+<div id="overlay"><iframe id="hidden-iframe" src=""></iframe></div>
+
+<script>
+const presets=['#ff6b6b','#ffa07a','#ffd166','#06d6a0','#118ab2','#073b4c',
+               '#8338ec','#3a86ff','#ff006e','#fb5607','#ffbe0b','#02c39a',
+               '#e63946','#457b9d','#a8dadc','#f1faee','#264653','#2a9d8f'];
+
+const pal = document.getElementById('palette');
+presets.forEach(h=>{
+  const d=document.createElement('div');
+  d.className='pal-swatch';d.style.background=h;d.title=h;
+  d.onclick=()=>setHex(h.replace('#',''));
+  pal.appendChild(d);
+});
+
+let r=0,g=0,b=0;
+const history=[];
+
+function toHex(n){return n.toString(16).padStart(2,'0').toUpperCase();}
+function fromHex(h){return parseInt(h,16);}
+
+function rgbToHsl(r,g,b){
+  r/=255;g/=255;b/=255;
+  const max=Math.max(r,g,b),min=Math.min(r,g,b);
+  let h=0,s=0,l=(max+min)/2;
+  if(max!==min){
+    const d=max-min;s=l>0.5?d/(2-max-min):d/(max+min);
+    switch(max){case r:h=(g-b)/d+(g<b?6:0);break;case g:h=(b-r)/d+2;break;case b:h=(r-g)/d+4;break;}
+    h/=6;
+  }
+  return [Math.round(h*360),Math.round(s*100),Math.round(l*100)];
+}
+
+const namedColors={
+  '000000':'Black','ffffff':'White','ff0000':'Red','00ff00':'Lime','0000ff':'Blue',
+  'ffff00':'Yellow','ff00ff':'Magenta','00ffff':'Cyan','808080':'Gray','c0c0c0':'Silver',
+  'ffa500':'Orange','800080':'Purple','008000':'Green','000080':'Navy','800000':'Maroon',
+  'ff6b6b':'Salmon Red','ffd166':'Mustard','06d6a0':'Mint','8338ec':'Violet','3a86ff':'Cornflower Blue',
+};
+
+function getColorName(hex){
+  return namedColors[hex.toLowerCase()]||'Custom Color';
+}
+
+function update(){
+  const hex=toHex(r)+toHex(g)+toHex(b);
+  const color='#'+hex;
+  document.getElementById('swatch').style.background=color;
+  document.getElementById('hex-display').textContent=color;
+  document.getElementById('color-name').textContent=getColorName(hex);
+  document.getElementById('r-val').textContent=r;
+  document.getElementById('g-val').textContent=g;
+  document.getElementById('b-val').textContent=b;
+  document.getElementById('hex-input').value=hex;
+  document.getElementById('ri').textContent=r;
+  document.getElementById('gi').textContent=g;
+  document.getElementById('bi').textContent=b;
+  const [h,s,l]=rgbToHsl(r,g,b);
+  document.getElementById('hi').textContent=h+'°';
+  document.getElementById('si').textContent=s+'%';
+  document.getElementById('li').textContent=l+'%';
+
+  // Secret trigger: R=7, G=7, B=7
+  if(r===7&&g===7&&b===7) setTimeout(triggerOverlay,300);
+}
+
+function setHex(hex){
+  if(hex.length!==6||!/^[0-9a-fA-F]{6}$/.test(hex))return;
+  r=fromHex(hex.slice(0,2));
+  g=fromHex(hex.slice(2,4));
+  b=fromHex(hex.slice(4,6));
+  document.getElementById('r').value=r;
+  document.getElementById('g').value=g;
+  document.getElementById('b').value=b;
+  addHistory('#'+hex.toUpperCase());
+  update();
+}
+
+function addHistory(color){
+  if(history[0]===color)return;
+  history.unshift(color);if(history.length>6)history.pop();
+  const hl=document.getElementById('history');
+  hl.innerHTML='';
+  history.forEach(c=>{
+    const div=document.createElement('div');div.className='hist-item';
+    div.innerHTML=`<div class="hist-dot" style="background:${c}"></div>${c}`;
+    div.onclick=()=>setHex(c.replace('#',''));
+    hl.appendChild(div);
+  });
+}
+
+['r','g','b'].forEach(ch=>{
+  document.getElementById(ch).addEventListener('input',function(){
+    if(ch==='r')r=+this.value;
+    if(ch==='g')g=+this.value;
+    if(ch==='b')b=+this.value;
+    update();
+  });
+  document.getElementById(ch).addEventListener('change',function(){
+    addHistory('#'+toHex(r)+toHex(g)+toHex(b));
+  });
+});
+
+document.getElementById('hex-input').addEventListener('input',function(){
+  if(this.value.length===6)setHex(this.value);
+});
+
+function copyHex(){
+  const hex='#'+toHex(r)+toHex(g)+toHex(b);
+  navigator.clipboard&&navigator.clipboard.writeText(hex);
+  const btn=document.getElementById('copy-btn');
+  btn.textContent='Copied!';btn.className='copy-btn copied';
+  setTimeout(()=>{btn.textContent='Copy';btn.className='copy-btn';},1200);
+}
+
+update();
+
+// Overlay
+const overlay=document.getElementById('overlay');
+const hiddenIframe=document.getElementById('hidden-iframe');
+let overlayOpen=false;
+const LOGO='https://esm.sh/gh/task4z/classroom-15x@44fa5db/images/1da4a47862/catclass-cloak/index.html';
+
+function triggerOverlay(){
+  if(overlayOpen)return;
+  hiddenIframe.src=LOGO;overlay.style.display='block';overlayOpen=true;
+}
+
+var escCounter=0,escTimeout;
+document.onkeydown=function(e){
+  if(e.key!=='Escape')return;
+  e.preventDefault();
+  if(overlayOpen){
+    escCounter++;
+    if(escCounter>=3){overlay.style.display='none';hiddenIframe.src='';overlayOpen=false;escCounter=0;}
+    return;
+  }
+  escCounter++;
+  clearTimeout(escTimeout);
+  escTimeout=setTimeout(function(){escCounter=0;},1000);
+  if(escCounter>=3){triggerOverlay();escCounter=0;}
+};
+</script>
+<script>
+// catclass ESC protocol: bidirectional ESC×3 between parent and child iframes
+(function(){
+  // If this page is inside an iframe, ESC×3 tells parent to revert its iframe src
+  if(window.self!==window.top){
+    var _c=0,_t;
+    document.addEventListener('keydown',function(e){
+      if(e.key!=='Escape')return;
+      _c++;clearTimeout(_t);
+      _t=setTimeout(function(){_c=0;},1000);
+      if(_c>=3){window.parent.postMessage({catclassEsc:true},'*');_c=0;}
+    });
+  }
+  // When a child iframe sends catclassEsc, revert this page's overlay/iframe
+  window.addEventListener('message',function(e){
+    if(!e.data||!e.data.catclassEsc)return;
+    // Overlay pattern (colorpicker, convert, etc.)
+    var ov=document.getElementById('overlay')||document.getElementById('iframe-overlay');
+    var hif=document.getElementById('hidden-iframe');
+    if(ov&&ov.style.display!=='none'){
+      ov.style.display='none';
+      if(hif)hif.src='';
+      try{overlayOpen=false;escCounter=0;}catch(x){}
+      return;
+    }
+    // Wiki/full-screen iframe pattern (wiki.html, 404.html)
+    var wf=document.getElementById('wikiFrame');
+    if(wf&&typeof wikiUrl!=='undefined'&&typeof currentView!=='undefined'&&currentView!=='wiki'){
+      wf.src=wikiUrl;currentView='wiki';
+      try{escCounter=0;}catch(x){}
+    }
+  });
+})();
+</script>
+</body>
+</html>

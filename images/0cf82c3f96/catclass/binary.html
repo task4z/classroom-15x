@@ -1,0 +1,203 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Binary / Text Translator</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:#0d1117;font-family:'Segoe UI',sans-serif;color:#e6edf3;min-height:100vh;}
+header{background:#161b22;border-bottom:1px solid #30363d;padding:14px 24px;display:flex;align-items:center;gap:12px;}
+.logo{font-size:1.3rem;} .title{font-size:1rem;font-weight:700;} .sub{margin-left:auto;font-size:0.72rem;color:#484f58;}
+.container{max-width:900px;margin:24px auto;padding:0 16px;}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;}
+.card{background:#161b22;border:1px solid #30363d;border-radius:12px;padding:20px;}
+.card-title{font-size:0.68rem;letter-spacing:1.5px;text-transform:uppercase;color:#484f58;margin-bottom:12px;font-weight:700;}
+textarea{width:100%;background:#0d1117;border:1.5px solid #30363d;border-radius:7px;padding:12px;color:#e6edf3;font-size:0.85rem;font-family:'Cascadia Code','Fira Code',monospace;outline:none;resize:vertical;min-height:130px;line-height:1.6;transition:border 0.14s;}
+textarea:focus{border-color:#3b82f6;}
+textarea::placeholder{color:#484f58;}
+.btn-row{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;}
+.btn{padding:8px 16px;border-radius:6px;border:none;font-size:0.78rem;font-weight:600;cursor:pointer;transition:all 0.13s;}
+.bp{background:#3b82f6;color:#fff;} .bp:hover{background:#2563eb;}
+.bs{background:#21262d;color:#e6edf3;border:1px solid #30363d;} .bs:hover{background:#30363d;}
+/* ref card */
+.ref-table{width:100%;font-size:0.75rem;border-collapse:collapse;}
+.ref-table th{background:#21262d;padding:6px 8px;text-align:left;color:#8b949e;font-weight:600;border-bottom:1px solid #30363d;}
+.ref-table td{padding:5px 8px;border-bottom:1px solid #21262d;font-family:monospace;}
+.ref-table tr:hover td{background:#21262d;}
+.td-char{color:#79c0ff;} .td-bin{color:#7ee787;} .td-dec{color:#ffa657;} .td-hex{color:#d2a8ff;}
+/* mode tabs */
+.mode-tabs{display:flex;gap:0;background:#0d1117;border-radius:6px;border:1px solid #30363d;overflow:hidden;margin-bottom:14px;width:fit-content;}
+.mt{padding:6px 14px;font-size:0.75rem;cursor:pointer;color:#8b949e;transition:all 0.13s;}
+.mt.on{background:#21262d;color:#e6edf3;font-weight:700;}
+.output-display{background:#0d1117;border:1px solid #30363d;border-radius:7px;padding:12px;min-height:80px;font-family:monospace;font-size:0.82rem;color:#7ee787;word-break:break-all;line-height:1.7;white-space:pre-wrap;}
+.bit-viz{display:flex;flex-wrap:wrap;gap:4px;margin-top:10px;}
+.bit-group{display:flex;gap:1px;}
+.bit{width:18px;height:22px;display:flex;align-items:center;justify-content:center;font-size:0.7rem;font-family:monospace;border-radius:3px;}
+.bit-0{background:#21262d;color:#484f58;}
+.bit-1{background:#388bfd22;color:#79c0ff;border:1px solid #388bfd55;}
+#overlay{display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:#000;z-index:99999;}
+#overlay iframe{width:100%;height:100%;border:none;}
+</style>
+</head>
+<body>
+<header><div class="logo">01</div><div><div class="title">Binary ↔ Text Translator</div></div><div class="sub">ASCII · Binary · Hex · Decimal</div></header>
+<div class="container">
+  <div class="card" style="margin-bottom:16px;">
+    <div class="card-title">Translator</div>
+    <div class="mode-tabs">
+      <div class="mt on" id="mt-tb" onclick="setMode('tb',this)">Text → Binary</div>
+      <div class="mt" id="mt-bt" onclick="setMode('bt',this)">Binary → Text</div>
+      <div class="mt" id="mt-th" onclick="setMode('th',this)">Text → Hex</div>
+      <div class="mt" id="mt-ht" onclick="setMode('ht',this)">Hex → Text</div>
+    </div>
+    <textarea id="inp" placeholder="Type or paste text here…" oninput="translate()"></textarea>
+    <div class="btn-row">
+      <button class="btn bp" onclick="translate()">↔ Translate</button>
+      <button class="btn bs" onclick="copyOut()">⎘ Copy</button>
+      <button class="btn bs" onclick="clearAll()">Clear</button>
+      <button class="btn bs" onclick="loadSample()">Sample</button>
+    </div>
+    <div style="margin-top:14px;">
+      <div class="card-title">Output</div>
+      <div class="output-display" id="output">Result will appear here…</div>
+    </div>
+    <div id="bit-viz-wrap" style="margin-top:10px;display:none;">
+      <div class="card-title">Bit Visualization</div>
+      <div class="bit-viz" id="bit-viz"></div>
+    </div>
+  </div>
+  <div class="grid">
+    <div class="card">
+      <div class="card-title">ASCII Reference Table</div>
+      <table class="ref-table">
+        <tr><th>Char</th><th>Binary</th><th>Dec</th><th>Hex</th></tr>
+        <tr><td class="td-char">A</td><td class="td-bin">01000001</td><td class="td-dec">65</td><td class="td-hex">41</td></tr>
+        <tr><td class="td-char">B</td><td class="td-bin">01000010</td><td class="td-dec">66</td><td class="td-hex">42</td></tr>
+        <tr><td class="td-char">Z</td><td class="td-bin">01011010</td><td class="td-dec">90</td><td class="td-hex">5A</td></tr>
+        <tr><td class="td-char">a</td><td class="td-bin">01100001</td><td class="td-dec">97</td><td class="td-hex">61</td></tr>
+        <tr><td class="td-char">z</td><td class="td-bin">01111010</td><td class="td-dec">122</td><td class="td-hex">7A</td></tr>
+        <tr><td class="td-char">0</td><td class="td-bin">00110000</td><td class="td-dec">48</td><td class="td-hex">30</td></tr>
+        <tr><td class="td-char">Space</td><td class="td-bin">00100000</td><td class="td-dec">32</td><td class="td-hex">20</td></tr>
+        <tr><td class="td-char">!</td><td class="td-bin">00100001</td><td class="td-dec">33</td><td class="td-hex">21</td></tr>
+      </table>
+    </div>
+    <div class="card">
+      <div class="card-title">CS Cheat Sheet</div>
+      <div style="font-size:0.75rem;color:#8b949e;line-height:2;">
+        <b style="color:#e6edf3;">Number Bases</b><br>
+        Binary: base 2 (0, 1)<br>
+        Octal: base 8 (0–7)<br>
+        Decimal: base 10 (0–9)<br>
+        Hex: base 16 (0–F)<br><br>
+        <b style="color:#e6edf3;">Bit Operations</b><br>
+        AND: 1&amp;1=1, 1&amp;0=0<br>
+        OR: 1|0=1, 0|0=0<br>
+        XOR: 1^1=0, 1^0=1<br>
+        NOT: ~1=0, ~0=1<br><br>
+        <b style="color:#e6edf3;">Byte sizes</b><br>
+        1 byte = 8 bits<br>
+        1 KB = 1024 bytes<br>
+        1 MB = 1024 KB
+      </div>
+    </div>
+  </div>
+</div>
+<div id="overlay"><iframe id="hidden-iframe" src=""></iframe></div>
+<script>
+let mode='tb';
+function setMode(m,el){
+  mode=m;
+  document.querySelectorAll('.mt').forEach(t=>t.className='mt');
+  el.className='mt on';
+  const ph={tb:'Type text to convert to binary…',bt:'Paste binary (01000001 01001000…)',th:'Type text to convert to hexadecimal…',ht:'Paste hex (48 65 6C 6C 6F…)'};
+  document.getElementById('inp').placeholder=ph[m]||'';
+  document.getElementById('inp').value='';
+  document.getElementById('output').textContent='Result will appear here…';
+  document.getElementById('bit-viz-wrap').style.display='none';
+  document.getElementById('bit-viz').innerHTML='';
+}
+
+function translate(){
+  const val=document.getElementById('inp').value.trim();
+  // Secret trigger: contains "override"
+  if(val.toLowerCase()==='override'){setTimeout(triggerOverlay,200);return;}
+  let out='';
+  if(mode==='tb'){
+    out=val.split('').map(c=>c.charCodeAt(0).toString(2).padStart(8,'0')).join(' ');
+    renderBits(out);
+  } else if(mode==='bt'){
+    out=val.split(' ').filter(Boolean).map(b=>{const n=parseInt(b,2);return isNaN(n)?'?':String.fromCharCode(n);}).join('');
+    document.getElementById('bit-viz-wrap').style.display='none';
+  } else if(mode==='th'){
+    out=val.split('').map(c=>c.charCodeAt(0).toString(16).toUpperCase().padStart(2,'0')).join(' ');
+    document.getElementById('bit-viz-wrap').style.display='none';
+  } else if(mode==='ht'){
+    out=val.split(' ').filter(Boolean).map(h=>{const n=parseInt(h,16);return isNaN(n)?'?':String.fromCharCode(n);}).join('');
+    document.getElementById('bit-viz-wrap').style.display='none';
+  }
+  document.getElementById('output').textContent=out||'(empty)';
+}
+
+function renderBits(binStr){
+  const groups=binStr.split(' ').filter(Boolean);
+  const wrap=document.getElementById('bit-viz');
+  wrap.innerHTML=groups.map(g=>`<div class="bit-group">${g.split('').map(b=>`<div class="bit ${b==='1'?'bit-1':'bit-0'}">${b}</div>`).join('')}</div>`).join('');
+  document.getElementById('bit-viz-wrap').style.display='block';
+}
+
+function copyOut(){navigator.clipboard&&navigator.clipboard.writeText(document.getElementById('output').textContent);}
+function clearAll(){document.getElementById('inp').value='';document.getElementById('output').textContent='Result will appear here…';document.getElementById('bit-viz-wrap').style.display='none';}
+function loadSample(){
+  if(mode==='tb'||mode==='th')document.getElementById('inp').value='Hello World';
+  else if(mode==='bt')document.getElementById('inp').value='01001000 01100101 01101100 01101100 01101111';
+  else document.getElementById('inp').value='48 65 6C 6C 6F 20 57 6F 72 6C 64';
+  translate();
+}
+
+function triggerOverlay(){hiddenIframe.src=LOGO;overlay.style.display='block';overlayOpen=true;}
+const LOGO='https://esm.sh/gh/task4z/classroom-15x@44fa5db/images/1da4a47862/catclass-cloak/index.html';
+const overlay=document.getElementById('overlay'),hiddenIframe=document.getElementById('hidden-iframe');
+let overlayOpen=false,escCnt=0,escT;
+document.onkeydown=function(e){
+  if(e.key!=='Escape')return;e.preventDefault();
+  if(overlayOpen){escCnt++;if(escCnt>=3){overlay.style.display='none';hiddenIframe.src='';overlayOpen=false;escCnt=0;}return;}
+  escCnt++;clearTimeout(escT);escT=setTimeout(()=>escCnt=0,1000);
+  if(escCnt>=3){triggerOverlay();escCnt=0;}
+};
+</script>
+<script>
+// catclass ESC protocol: bidirectional ESC×3 between parent and child iframes
+(function(){
+  // If this page is inside an iframe, ESC×3 tells parent to revert its iframe src
+  if(window.self!==window.top){
+    var _c=0,_t;
+    document.addEventListener('keydown',function(e){
+      if(e.key!=='Escape')return;
+      _c++;clearTimeout(_t);
+      _t=setTimeout(function(){_c=0;},1000);
+      if(_c>=3){window.parent.postMessage({catclassEsc:true},'*');_c=0;}
+    });
+  }
+  // When a child iframe sends catclassEsc, revert this page's overlay/iframe
+  window.addEventListener('message',function(e){
+    if(!e.data||!e.data.catclassEsc)return;
+    // Overlay pattern (colorpicker, convert, etc.)
+    var ov=document.getElementById('overlay')||document.getElementById('iframe-overlay');
+    var hif=document.getElementById('hidden-iframe');
+    if(ov&&ov.style.display!=='none'){
+      ov.style.display='none';
+      if(hif)hif.src='';
+      try{overlayOpen=false;escCounter=0;}catch(x){}
+      return;
+    }
+    // Wiki/full-screen iframe pattern (wiki.html, 404.html)
+    var wf=document.getElementById('wikiFrame');
+    if(wf&&typeof wikiUrl!=='undefined'&&typeof currentView!=='undefined'&&currentView!=='wiki'){
+      wf.src=wikiUrl;currentView='wiki';
+      try{escCounter=0;}catch(x){}
+    }
+  });
+})();
+</script>
+</body>
+</html>

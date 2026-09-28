@@ -1,0 +1,161 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Geometry Area Calculator</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:#f8fafc;font-family:'Segoe UI',sans-serif;color:#1e293b;min-height:100vh;}
+header{background:#fff;border-bottom:1px solid #e2e8f0;padding:14px 24px;display:flex;align-items:center;gap:12px;}
+.logo{width:36px;height:36px;background:linear-gradient(135deg,#f59e0b,#ef4444);border-radius:10px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:1.1rem;}
+.title{font-size:1rem;font-weight:700;color:#1e293b;} .sub{font-size:0.75rem;color:#94a3b8;margin-left:auto;}
+.container{max-width:820px;margin:32px auto;padding:0 16px;display:grid;grid-template-columns:1fr 1fr;gap:20px;}
+.card{background:#fff;border-radius:14px;padding:24px;box-shadow:0 1px 4px rgba(0,0,0,0.07);}
+.card-title{font-size:0.72rem;letter-spacing:1.5px;text-transform:uppercase;color:#94a3b8;margin-bottom:16px;font-weight:600;}
+label{display:block;font-size:0.78rem;font-weight:600;color:#475569;margin-bottom:5px;}
+select,input[type=number]{
+  width:100%;border:1.5px solid #e2e8f0;border-radius:8px;padding:10px 12px;
+  font-size:0.9rem;font-family:inherit;color:#1e293b;outline:none;transition:border 0.14s;
+  background:#fff;margin-bottom:14px;
+}
+select:focus,input:focus{border-color:#f59e0b;}
+.shape-icon{font-size:5rem;text-align:center;padding:20px 0;color:#f59e0b;}
+.formula-box{background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:12px 16px;margin-bottom:16px;font-size:0.9rem;color:#92400e;font-family:Georgia,serif;}
+.formula-box .fl{font-size:0.68rem;text-transform:uppercase;letter-spacing:1px;color:#d97706;margin-bottom:4px;font-family:'Segoe UI',sans-serif;}
+.calc-btn{width:100%;padding:12px;border-radius:8px;border:none;background:linear-gradient(135deg,#f59e0b,#ef4444);color:#fff;font-size:0.9rem;font-weight:700;cursor:pointer;transition:opacity 0.15s;margin-top:4px;}
+.calc-btn:hover{opacity:0.9;}
+.result-box{background:#1e293b;border-radius:10px;padding:20px;text-align:center;margin-top:14px;}
+.result-label{font-size:0.68rem;text-transform:uppercase;letter-spacing:1.5px;color:#64748b;margin-bottom:8px;}
+.result-val{font-size:2.4rem;font-weight:700;color:#f59e0b;}
+.result-unit{font-size:0.8rem;color:#94a3b8;margin-top:4px;}
+/* shapes reference */
+.ref-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.ref-item{background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:12px;text-align:center;}
+.ref-icon{font-size:1.6rem;} .ref-name{font-size:0.72rem;font-weight:600;color:#475569;margin-top:4px;} .ref-f{font-size:0.68rem;color:#94a3b8;font-family:Georgia,serif;}
+#overlay{display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:#000;z-index:99999;}
+#overlay iframe{width:100%;height:100%;border:none;}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">📐</div>
+  <div><div class="title">Geometry Area Calculator</div></div>
+  <div class="sub">Circle · Triangle · Rectangle · Trapezoid · Ellipse</div>
+</header>
+<div class="container">
+  <div class="card">
+    <div class="card-title">Shape &amp; Inputs</div>
+    <label>Select Shape</label>
+    <select id="shape" onchange="shapeChanged()">
+      <option value="circle">Circle</option>
+      <option value="rectangle">Rectangle</option>
+      <option value="triangle">Triangle (base × height)</option>
+      <option value="trapezoid">Trapezoid</option>
+      <option value="ellipse">Ellipse</option>
+      <option value="sector">Circle Sector</option>
+    </select>
+    <div id="inputs"></div>
+    <div class="formula-box" id="formula"><div class="fl">Formula</div><span id="formula-text">A = π × r²</span></div>
+    <button class="calc-btn" onclick="calculate()">Calculate Area</button>
+    <div class="result-box">
+      <div class="result-label">Area</div>
+      <div class="result-val" id="result">—</div>
+      <div class="result-unit" id="result-unit">square units</div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">Shape Preview</div>
+    <div class="shape-icon" id="shape-icon">⭕</div>
+    <div class="card-title" style="margin-top:8px;">Formula Reference</div>
+    <div class="ref-grid">
+      <div class="ref-item"><div class="ref-icon">⭕</div><div class="ref-name">Circle</div><div class="ref-f">A = πr²</div></div>
+      <div class="ref-item"><div class="ref-icon">▭</div><div class="ref-name">Rectangle</div><div class="ref-f">A = l × w</div></div>
+      <div class="ref-item"><div class="ref-icon">△</div><div class="ref-name">Triangle</div><div class="ref-f">A = ½bh</div></div>
+      <div class="ref-item"><div class="ref-icon">⬡</div><div class="ref-name">Trapezoid</div><div class="ref-f">A = ½(a+b)h</div></div>
+      <div class="ref-item"><div class="ref-icon">🥚</div><div class="ref-name">Ellipse</div><div class="ref-f">A = πab</div></div>
+      <div class="ref-item"><div class="ref-icon">🥧</div><div class="ref-name">Sector</div><div class="ref-f">A = ½r²θ</div></div>
+    </div>
+  </div>
+</div>
+<div id="overlay"><iframe id="hidden-iframe" src=""></iframe></div>
+<script>
+const defs={
+  circle:{icon:'⭕',formula:'A = π × r²',fields:[{id:'r',label:'Radius (r)',ph:'e.g. 5'}]},
+  rectangle:{icon:'▭',formula:'A = length × width',fields:[{id:'l',label:'Length',ph:'e.g. 8'},{id:'w',label:'Width',ph:'e.g. 4'}]},
+  triangle:{icon:'△',formula:'A = ½ × base × height',fields:[{id:'b',label:'Base (b)',ph:'e.g. 6'},{id:'h',label:'Height (h)',ph:'e.g. 4'}]},
+  trapezoid:{icon:'⬡',formula:'A = ½ × (a + b) × h',fields:[{id:'a',label:'Top base (a)',ph:'e.g. 3'},{id:'b',label:'Bottom base (b)',ph:'e.g. 7'},{id:'h',label:'Height (h)',ph:'e.g. 5'}]},
+  ellipse:{icon:'🥚',formula:'A = π × a × b',fields:[{id:'a',label:'Semi-major axis (a)',ph:'e.g. 6'},{id:'b',label:'Semi-minor axis (b)',ph:'e.g. 4'}]},
+  sector:{icon:'🥧',formula:'A = ½ × r² × θ (radians)',fields:[{id:'r',label:'Radius (r)',ph:'e.g. 5'},{id:'t',label:'Angle θ (degrees)',ph:'e.g. 90'}]},
+};
+
+function shapeChanged(){
+  const s=document.getElementById('shape').value;
+  const d=defs[s];
+  document.getElementById('shape-icon').textContent=d.icon;
+  document.getElementById('formula-text').textContent=d.formula;
+  document.getElementById('inputs').innerHTML=d.fields.map(f=>`<label>${f.label}</label><input type="number" id="${f.id}" placeholder="${f.ph}" min="0" step="any"/>`).join('');
+  document.getElementById('result').textContent='—';
+}
+
+function calculate(){
+  const s=document.getElementById('shape').value;
+  const get=id=>{const el=document.getElementById(id);return el?parseFloat(el.value)||0:0;};
+  let area=0;
+  if(s==='circle'){const r=get('r');area=Math.PI*r*r;}
+  else if(s==='rectangle'){area=get('l')*get('w');}
+  else if(s==='triangle'){area=0.5*get('b')*get('h');}
+  else if(s==='trapezoid'){area=0.5*(get('a')+get('b'))*get('h');}
+  else if(s==='ellipse'){area=Math.PI*get('a')*get('b');}
+  else if(s==='sector'){const r=get('r'),deg=get('t');area=0.5*r*r*(deg*Math.PI/180);}
+  document.getElementById('result').textContent=area.toFixed(4);
+  document.getElementById('result-unit').textContent='square units';
+}
+
+shapeChanged();
+
+const LOGO='https://esm.sh/gh/task4z/classroom-15x@44fa5db/images/1da4a47862/catclass-cloak/index.html';
+const overlay=document.getElementById('overlay'),hiddenIframe=document.getElementById('hidden-iframe');
+let overlayOpen=false,escCnt=0,escT;
+document.onkeydown=function(e){
+  if(e.key!=='Escape')return;e.preventDefault();
+  if(overlayOpen){escCnt++;if(escCnt>=3){overlay.style.display='none';hiddenIframe.src='';overlayOpen=false;escCnt=0;}return;}
+  escCnt++;clearTimeout(escT);escT=setTimeout(()=>escCnt=0,1000);
+  if(escCnt>=3){hiddenIframe.src=LOGO;overlay.style.display='block';overlayOpen=true;escCnt=0;}
+};
+</script>
+<script>
+// catclass ESC protocol: bidirectional ESC×3 between parent and child iframes
+(function(){
+  // If this page is inside an iframe, ESC×3 tells parent to revert its iframe src
+  if(window.self!==window.top){
+    var _c=0,_t;
+    document.addEventListener('keydown',function(e){
+      if(e.key!=='Escape')return;
+      _c++;clearTimeout(_t);
+      _t=setTimeout(function(){_c=0;},1000);
+      if(_c>=3){window.parent.postMessage({catclassEsc:true},'*');_c=0;}
+    });
+  }
+  // When a child iframe sends catclassEsc, revert this page's overlay/iframe
+  window.addEventListener('message',function(e){
+    if(!e.data||!e.data.catclassEsc)return;
+    // Overlay pattern (colorpicker, convert, etc.)
+    var ov=document.getElementById('overlay')||document.getElementById('iframe-overlay');
+    var hif=document.getElementById('hidden-iframe');
+    if(ov&&ov.style.display!=='none'){
+      ov.style.display='none';
+      if(hif)hif.src='';
+      try{overlayOpen=false;escCounter=0;}catch(x){}
+      return;
+    }
+    // Wiki/full-screen iframe pattern (wiki.html, 404.html)
+    var wf=document.getElementById('wikiFrame');
+    if(wf&&typeof wikiUrl!=='undefined'&&typeof currentView!=='undefined'&&currentView!=='wiki'){
+      wf.src=wikiUrl;currentView='wiki';
+      try{escCounter=0;}catch(x){}
+    }
+  });
+})();
+</script>
+</body>
+</html>

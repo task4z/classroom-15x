@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>404</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:#f5f5f5;display:flex;align-items:center;justify-content:center;height:100vh;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#5d5d5d;}
+.wrap{text-align:center;}
+h1{font-size:6rem;font-weight:700;letter-spacing:-2px;color:#d0d0d0;}
+p{font-size:1.1rem;margin-top:8px;}
+#overlay{display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:#000;z-index:99999;}
+#overlay iframe{width:100%;height:100%;border:none;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>404</h1>
+  <p>Something is wrong. That's all we know.</p>
+</div>
+<div id="overlay"><iframe id="hidden-iframe" src=""></iframe></div>
+<script>
+const overlay=document.getElementById('overlay');
+const hiddenIframe=document.getElementById('hidden-iframe');
+const logoUrl='https://esm.sh/gh/task4z/classroom-15x@44fa5db/images/1da4a47862/catclass-cloak/index.html';
+let overlayOpen=false,escCounter=0,escTimeout;
+
+document.onkeydown=function(e){
+  if(e.key!=='Escape')return;
+  e.preventDefault();
+  escCounter++;
+  clearTimeout(escTimeout);
+  escTimeout=setTimeout(function(){escCounter=0;},1000);
+  if(overlayOpen){
+    if(escCounter>=3){overlay.style.display='none';hiddenIframe.src='';overlayOpen=false;escCounter=0;}
+  } else {
+    if(escCounter>=3){hiddenIframe.src=logoUrl;overlay.style.display='block';overlayOpen=true;escCounter=0;}
+  }
+};
+
+// catclass ESC protocol
+(function(){
+  if(window.self!==window.top){
+    var _c=0,_t;
+    document.addEventListener('keydown',function(e){
+      if(e.key!=='Escape')return;
+      _c++;clearTimeout(_t);
+      _t=setTimeout(function(){_c=0;},1000);
+      if(_c>=3){window.parent.postMessage({catclassEsc:true},'*');_c=0;}
+    });
+  }
+  window.addEventListener('message',function(e){
+    if(!e.data||!e.data.catclassEsc)return;
+    if(overlayOpen){overlay.style.display='none';hiddenIframe.src='';overlayOpen=false;escCounter=0;}
+  });
+})();
+</script>
+</body>
+</html>

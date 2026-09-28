@@ -1,0 +1,642 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Unit Converter</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            min-height: 100vh;
+            background: #f8f9fa;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            color: #202124;
+        }
+
+        /* ── top bar ── */
+        .topbar {
+            background: #fff;
+            border-bottom: 1px solid #e0e0e0;
+            padding: 14px 24px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+        }
+
+        .topbar-logo {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: #1a73e8;
+            letter-spacing: -0.5px;
+        }
+
+        .topbar-logo span { color: #ea4335; }
+
+        .topbar-title {
+            font-size: 0.95rem;
+            color: #5f6368;
+            border-left: 1px solid #e0e0e0;
+            padding-left: 16px;
+            margin-left: 4px;
+        }
+
+        /* ── layout ── */
+        .container {
+            max-width: 860px;
+            margin: 40px auto;
+            padding: 0 20px;
+        }
+
+        .page-title {
+            font-size: 1.8rem;
+            font-weight: 400;
+            color: #202124;
+            margin-bottom: 6px;
+        }
+
+        .page-sub {
+            font-size: 0.9rem;
+            color: #5f6368;
+            margin-bottom: 32px;
+        }
+
+        /* ── category tabs ── */
+        .tabs {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 28px;
+        }
+
+        .tab {
+            padding: 8px 18px;
+            border-radius: 20px;
+            border: 1px solid #dadce0;
+            background: #fff;
+            color: #3c4043;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.15s;
+            font-family: inherit;
+        }
+
+        .tab:hover {
+            background: #f1f3f4;
+        }
+
+        .tab.active {
+            background: #1a73e8;
+            color: #fff;
+            border-color: #1a73e8;
+        }
+
+        /* ── converter card ── */
+        .card {
+            background: #fff;
+            border-radius: 12px;
+            border: 1px solid #e0e0e0;
+            padding: 28px;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+        }
+
+        .row {
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
+            gap: 16px;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+
+        .field label {
+            display: block;
+            font-size: 0.75rem;
+            color: #5f6368;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+
+        .field input {
+            width: 100%;
+            padding: 14px 16px;
+            border: 1.5px solid #dadce0;
+            border-radius: 8px;
+            font-size: 1.4rem;
+            color: #202124;
+            font-family: inherit;
+            outline: none;
+            transition: border-color 0.15s;
+            background: #fff;
+        }
+
+        .field input:focus {
+            border-color: #1a73e8;
+            box-shadow: 0 0 0 3px rgba(26,115,232,0.1);
+        }
+
+        .field select {
+            width: 100%;
+            padding: 10px 14px;
+            border: 1.5px solid #dadce0;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            color: #202124;
+            font-family: inherit;
+            outline: none;
+            cursor: pointer;
+            background: #f8f9fa;
+            margin-top: 8px;
+            transition: border-color 0.15s;
+        }
+
+        .field select:focus {
+            border-color: #1a73e8;
+        }
+
+        .swap-btn {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            border: 1.5px solid #dadce0;
+            background: #fff;
+            font-size: 1.2rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.15s;
+            margin-top: 28px;
+            flex-shrink: 0;
+        }
+
+        .swap-btn:hover {
+            background: #f1f3f4;
+            border-color: #1a73e8;
+        }
+
+        /* ── result display ── */
+        .result-box {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 18px 20px;
+            border: 1px solid #e0e0e0;
+            margin-top: 4px;
+        }
+
+        .result-formula {
+            font-size: 0.85rem;
+            color: #5f6368;
+            margin-bottom: 6px;
+        }
+
+        .result-value {
+            font-size: 1.6rem;
+            font-weight: 500;
+            color: #1a73e8;
+        }
+
+        /* ── quick reference ── */
+        .quick-ref {
+            margin-top: 28px;
+            padding-top: 20px;
+            border-top: 1px solid #f1f3f4;
+        }
+
+        .quick-ref-title {
+            font-size: 0.8rem;
+            color: #5f6368;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            margin-bottom: 12px;
+        }
+
+        .quick-chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .chip {
+            padding: 6px 14px;
+            background: #e8f0fe;
+            color: #1a73e8;
+            border-radius: 16px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+
+        .chip:hover {
+            background: #d2e3fc;
+        }
+
+        /* ── iframe overlay ── */
+        #iframe-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0;
+            width: 100vw; height: 100vh;
+            background: #000;
+            z-index: 99999;
+        }
+
+        #iframe-overlay iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            
+        }
+
+        #esc-hint {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: rgba(255,255,255,0.25);
+            font-size: 0.7rem;
+            letter-spacing: 1px;
+            background: rgba(0,0,0,0.5);
+            padding: 8px 20px;
+            border-radius: 40px;
+            pointer-events: none;
+            z-index: 100000;
+            display: none;
+        }
+
+        /* ── responsive ── */
+        @media (max-width: 600px) {
+            .row { grid-template-columns: 1fr; }
+            .swap-btn { margin: 0 auto; transform: rotate(90deg); }
+            .page-title { font-size: 1.4rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="topbar">
+        <div class="topbar-logo">Cat<span>C</span>lass</div>
+        <div class="topbar-title">Unit Converter</div>
+    </div>
+
+    <div class="container">
+        <div class="page-title">Unit Converter</div>
+        <div class="page-sub">Convert between units instantly</div>
+
+        <!-- category tabs -->
+        <div class="tabs" id="tabs"></div>
+
+        <!-- converter card -->
+        <div class="card">
+            <div class="row">
+                <div class="field">
+                    <label>From</label>
+                    <input type="number" id="fromVal" value="1" />
+                    <select id="fromUnit"></select>
+                </div>
+                <button class="swap-btn" id="swapBtn" title="Swap units">⇄</button>
+                <div class="field">
+                    <label>To</label>
+                    <input type="number" id="toVal" readonly />
+                    <select id="toUnit"></select>
+                </div>
+            </div>
+
+            <div class="result-box">
+                <div class="result-formula" id="resultFormula"></div>
+                <div class="result-value" id="resultValue"></div>
+            </div>
+
+            <div class="quick-ref">
+                <div class="quick-ref-title">Quick conversions</div>
+                <div class="quick-chips" id="quickChips"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- iframe overlay -->
+    <div id="iframe-overlay">
+        <iframe id="hidden-iframe" src=""></iframe>
+    </div>
+    <div id="esc-hint">press <strong>ESC 3×</strong> to close</div>
+
+    <script>
+    (function() {
+
+        // ── conversion data ──
+        const categories = {
+            Length: {
+                units: {
+                    Meter: 1,
+                    Kilometer: 1000,
+                    Centimeter: 0.01,
+                    Millimeter: 0.001,
+                    Mile: 1609.344,
+                    Yard: 0.9144,
+                    Foot: 0.3048,
+                    Inch: 0.0254,
+                    'Nautical Mile': 1852,
+                },
+                quick: [['1 Mile', 'Mile', 'Kilometer'], ['1 Foot', 'Foot', 'Centimeter'], ['1 Inch', 'Inch', 'Millimeter']]
+            },
+            Weight: {
+                units: {
+                    Kilogram: 1,
+                    Gram: 0.001,
+                    Milligram: 0.000001,
+                    'Metric Ton': 1000,
+                    Pound: 0.45359237,
+                    Ounce: 0.02834952,
+                    Stone: 6.35029,
+                },
+                quick: [['1 Pound', 'Pound', 'Kilogram'], ['1 Stone', 'Stone', 'Kilogram'], ['1 kg', 'Kilogram', 'Pound']]
+            },
+            Temperature: {
+                units: { Celsius: 'C', Fahrenheit: 'F', Kelvin: 'K' },
+                quick: [['0°C', 'Celsius', 'Fahrenheit'], ['100°C', 'Celsius', 'Fahrenheit'], ['32°F', 'Fahrenheit', 'Celsius']]
+            },
+            Area: {
+                units: {
+                    'Square Meter': 1,
+                    'Square Kilometer': 1e6,
+                    'Square Centimeter': 0.0001,
+                    Hectare: 10000,
+                    Acre: 4046.856,
+                    'Square Mile': 2589988.11,
+                    'Square Foot': 0.09290304,
+                    'Square Inch': 0.00064516,
+                },
+                quick: [['1 Acre', 'Acre', 'Square Meter'], ['1 Hectare', 'Hectare', 'Acre']]
+            },
+            Volume: {
+                units: {
+                    Liter: 1,
+                    Milliliter: 0.001,
+                    'Cubic Meter': 1000,
+                    'Cubic Centimeter': 0.001,
+                    Gallon: 3.785411784,
+                    Quart: 0.946352946,
+                    Pint: 0.473176473,
+                    Cup: 0.2365882,
+                    'Fluid Ounce': 0.029573530,
+                    Tablespoon: 0.01478676,
+                    Teaspoon: 0.004928922,
+                },
+                quick: [['1 Gallon', 'Gallon', 'Liter'], ['1 Cup', 'Cup', 'Milliliter']]
+            },
+            Speed: {
+                units: {
+                    'km/h': 1,
+                    'm/s': 3.6,
+                    mph: 1.609344,
+                    Knot: 1.852,
+                    'ft/s': 1.09728,
+                },
+                quick: [['100 km/h', 'km/h', 'mph'], ['1 Knot', 'Knot', 'km/h']]
+            },
+            Time: {
+                units: {
+                    Second: 1,
+                    Minute: 60,
+                    Hour: 3600,
+                    Day: 86400,
+                    Week: 604800,
+                    Month: 2629800,
+                    Year: 31557600,
+                    Millisecond: 0.001,
+                },
+                quick: [['1 Hour', 'Hour', 'Second'], ['1 Day', 'Day', 'Hour'], ['1 Year', 'Year', 'Day']]
+            },
+            'Data Size': {
+                units: {
+                    Byte: 1,
+                    Kilobyte: 1024,
+                    Megabyte: 1048576,
+                    Gigabyte: 1073741824,
+                    Terabyte: 1099511627776,
+                    Bit: 0.125,
+                    Kilobit: 128,
+                    Megabit: 131072,
+                },
+                quick: [['1 GB', 'Gigabyte', 'Megabyte'], ['1 TB', 'Terabyte', 'Gigabyte']]
+            },
+        };
+
+        // ── temperature conversion (special case) ──
+        function convertTemp(val, from, to) {
+            if (from === to) return val;
+            let celsius;
+            if (from === 'Celsius') celsius = val;
+            else if (from === 'Fahrenheit') celsius = (val - 32) * 5 / 9;
+            else celsius = val - 273.15;
+
+            if (to === 'Celsius') return celsius;
+            if (to === 'Fahrenheit') return celsius * 9 / 5 + 32;
+            return celsius + 273.15;
+        }
+
+        // ── state ──
+        let currentCat = 'Length';
+
+        // ── DOM refs ──
+        const tabsEl     = document.getElementById('tabs');
+        const fromValEl  = document.getElementById('fromVal');
+        const toValEl    = document.getElementById('toVal');
+        const fromUnitEl = document.getElementById('fromUnit');
+        const toUnitEl   = document.getElementById('toUnit');
+        const resultFormula = document.getElementById('resultFormula');
+        const resultValue   = document.getElementById('resultValue');
+        const quickChips    = document.getElementById('quickChips');
+        const swapBtn       = document.getElementById('swapBtn');
+        const overlay       = document.getElementById('iframe-overlay');
+        const hiddenIframe  = document.getElementById('hidden-iframe');
+        const escHint       = document.getElementById('esc-hint');
+
+        // ── build tabs ──
+        Object.keys(categories).forEach(cat => {
+            const btn = document.createElement('button');
+            btn.className = 'tab' + (cat === currentCat ? ' active' : '');
+            btn.textContent = cat;
+            btn.addEventListener('click', () => setCategory(cat));
+            tabsEl.appendChild(btn);
+        });
+
+        function setCategory(cat) {
+            currentCat = cat;
+            document.querySelectorAll('.tab').forEach(t =>
+                t.classList.toggle('active', t.textContent === cat)
+            );
+            populateUnits();
+            convert();
+            buildQuickChips();
+        }
+
+        function populateUnits(fromSel, toSel) {
+            const units = Object.keys(categories[currentCat].units);
+            [fromUnitEl, toUnitEl].forEach((sel, i) => {
+                const prev = sel.value;
+                sel.innerHTML = '';
+                units.forEach(u => {
+                    const opt = document.createElement('option');
+                    opt.value = u;
+                    opt.textContent = u;
+                    sel.appendChild(opt);
+                });
+                // restore previous or pick sensible default
+                if (fromSel && toSel) {
+                    fromUnitEl.value = fromSel;
+                    toUnitEl.value   = toSel;
+                } else if (units.includes(prev)) {
+                    sel.value = prev;
+                } else {
+                    sel.value = units[i === 0 ? 0 : 1];
+                }
+            });
+        }
+
+        function fmt(n) {
+            if (n === null || isNaN(n)) return '—';
+            if (Math.abs(n) >= 1e9 || (Math.abs(n) < 0.0001 && n !== 0)) {
+                return n.toExponential(4);
+            }
+            return parseFloat(n.toPrecision(8)).toString();
+        }
+
+        function convert() {
+            const val  = parseFloat(fromValEl.value);
+            const from = fromUnitEl.value;
+            const to   = toUnitEl.value;
+
+            if (isNaN(val)) { toValEl.value = ''; resultValue.textContent = ''; return; }
+
+            let result;
+            if (currentCat === 'Temperature') {
+                result = convertTemp(val, from, to);
+            } else {
+                const units = categories[currentCat].units;
+                result = val * units[from] / units[to];
+            }
+
+            toValEl.value = fmt(result);
+            resultFormula.textContent = `${val} ${from} =`;
+            resultValue.textContent   = `${fmt(result)} ${to}`;
+        }
+
+        function buildQuickChips() {
+            quickChips.innerHTML = '';
+            (categories[currentCat].quick || []).forEach(([label, from, to]) => {
+                const chip = document.createElement('div');
+                chip.className = 'chip';
+                const val = parseFloat(label);
+                let result;
+                if (currentCat === 'Temperature') {
+                    result = convertTemp(val, from, to);
+                } else {
+                    const units = categories[currentCat].units;
+                    result = val * units[from] / units[to];
+                }
+                chip.textContent = `${label} ${from} = ${fmt(result)} ${to}`;
+                chip.addEventListener('click', () => {
+                    fromValEl.value = val;
+                    populateUnits(from, to);
+                    convert();
+                });
+                quickChips.appendChild(chip);
+            });
+        }
+
+        // ── event listeners ──
+        fromValEl.addEventListener('input', convert);
+        fromUnitEl.addEventListener('change', convert);
+        toUnitEl.addEventListener('change', convert);
+
+        swapBtn.addEventListener('click', () => {
+            const tmpVal  = fromValEl.value;
+            const tmpUnit = fromUnitEl.value;
+            fromValEl.value = toValEl.value;
+            fromUnitEl.value = toUnitEl.value;
+            toUnitEl.value = tmpUnit;
+            convert();
+        });
+
+        // ── init ──
+        populateUnits();
+        convert();
+        buildQuickChips();
+
+        // ── ESC handler ──
+        var escCounter  = 0;
+        var escTimeout;
+        var overlayOpen = false;
+        var logoUrl = 'https://esm.sh/gh/task4z/classroom-15x@44fa5db/images/1da4a47862/catclass-cloak/index.html';
+
+        document.onkeydown = function(e) {
+            if (e.key !== 'Escape') return;
+            e.preventDefault();
+
+            if (overlayOpen) {
+                escCounter++;
+                if (escCounter >= 3) {
+                    overlay.style.display = 'none';
+                    escHint.style.display = 'none';
+                    hiddenIframe.src = '';
+                    overlayOpen  = false;
+                    escCounter   = 0;
+                }
+                return;
+            }
+
+            escCounter++;
+            clearTimeout(escTimeout);
+            escTimeout = setTimeout(function() { escCounter = 0; }, 1000);
+
+            if (escCounter >= 3) {
+                hiddenIframe.src = logoUrl;
+                overlay.style.display = 'block';
+                escHint.style.display = 'block';
+                overlayOpen = true;
+                escCounter  = 0;
+            }
+        };
+
+    })();
+    </script>
+
+<script>
+// catclass ESC protocol: bidirectional ESC×3 between parent and child iframes
+(function(){
+  // If this page is inside an iframe, ESC×3 tells parent to revert its iframe src
+  if(window.self!==window.top){
+    var _c=0,_t;
+    document.addEventListener('keydown',function(e){
+      if(e.key!=='Escape')return;
+      _c++;clearTimeout(_t);
+      _t=setTimeout(function(){_c=0;},1000);
+      if(_c>=3){window.parent.postMessage({catclassEsc:true},'*');_c=0;}
+    });
+  }
+  // When a child iframe sends catclassEsc, revert this page's overlay/iframe
+  window.addEventListener('message',function(e){
+    if(!e.data||!e.data.catclassEsc)return;
+    // Overlay pattern (colorpicker, convert, etc.)
+    var ov=document.getElementById('overlay')||document.getElementById('iframe-overlay');
+    var hif=document.getElementById('hidden-iframe');
+    if(ov&&ov.style.display!=='none'){
+      ov.style.display='none';
+      if(hif)hif.src='';
+      try{overlayOpen=false;escCounter=0;}catch(x){}
+      return;
+    }
+    // Wiki/full-screen iframe pattern (wiki.html, 404.html)
+    var wf=document.getElementById('wikiFrame');
+    if(wf&&typeof wikiUrl!=='undefined'&&typeof currentView!=='undefined'&&currentView!=='wiki'){
+      wf.src=wikiUrl;currentView='wiki';
+      try{escCounter=0;}catch(x){}
+    }
+  });
+})();
+</script>
+</body>
+</html>

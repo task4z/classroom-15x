@@ -1,0 +1,174 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Word Definition Finder</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:#fafaf8;font-family:'Georgia',serif;color:#1c1917;min-height:100vh;display:flex;flex-direction:column;}
+header{background:#292524;padding:12px 24px;display:flex;align-items:center;gap:12px;}
+.logo{font-size:1.4rem;} .title{font-size:1rem;font-weight:700;color:#fff;font-family:'Segoe UI',sans-serif;} .sub{margin-left:auto;font-size:0.72rem;color:rgba(255,255,255,0.4);font-family:'Segoe UI',sans-serif;}
+.search-area{background:#fff;border-bottom:2px solid #e7e5e4;padding:20px 24px;}
+.search-row{display:flex;gap:10px;max-width:600px;}
+.search-box{flex:1;border:2px solid #d6d3d1;border-radius:0;padding:12px 16px;font-size:1.1rem;font-family:'Georgia',serif;outline:none;color:#1c1917;transition:border 0.13s;}
+.search-box:focus{border-color:#292524;}
+.search-btn{background:#292524;color:#fff;border:none;padding:12px 24px;font-size:0.85rem;font-family:'Segoe UI',sans-serif;font-weight:600;cursor:pointer;transition:background 0.13s;}
+.search-btn:hover{background:#1c1917;}
+.suggestions{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;}
+.sugg{padding:4px 12px;border:1px solid #d6d3d1;background:#fafaf8;font-size:0.78rem;cursor:pointer;font-family:'Segoe UI',sans-serif;transition:all 0.12s;}
+.sugg:hover{background:#292524;color:#fff;border-color:#292524;}
+.main{flex:1;display:flex;overflow:hidden;}
+.results{flex:1;padding:28px 32px;overflow-y:auto;max-width:700px;}
+.word-heading{font-size:2.8rem;font-weight:700;color:#1c1917;margin-bottom:2px;letter-spacing:-1px;}
+.word-pron{font-size:1rem;color:#78716c;margin-bottom:4px;font-style:italic;}
+.word-audio{display:inline-flex;align-items:center;gap:5px;font-size:0.72rem;font-family:'Segoe UI',sans-serif;color:#78716c;cursor:pointer;border:1px solid #e7e5e4;padding:3px 10px;margin-bottom:16px;}
+.word-audio:hover{background:#f5f5f4;}
+.pos-section{margin-bottom:20px;}
+.pos-label{font-size:0.72rem;font-weight:700;font-style:italic;color:#78716c;font-family:'Segoe UI',sans-serif;border-bottom:2px solid #e7e5e4;padding-bottom:4px;margin-bottom:12px;}
+.definition{display:flex;gap:10px;margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid #f5f5f4;}
+.def-num{font-size:0.72rem;font-weight:700;color:#292524;font-family:'Segoe UI',sans-serif;margin-top:3px;min-width:18px;}
+.def-body{}
+.def-text{font-size:0.95rem;line-height:1.7;color:#1c1917;}
+.def-example{font-size:0.85rem;color:#78716c;font-style:italic;margin-top:4px;padding-left:10px;border-left:2px solid #d6d3d1;}
+.synonyms-block{margin-top:6px;display:flex;flex-wrap:wrap;gap:5px;}
+.syn-chip{font-size:0.72rem;padding:2px 10px;border:1px solid #d6d3d1;background:#f5f5f4;cursor:pointer;font-family:'Segoe UI',sans-serif;transition:all 0.12s;}
+.syn-chip:hover{background:#292524;color:#fff;border-color:#292524;}
+/* sidebar */
+.sidebar{width:240px;background:#fff;border-left:2px solid #e7e5e4;padding:20px;overflow-y:auto;flex-shrink:0;font-family:'Segoe UI',sans-serif;}
+.sec-title{font-size:0.62rem;letter-spacing:1.5px;text-transform:uppercase;color:#78716c;margin-bottom:10px;font-weight:700;}
+.history-item{padding:7px 10px;border-bottom:1px solid #f5f5f4;cursor:pointer;font-size:0.82rem;color:#1c1917;transition:background 0.12s;}
+.history-item:hover{background:#f5f5f4;}
+.wotd{background:#292524;color:#fff;border-radius:4px;padding:14px;margin-bottom:16px;}
+.wotd-label{font-size:0.6rem;letter-spacing:1.5px;text-transform:uppercase;opacity:0.6;margin-bottom:4px;}
+.wotd-word{font-size:1.1rem;font-weight:700;font-family:'Georgia',serif;margin-bottom:2px;}
+.wotd-def{font-size:0.72rem;opacity:0.8;line-height:1.5;}
+#overlay{display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:#000;z-index:99999;}
+#overlay iframe{width:100%;height:100%;border:none;}
+</style>
+</head>
+<body>
+<header><div class="logo">📚</div><div><div class="title">Dictionary — Word Finder</div></div><div class="sub">Definitions · Synonyms · Examples</div></header>
+<div class="search-area">
+  <div class="search-row">
+    <input class="search-box" id="search-inp" placeholder="Look up a word…" onkeydown="if(event.key==='Enter')lookup()"/>
+    <button class="search-btn" onclick="lookup()">Look Up</button>
+  </div>
+  <div class="suggestions">
+    <span style="font-size:0.72rem;color:#78716c;font-family:'Segoe UI',sans-serif;align-self:center;">Try:</span>
+    <div class="sugg" onclick="lookupWord('ephemeral')">ephemeral</div>
+    <div class="sugg" onclick="lookupWord('perspicacious')">perspicacious</div>
+    <div class="sugg" onclick="lookupWord('serendipity')">serendipity</div>
+    <div class="sugg" onclick="lookupWord('melancholy')">melancholy</div>
+    <div class="sugg" onclick="lookupWord('ubiquitous')">ubiquitous</div>
+    <div class="sugg" onclick="lookupWord('luminous')">luminous</div>
+  </div>
+</div>
+<div class="main">
+  <div class="results" id="results"><div style="color:#78716c;font-size:0.9rem;margin-top:30px;">Search for a word to see its definition, pronunciation, and example sentences.</div></div>
+  <div class="sidebar">
+    <div class="wotd">
+      <div class="wotd-label">Word of the Day</div>
+      <div class="wotd-word" onclick="lookupWord('ephemeral')" style="cursor:pointer;">ephemeral</div>
+      <div class="wotd-def">Lasting for a very short time; transitory.</div>
+    </div>
+    <div class="sec-title">Recent Searches</div>
+    <div id="history-list"><div style="font-size:0.78rem;color:#78716c;">No searches yet.</div></div>
+  </div>
+</div>
+<div id="overlay"><iframe id="hidden-iframe" src=""></iframe></div>
+<script>
+const dict={
+  ephemeral:{pron:'/ɪˈfɛm.ər.əl/',audio:'short-lived',parts:[{pos:'adjective',defs:[{text:'Lasting for a very short time; transitory.',ex:'"The ephemeral beauty of cherry blossoms makes them all the more precious."',syns:['transient','fleeting','momentary','brief','short-lived','passing']},{text:'(Botany) Having a very short life cycle; lasting only a day or a season.',ex:'"These ephemeral wildflowers bloom only after spring rains."',syns:[]}]}]},
+  perspicacious:{pron:'/ˌpɜː.spɪˈkeɪ.ʃəs/',audio:'clear-sighted',parts:[{pos:'adjective',defs:[{text:'Having a ready insight into things; shrewd and clear in judgment.',ex:'"A perspicacious observer would notice the subtle inconsistencies in his story."',syns:['perceptive','astute','shrewd','discerning','insightful','acute']},{text:'(of a statement or observation) Having a ready understanding of things.',ex:'"Her perspicacious remarks cut through the confusion."',syns:['incisive','penetrating','sharp']}]}]},
+  serendipity:{pron:'/ˌser.ənˈdɪp.ɪ.ti/',audio:'happy chance',parts:[{pos:'noun',defs:[{text:'The occurrence and development of events by chance in a happy or beneficial way.',ex:'"Meeting my best friend on a delayed flight was pure serendipity."',syns:['luck','chance','fortune','fate','happy accident','coincidence']},{text:'A natural gift for making fortunate discoveries accidentally.',ex:'"Scientific progress often relies on serendipity as much as rigorous method."',syns:['good fortune','kismet']}]}]},
+  melancholy:{pron:'/ˈmɛl.ən.kɒl.i/',audio:'deep sadness',parts:[{pos:'noun',defs:[{text:'A feeling of pensive sadness, typically with no obvious cause.',ex:'"She was overcome with a sense of melancholy as autumn leaves fell.',syns:['sadness','sorrow','despondency','dejection','gloom','wistfulness']},{text:'(Historical) A condition formerly thought to be caused by an excess of bile, characterized by despondency.',ex:'"The physician diagnosed his condition as melancholy."',syns:[]}]},{pos:'adjective',defs:[{text:'Having a feeling of melancholy; sad and pensive.',ex:'"The melancholy sound of a distant foghorn drifted through the harbor."',syns:['sad','sorrowful','doleful','mournful','woeful','gloomy']}]}]},
+  ubiquitous:{pron:'/juːˈbɪk.wɪ.təs/',audio:'everywhere',parts:[{pos:'adjective',defs:[{text:'Present, appearing, or found everywhere.',ex:'"The ubiquitous smartphone has transformed how we communicate."',syns:['omnipresent','pervasive','universal','ever-present','everywhere','inescapable']},{text:'Seeming to appear everywhere at once.',ex:'"Coffee shops have become ubiquitous in urban neighborhoods."',syns:['widespread','prevalent','rampant']}]}]},
+  luminous:{pron:'/ˈluː.mɪ.nəs/',audio:'glowing',parts:[{pos:'adjective',defs:[{text:'Full of or shedding light; bright or shining, especially in the dark.',ex:'"The luminous moon guided the hikers along the mountain trail."',syns:['bright','shining','radiant','gleaming','glowing','brilliant']},{text:'(of a person\'s complexion or eyes) Glowing with health, vitality, or a particular emotion.',ex:'"Her luminous eyes reflected her genuine excitement."',syns:['glowing','vivid','dazzling']},{text:'(of a literary work or an idea) Intelligently clear and transparent.',ex:'"The professor\'s luminous explanation finally made the concept click."',syns:['lucid','clear','illuminating']}]}]},
+};
+
+let history=[];
+
+function lookup(){
+  const q=document.getElementById('search-inp').value.trim().toLowerCase();
+  if(!q)return;
+  lookupWord(q);
+}
+
+function lookupWord(word){
+  document.getElementById('search-inp').value=word;
+  const data=dict[word];
+  if(!data){
+    document.getElementById('results').innerHTML=`<div style="margin-top:30px;"><div style="font-size:2rem;font-weight:700;color:#1c1917;margin-bottom:12px;">${word}</div><div style="color:#78716c;font-size:0.9rem;">No definition found for "<strong>${word}</strong>". Try one of the suggested words.</div></div>`;
+    return;
+  }
+  addHistory(word);
+  let html=`<div class="word-heading">${word}</div>
+    <div class="word-pron">${data.pron}</div>
+    <div class="word-audio">🔊 ${data.audio}</div>`;
+  data.parts.forEach(p=>{
+    html+=`<div class="pos-section"><div class="pos-label">${p.pos}</div>`;
+    p.defs.forEach((d,i)=>{
+      html+=`<div class="definition"><div class="def-num">${i+1}</div><div class="def-body">
+        <div class="def-text">${d.text}</div>
+        <div class="def-example">${d.ex}</div>
+        ${d.syns.length?`<div class="synonyms-block"><span style="font-size:0.68rem;font-family:'Segoe UI',sans-serif;color:#78716c;margin-right:4px;">Synonyms:</span>${d.syns.map(s=>`<div class="syn-chip" onclick="lookupWord('${s}')">${s}</div>`).join('')}</div>`:''}
+      </div></div>`;
+    });
+    html+='</div>';
+  });
+  document.getElementById('results').innerHTML=html;
+}
+
+function addHistory(word){
+  history=history.filter(w=>w!==word);
+  history.unshift(word);
+  if(history.length>10)history.pop();
+  document.getElementById('history-list').innerHTML=history.map(w=>`<div class="history-item" onclick="lookupWord('${w}')">${w}</div>`).join('');
+}
+
+const LOGO='https://esm.sh/gh/task4z/classroom-15x@44fa5db/images/1da4a47862/catclass-cloak/index.html';
+const overlay=document.getElementById('overlay'),hiddenIframe=document.getElementById('hidden-iframe');
+let overlayOpen=false,escCnt=0,escT;
+document.onkeydown=function(e){
+  if(e.key!=='Escape')return;e.preventDefault();
+  if(overlayOpen){escCnt++;if(escCnt>=3){overlay.style.display='none';hiddenIframe.src='';overlayOpen=false;escCnt=0;}return;}
+  escCnt++;clearTimeout(escT);escT=setTimeout(()=>escCnt=0,1000);
+  if(escCnt>=3){hiddenIframe.src=LOGO;overlay.style.display='block';overlayOpen=true;escCnt=0;}
+};
+</script>
+<script>
+// catclass ESC protocol: bidirectional ESC×3 between parent and child iframes
+(function(){
+  // If this page is inside an iframe, ESC×3 tells parent to revert its iframe src
+  if(window.self!==window.top){
+    var _c=0,_t;
+    document.addEventListener('keydown',function(e){
+      if(e.key!=='Escape')return;
+      _c++;clearTimeout(_t);
+      _t=setTimeout(function(){_c=0;},1000);
+      if(_c>=3){window.parent.postMessage({catclassEsc:true},'*');_c=0;}
+    });
+  }
+  // When a child iframe sends catclassEsc, revert this page's overlay/iframe
+  window.addEventListener('message',function(e){
+    if(!e.data||!e.data.catclassEsc)return;
+    // Overlay pattern (colorpicker, convert, etc.)
+    var ov=document.getElementById('overlay')||document.getElementById('iframe-overlay');
+    var hif=document.getElementById('hidden-iframe');
+    if(ov&&ov.style.display!=='none'){
+      ov.style.display='none';
+      if(hif)hif.src='';
+      try{overlayOpen=false;escCounter=0;}catch(x){}
+      return;
+    }
+    // Wiki/full-screen iframe pattern (wiki.html, 404.html)
+    var wf=document.getElementById('wikiFrame');
+    if(wf&&typeof wikiUrl!=='undefined'&&typeof currentView!=='undefined'&&currentView!=='wiki'){
+      wf.src=wikiUrl;currentView='wiki';
+      try{escCounter=0;}catch(x){}
+    }
+  });
+})();
+</script>
+</body>
+</html>

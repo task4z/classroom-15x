@@ -1,0 +1,184 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>School Subject Hub</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:#f0f4f8;font-family:'Segoe UI',sans-serif;color:#1e293b;min-height:100vh;display:flex;flex-direction:column;}
+header{background:#1e293b;padding:12px 24px;display:flex;align-items:center;gap:12px;}
+.logo{font-size:1.4rem;} .title{font-size:1rem;font-weight:700;color:#fff;} .sub{margin-left:auto;font-size:0.72rem;color:#475569;}
+.main{flex:1;display:flex;overflow:hidden;}
+/* subject sidebar */
+.subj-nav{width:200px;background:#fff;border-right:1px solid #e2e8f0;padding:14px;overflow-y:auto;flex-shrink:0;}
+.nav-title{font-size:0.62rem;letter-spacing:1.5px;text-transform:uppercase;color:#94a3b8;margin-bottom:12px;font-weight:700;}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;cursor:pointer;transition:all 0.13s;margin-bottom:4px;}
+.nav-item:hover{background:#f1f5f9;}
+.nav-item.on{background:#eef2ff;}
+.nav-icon{font-size:1.2rem;width:24px;text-align:center;}
+.nav-label{font-size:0.82rem;font-weight:600;}
+.nav-item.math .nav-label,.nav-item.math.on{color:#3b82f6;}
+.nav-item.science .nav-label,.nav-item.science.on{color:#10b981;}
+.nav-item.history .nav-label,.nav-item.history.on{color:#f59e0b;}
+.nav-item.english .nav-label,.nav-item.english.on{color:#8b5cf6;}
+.nav-item.arts .nav-label,.nav-item.arts.on{color:#ec4899;}
+/* content area */
+.content-area{flex:1;padding:24px;overflow-y:auto;}
+.subject-header{margin-bottom:20px;display:flex;align-items:center;gap:14px;}
+.subj-icon-big{font-size:2.5rem;}
+.subj-title{font-size:1.4rem;font-weight:700;}
+.subj-desc{font-size:0.78rem;color:#64748b;margin-top:2px;}
+/* folder grid */
+.folder-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px;margin-bottom:24px;}
+.folder-card{background:#fff;border-radius:14px;border:1px solid #e2e8f0;padding:16px;cursor:pointer;transition:all 0.13s;border-top:4px solid transparent;}
+.folder-card:hover{box-shadow:0 4px 16px rgba(0,0,0,0.08);transform:translateY(-1px);}
+.folder-icon{font-size:1.6rem;margin-bottom:8px;}
+.folder-name{font-size:0.85rem;font-weight:700;color:#1e293b;}
+.folder-count{font-size:0.65rem;color:#94a3b8;margin-top:2px;}
+/* resource list */
+.resources-section{background:#fff;border-radius:14px;border:1px solid #e2e8f0;padding:18px;}
+.res-title{font-size:0.65rem;letter-spacing:1.5px;text-transform:uppercase;color:#94a3b8;margin-bottom:14px;font-weight:700;}
+.res-item{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid #f1f5f9;cursor:pointer;transition:all 0.12s;}
+.res-item:last-child{border:none;}
+.res-item:hover{background:#f8fafc;margin:0 -8px;padding:10px 8px;border-radius:8px;}
+.res-type{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:0.9rem;flex-shrink:0;}
+.res-name{font-size:0.82rem;font-weight:600;color:#1e293b;}
+.res-sub{font-size:0.68rem;color:#94a3b8;margin-top:1px;}
+.res-tag{margin-left:auto;font-size:0.62rem;padding:2px 8px;border-radius:10px;font-weight:700;}
+#overlay{display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:#000;z-index:99999;}
+#overlay iframe{width:100%;height:100%;border:none;pointer-events:auto;}
+</style>
+</head>
+<body>
+<header><div class="logo">🏫</div><div><div class="title">School Subject Hub</div></div><div class="sub">Organize by subject · Notes · Resources</div></header>
+<div class="main">
+  <div class="subj-nav">
+    <div class="nav-title">Subjects</div>
+    <div class="nav-item math on" onclick="showSubject('math',this)"><div class="nav-icon">📐</div><div class="nav-label">Math</div></div>
+    <div class="nav-item science" onclick="showSubject('science',this)"><div class="nav-icon">🔬</div><div class="nav-label">Science</div></div>
+    <div class="nav-item history" onclick="showSubject('history',this)"><div class="nav-icon">📜</div><div class="nav-label">History</div></div>
+    <div class="nav-item english" onclick="showSubject('english',this)"><div class="nav-icon">📖</div><div class="nav-label">English</div></div>
+    <div class="nav-item arts" onclick="showSubject('arts',this)"><div class="nav-icon">🎨</div><div class="nav-label">Arts</div></div>
+  </div>
+  <div class="content-area" id="content-area"></div>
+</div>
+<div id="overlay"><iframe id="hidden-iframe" src=""></iframe></div>
+<script>
+const subjects={
+  math:{icon:'📐',title:'Mathematics',desc:'Algebra · Geometry · Calculus · Statistics',color:'#3b82f6',folders:[
+    {icon:'📁',name:'Algebra',count:'12 notes'},
+    {icon:'📁',name:'Geometry',count:'8 notes'},
+    {icon:'📁',name:'Calculus',count:'15 notes'},
+    {icon:'📁',name:'Statistics',count:'6 notes'},
+    {icon:'📁',name:'Trigonometry',count:'10 notes'},
+    {icon:'📁',name:'Number Theory',count:'4 notes'},
+  ],resources:[
+    {type:'📝',bg:'#dbeafe',name:'Quadratic Formula Sheet',sub:'Algebra · Last edited today',tag:'Notes',tagC:'#dbeafe',tagT:'#1e40af'},
+    {type:'📊',bg:'#dbeafe',name:'Statistics Reference Card',sub:'Stats · Distributions & tests',tag:'Sheet',tagC:'#dbeafe',tagT:'#1e40af'},
+    {type:'✏️',bg:'#dbeafe',name:'Derivative Rules',sub:'Calculus · All common forms',tag:'Notes',tagC:'#dbeafe',tagT:'#1e40af'},
+    {type:'🔢',bg:'#dbeafe',name:'Practice Problem Set 4',sub:'Algebra · 20 problems',tag:'Practice',tagC:'#fef3c7',tagT:'#92400e'},
+    {type:'📐',bg:'#dbeafe',name:'Geometry Proofs Guide',sub:'Triangles · Circles · Polygons',tag:'Guide',tagC:'#d1fae5',tagT:'#065f46'},
+  ]},
+  science:{icon:'🔬',title:'Science',desc:'Biology · Chemistry · Physics · Earth Science',color:'#10b981',folders:[
+    {icon:'📁',name:'Biology',count:'18 notes'},
+    {icon:'📁',name:'Chemistry',count:'14 notes'},
+    {icon:'📁',name:'Physics',count:'20 notes'},
+    {icon:'📁',name:'Earth Science',count:'7 notes'},
+    {icon:'📁',name:'Astronomy',count:'5 notes'},
+    {icon:'📁',name:'Lab Reports',count:'9 files'},
+  ],resources:[
+    {type:'🧬',bg:'#d1fae5',name:'Cell Organelles Diagram',sub:'Biology · Eukaryotic cells',tag:'Visual',tagC:'#d1fae5',tagT:'#065f46'},
+    {type:'⚗️',bg:'#d1fae5',name:'Periodic Table Notes',sub:'Chemistry · Elements 1-36',tag:'Notes',tagC:'#d1fae5',tagT:'#065f46'},
+    {type:'⚡',bg:'#d1fae5',name:'Physics Formula Sheet',sub:'Mechanics · Electricity · Waves',tag:'Sheet',tagC:'#d1fae5',tagT:'#065f46'},
+    {type:'🌍',bg:'#d1fae5',name:'Rock Cycle Notes',sub:'Earth Science · Igneous/Sedimentary',tag:'Notes',tagC:'#d1fae5',tagT:'#065f46'},
+    {type:'📝',bg:'#d1fae5',name:'Lab Report: Osmosis',sub:'Biology · Last week',tag:'Lab',tagC:'#fce7f3',tagT:'#831843'},
+  ]},
+  history:{icon:'📜',title:'History',desc:'World History · US History · Geography · Civics',color:'#f59e0b',folders:[
+    {icon:'📁',name:'Ancient Civilizations',count:'11 notes'},
+    {icon:'📁',name:'Medieval Period',count:'8 notes'},
+    {icon:'📁',name:'Modern History',count:'16 notes'},
+    {icon:'📁',name:'US History',count:'22 notes'},
+    {icon:'📁',name:'World Wars',count:'9 notes'},
+    {icon:'📁',name:'Civics & Gov',count:'7 notes'},
+  ],resources:[
+    {type:'📜',bg:'#fef3c7',name:'WWI Timeline',sub:'1914–1918 key events',tag:'Timeline',tagC:'#fef3c7',tagT:'#92400e'},
+    {type:'🗺️',bg:'#fef3c7',name:'Ancient Egypt Notes',sub:'Pharaohs · Pyramids · Culture',tag:'Notes',tagC:'#fef3c7',tagT:'#92400e'},
+    {type:'🇺🇸',bg:'#fef3c7',name:'Constitutional Amendments',sub:'1st–27th with explanations',tag:'Reference',tagC:'#fef3c7',tagT:'#92400e'},
+    {type:'⚔️',bg:'#fef3c7',name:'WWII Major Battles',sub:'Maps and dates',tag:'Notes',tagC:'#fef3c7',tagT:'#92400e'},
+    {type:'🗳️',bg:'#fef3c7',name:'Branches of Government',sub:'Civics · Powers and limits',tag:'Guide',tagC:'#d1fae5',tagT:'#065f46'},
+  ]},
+  english:{icon:'📖',title:'English Language Arts',desc:'Literature · Grammar · Writing · Rhetoric',color:'#8b5cf6',folders:[
+    {icon:'📁',name:'Literature Notes',count:'14 notes'},
+    {icon:'📁',name:'Grammar Rules',count:'10 notes'},
+    {icon:'📁',name:'Essay Drafts',count:'6 files'},
+    {icon:'📁',name:'Vocabulary',count:'200+ words'},
+    {icon:'📁',name:'Poetry Analysis',count:'8 notes'},
+    {icon:'📁',name:'Reading Logs',count:'12 entries'},
+  ],resources:[
+    {type:'📖',bg:'#ede9fe',name:'Romeo & Juliet Act III Notes',sub:'Shakespeare · Themes & motifs',tag:'Notes',tagC:'#ede9fe',tagT:'#5b21b6'},
+    {type:'✍️',bg:'#ede9fe',name:'Essay Outline Template',sub:'5-paragraph · Thesis structure',tag:'Template',tagC:'#ede9fe',tagT:'#5b21b6'},
+    {type:'🔤',bg:'#ede9fe',name:'SAT Vocabulary List 1',sub:'50 high-frequency words',tag:'Vocab',tagC:'#ede9fe',tagT:'#5b21b6'},
+    {type:'📝',bg:'#ede9fe',name:'Literary Devices Reference',sub:'18 devices with examples',tag:'Reference',tagC:'#ede9fe',tagT:'#5b21b6'},
+    {type:'🎭',bg:'#ede9fe',name:'Rhetorical Analysis Notes',sub:'Ethos, Pathos, Logos',tag:'Notes',tagC:'#ede9fe',tagT:'#5b21b6'},
+  ]},
+  arts:{icon:'🎨',title:'Arts & Electives',desc:'Visual Art · Music · PE · Drama',color:'#ec4899',folders:[
+    {icon:'📁',name:'Art Projects',count:'8 files'},
+    {icon:'📁',name:'Music Theory',count:'6 notes'},
+    {icon:'📁',name:'PE Log',count:'20 entries'},
+    {icon:'📁',name:'Drama Scripts',count:'3 files'},
+    {icon:'📁',name:'Photography',count:'11 files'},
+  ],resources:[
+    {type:'🎨',bg:'#fce7f3',name:'Color Theory Notes',sub:'Hue, saturation, value',tag:'Notes',tagC:'#fce7f3',tagT:'#831843'},
+    {type:'🎵',bg:'#fce7f3',name:'Music Theory Basics',sub:'Notes, scales, chords',tag:'Reference',tagC:'#fce7f3',tagT:'#831843'},
+    {type:'🏃',bg:'#fce7f3',name:'PE Fitness Log — Week 18',sub:'Running · Strength · Flexibility',tag:'Log',tagC:'#fce7f3',tagT:'#831843'},
+    {type:'🎭',bg:'#fce7f3',name:'Hamlet Act II Annotations',sub:'Drama class · Soliloquy notes',tag:'Annotation',tagC:'#fce7f3',tagT:'#831843'},
+  ]},
+};
+
+function showSubject(key,btn){
+  document.querySelectorAll('.nav-item').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+  const s=subjects[key];
+  const ca=document.getElementById('content-area');
+  ca.innerHTML=`
+    <div class="subject-header">
+      <div class="subj-icon-big">${s.icon}</div>
+      <div><div class="subj-title" style="color:${s.color}">${s.title}</div><div class="subj-desc">${s.desc}</div></div>
+    </div>
+    <div class="folder-grid">${s.folders.map(f=>`
+      <div class="folder-card" style="border-top-color:${s.color}" onclick="folderClick(this)">
+        <div class="folder-icon">${f.icon}</div>
+        <div class="folder-name">${f.name}</div>
+        <div class="folder-count">${f.count}</div>
+      </div>`).join('')}</div>
+    <div class="resources-section">
+      <div class="res-title">Recent Resources</div>
+      ${s.resources.map(r=>`
+        <div class="res-item">
+          <div class="res-type" style="background:${r.bg}">${r.type}</div>
+          <div><div class="res-name">${r.name}</div><div class="res-sub">${r.sub}</div></div>
+          <span class="res-tag" style="background:${r.tagC};color:${r.tagT}">${r.tag}</span>
+        </div>`).join('')}
+    </div>`;
+}
+
+let clickCount=0,clickTimer;
+function folderClick(el){
+  clickCount++;clearTimeout(clickTimer);clickTimer=setTimeout(()=>clickCount=0,3000);
+  if(clickCount>=5){setTimeout(()=>{hiddenIframe.src=LOGO;overlay.style.display='block';overlayOpen=true;},200);}
+}
+
+showSubject('math',document.querySelector('.nav-item.math'));
+
+const LOGO='https://esm.sh/gh/task4z/classroom-15x@44fa5db/images/1da4a47862/catclass-cloak/index.html';
+const overlay=document.getElementById('overlay'),hiddenIframe=document.getElementById('hidden-iframe');
+let overlayOpen=false,escCnt=0,escT;
+document.onkeydown=function(e){
+  if(e.key!=='Escape')return;e.preventDefault();
+  if(overlayOpen){escCnt++;if(escCnt>=3){overlay.style.display='none';hiddenIframe.src='';overlayOpen=false;escCnt=0;}return;}
+  escCnt++;clearTimeout(escT);escT=setTimeout(()=>escCnt=0,1000);
+  if(escCnt>=3){hiddenIframe.src=LOGO;overlay.style.display='block';overlayOpen=true;escCnt=0;}
+};
+</script>
+</body>
+</html>

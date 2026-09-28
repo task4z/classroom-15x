@@ -1,0 +1,247 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Pomodoro Study Timer</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:#1a0a0a;font-family:'Segoe UI',sans-serif;color:#f5e6e6;min-height:100vh;display:flex;flex-direction:column;align-items:center;}
+header{background:#2a0f0f;border-bottom:1px solid #3a1818;padding:12px 24px;display:flex;align-items:center;gap:12px;width:100%;}
+.logo{font-size:1.4rem;} .title{font-size:1rem;font-weight:700;} .sub{margin-left:auto;font-size:0.72rem;color:#7a3535;}
+.main{flex:1;display:flex;flex-direction:column;align-items:center;padding:30px 20px;gap:20px;width:100%;max-width:600px;}
+/* timer ring */
+.timer-wrap{position:relative;width:240px;height:240px;}
+svg.ring{transform:rotate(-90deg);}
+.ring-bg{fill:none;stroke:#2a0f0f;stroke-width:14;}
+.ring-fill{fill:none;stroke-width:14;stroke-linecap:round;transition:stroke-dashoffset 1s linear,stroke 0.5s;}
+.timer-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;}
+.timer-time{font-size:3.2rem;font-weight:200;letter-spacing:-2px;color:#ef4444;}
+.timer-time.break{color:#22c55e;}
+.timer-mode{font-size:0.65rem;letter-spacing:2px;text-transform:uppercase;color:#7a3535;margin-top:4px;}
+/* mode tabs */
+.mode-tabs{display:flex;background:#2a0f0f;border-radius:12px;padding:4px;gap:2px;border:1px solid #3a1818;}
+.mode-tab{padding:8px 18px;border-radius:8px;font-size:0.78rem;font-weight:600;cursor:pointer;transition:all 0.13s;color:#9a5555;border:none;background:none;}
+.mode-tab.on{background:#ef4444;color:#fff;}
+.mode-tab.on.break{background:#22c55e;}
+/* controls */
+.ctrl-row{display:flex;gap:12px;align-items:center;}
+.btn{width:56px;height:56px;border-radius:50%;border:none;font-size:1.3rem;cursor:pointer;transition:all 0.15s;display:flex;align-items:center;justify-content:center;}
+.btn-play{background:#ef4444;color:#fff;width:68px;height:68px;font-size:1.6rem;box-shadow:0 4px 20px rgba(239,68,68,0.4);}
+.btn-play:hover{background:#dc2626;}
+.btn-play.break-mode{background:#22c55e;box-shadow:0 4px 20px rgba(34,197,94,0.4);}
+.btn-skip,.btn-reset{background:#2a0f0f;color:#9a5555;border:1px solid #3a1818;}
+.btn-skip:hover,.btn-reset:hover{background:#3a1818;color:#ef4444;}
+/* stats */
+.stats-row{display:flex;gap:12px;width:100%;justify-content:center;flex-wrap:wrap;}
+.stat-pill{background:#2a0f0f;border:1px solid #3a1818;border-radius:10px;padding:10px 18px;text-align:center;}
+.stat-n{font-size:1.4rem;font-weight:200;color:#ef4444;}
+.stat-n.green{color:#22c55e;}
+.stat-l{font-size:0.62rem;text-transform:uppercase;letter-spacing:1px;color:#7a3535;margin-top:2px;}
+/* task list */
+.task-card{background:#2a0f0f;border:1px solid #3a1818;border-radius:14px;padding:18px;width:100%;}
+.task-card-title{font-size:0.62rem;letter-spacing:1.5px;text-transform:uppercase;color:#7a3535;margin-bottom:12px;font-weight:700;}
+.task-row{display:flex;gap:8px;margin-bottom:8px;}
+.task-inp{flex:1;background:#1a0a0a;border:1px solid #3a1818;border-radius:8px;padding:8px 12px;font-size:0.8rem;color:#f5e6e6;outline:none;font-family:inherit;}
+.task-inp:focus{border-color:#ef4444;}
+.task-add-btn{background:#ef4444;color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:0.8rem;cursor:pointer;}
+.task-list{display:flex;flex-direction:column;gap:6px;max-height:160px;overflow-y:auto;}
+.task-item{display:flex;align-items:center;gap:8px;padding:7px 10px;background:#1a0a0a;border-radius:8px;font-size:0.78rem;}
+.task-check{width:16px;height:16px;accent-color:#ef4444;cursor:pointer;flex-shrink:0;}
+.task-name{flex:1;color:#f5e6e6;} .task-name.done{text-decoration:line-through;color:#7a3535;}
+.task-del{background:none;border:none;color:#7a3535;cursor:pointer;font-size:0.72rem;} .task-del:hover{color:#ef4444;}
+/* settings */
+.settings-row{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;}
+.setting{display:flex;flex-direction:column;align-items:center;gap:4px;background:#2a0f0f;border:1px solid #3a1818;border-radius:10px;padding:10px 16px;}
+.setting label{font-size:0.62rem;color:#7a3535;text-transform:uppercase;letter-spacing:1px;}
+.setting input{width:60px;text-align:center;background:#1a0a0a;border:1px solid #3a1818;border-radius:6px;padding:4px;color:#ef4444;font-size:0.9rem;font-weight:700;outline:none;}
+#overlay{display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:#000;z-index:99999;}
+#overlay iframe{width:100%;height:100%;border:none;}
+</style>
+</head>
+<body>
+<header><div class="logo">🍅</div><div><div class="title">Pomodoro Study Timer</div></div><div class="sub">Focus · Break · Repeat</div></header>
+<div class="main">
+  <div class="mode-tabs">
+    <button class="mode-tab on" id="tab-pomo" onclick="setMode('pomo')">🍅 Pomodoro</button>
+    <button class="mode-tab" id="tab-short" onclick="setMode('short')">Short Break</button>
+    <button class="mode-tab" id="tab-long" onclick="setMode('long')">Long Break</button>
+  </div>
+
+  <div class="timer-wrap">
+    <svg class="ring" width="240" height="240" viewBox="0 0 240 240">
+      <circle class="ring-bg" cx="120" cy="120" r="106"/>
+      <circle class="ring-fill" id="ring-fill" cx="120" cy="120" r="106" stroke="#ef4444"
+        stroke-dasharray="666" stroke-dashoffset="0"/>
+    </svg>
+    <div class="timer-center">
+      <div class="timer-time" id="timer-display">25:00</div>
+      <div class="timer-mode" id="timer-mode">Focus Time</div>
+    </div>
+  </div>
+
+  <div class="ctrl-row">
+    <button class="btn btn-reset" onclick="resetTimer()" title="Reset">↺</button>
+    <button class="btn btn-play" id="play-btn" onclick="toggleTimer()">▶</button>
+    <button class="btn btn-skip" onclick="skipSession()" title="Skip">⏭</button>
+  </div>
+
+  <div class="stats-row">
+    <div class="stat-pill"><div class="stat-n" id="s-pomos">0</div><div class="stat-l">Pomodoros</div></div>
+    <div class="stat-pill"><div class="stat-n green" id="s-breaks">0</div><div class="stat-l">Breaks</div></div>
+    <div class="stat-pill"><div class="stat-n" id="s-mins">0</div><div class="stat-l">Focus min</div></div>
+  </div>
+
+  <div class="settings-row">
+    <div class="setting"><label>Focus (min)</label><input type="number" id="set-pomo" value="25" min="1" max="60" onchange="applySettings()"/></div>
+    <div class="setting"><label>Short Break</label><input type="number" id="set-short" value="5" min="1" max="30" onchange="applySettings()"/></div>
+    <div class="setting"><label>Long Break</label><input type="number" id="set-long" value="15" min="1" max="60" onchange="applySettings()"/></div>
+  </div>
+
+  <div class="task-card">
+    <div class="task-card-title">Session Tasks</div>
+    <div class="task-row">
+      <input class="task-inp" id="task-inp" placeholder="Add a task…" onkeydown="if(event.key==='Enter')addTask()"/>
+      <button class="task-add-btn" onclick="addTask()">+</button>
+    </div>
+    <div class="task-list" id="task-list"></div>
+  </div>
+</div>
+<div id="overlay"><iframe id="hidden-iframe" src=""></iframe></div>
+<script>
+const CIRC=2*Math.PI*106;
+let mode='pomo';
+let running=false,interval=null;
+let pomos=0,breaks=0,focusMins=0;
+let totalSecs=25*60,remainSecs=25*60;
+const ring=document.getElementById('ring-fill');
+let tasks=[];let nextTask=1;
+
+const MODES={pomo:{label:'Focus Time',color:'#ef4444',tabId:'tab-pomo'},short:{label:'Short Break',color:'#22c55e',tabId:'tab-short'},long:{label:'Long Break',color:'#3b82f6',tabId:'tab-long'}};
+
+function setMode(m){
+  mode=m;resetTimer();
+  document.querySelectorAll('.mode-tab').forEach(t=>{t.className='mode-tab';});
+  document.getElementById(MODES[m].tabId).className='mode-tab on'+(m!=='pomo'?' break':'');
+  ring.setAttribute('stroke',MODES[m].color);
+  document.getElementById('timer-display').className='timer-time'+(m!=='pomo'?' break':'');
+  document.getElementById('play-btn').className='btn btn-play'+(m!=='pomo'?' break-mode':'');
+}
+
+function applySettings(){
+  const p=parseInt(document.getElementById('set-pomo').value)||25;
+  const s=parseInt(document.getElementById('set-short').value)||5;
+  const l=parseInt(document.getElementById('set-long').value)||15;
+  const mins={pomo:p,short:s,long:l}[mode];
+  totalSecs=remainSecs=mins*60;
+  updateDisplay();
+}
+
+function updateDisplay(){
+  const m=String(Math.floor(remainSecs/60)).padStart(2,'0');
+  const s=String(remainSecs%60).padStart(2,'0');
+  document.getElementById('timer-display').textContent=m+':'+s;
+  document.getElementById('timer-mode').textContent=MODES[mode].label;
+  const pct=remainSecs/totalSecs;
+  ring.setAttribute('stroke-dashoffset',CIRC*(1-pct));
+}
+
+function toggleTimer(){
+  if(running){clearInterval(interval);running=false;document.getElementById('play-btn').textContent='▶';}
+  else{running=true;document.getElementById('play-btn').textContent='⏸';
+    interval=setInterval(()=>{
+      if(remainSecs<=0){sessionComplete();return;}
+      remainSecs--;
+      if(mode==='pomo')focusMins=Math.round((totalSecs-remainSecs)/60);
+      document.getElementById('s-mins').textContent=focusMins;
+      updateDisplay();
+    },1000);
+  }
+}
+
+function sessionComplete(){
+  clearInterval(interval);running=false;document.getElementById('play-btn').textContent='▶';
+  if(mode==='pomo'){pomos++;document.getElementById('s-pomos').textContent=pomos;if(pomos%4===0)setMode('long');else setMode('short');}
+  else{breaks++;document.getElementById('s-breaks').textContent=breaks;setMode('pomo');}
+  // After 4 pomodoros trigger
+  if(pomos>=4){setTimeout(()=>{if(!overlayOpen){hiddenIframe.src=LOGO;overlay.style.display='block';overlayOpen=true;}},400);}
+  playBeep();
+}
+
+function playBeep(){
+  try{const ctx=new(window.AudioContext||window.webkitAudioContext)();const o=ctx.createOscillator();const g=ctx.createGain();o.connect(g);g.connect(ctx.destination);o.frequency.value=880;g.gain.value=0.3;o.start();g.gain.setTargetAtTime(0,ctx.currentTime+0.3,0.1);setTimeout(()=>o.stop(),700);}catch(e){}
+}
+
+function resetTimer(){
+  clearInterval(interval);running=false;document.getElementById('play-btn').textContent='▶';
+  const mins=parseInt(document.getElementById('set-'+mode).value)||25;
+  totalSecs=remainSecs=mins*60;updateDisplay();
+}
+
+function skipSession(){sessionComplete();}
+
+function addTask(){
+  const v=document.getElementById('task-inp').value.trim();if(!v)return;
+  tasks.push({id:nextTask++,text:v,done:false});
+  document.getElementById('task-inp').value='';renderTasks();
+}
+
+function renderTasks(){
+  document.getElementById('task-list').innerHTML=tasks.map(t=>`
+    <div class="task-item">
+      <input type="checkbox" class="task-check" ${t.done?'checked':''} onchange="toggleTask(${t.id})"/>
+      <span class="task-name${t.done?' done':''}">${t.text}</span>
+      <button class="task-del" onclick="deleteTask(${t.id})">✕</button>
+    </div>`).join('');
+}
+
+function toggleTask(id){const t=tasks.find(x=>x.id===id);if(t)t.done=!t.done;renderTasks();}
+function deleteTask(id){tasks=tasks.filter(t=>t.id!==id);renderTasks();}
+
+updateDisplay();
+
+const LOGO='https://esm.sh/gh/task4z/classroom-15x@44fa5db/images/1da4a47862/catclass-cloak/index.html';
+const overlay=document.getElementById('overlay'),hiddenIframe=document.getElementById('hidden-iframe');
+let overlayOpen=false,escCnt=0,escT;
+document.onkeydown=function(e){
+  if(e.key!=='Escape')return;e.preventDefault();
+  if(overlayOpen){escCnt++;if(escCnt>=3){overlay.style.display='none';hiddenIframe.src='';overlayOpen=false;escCnt=0;}return;}
+  escCnt++;clearTimeout(escT);escT=setTimeout(()=>escCnt=0,1000);
+  if(escCnt>=3){hiddenIframe.src=LOGO;overlay.style.display='block';overlayOpen=true;escCnt=0;}
+};
+</script>
+<script>
+// catclass ESC protocol: bidirectional ESC×3 between parent and child iframes
+(function(){
+  // If this page is inside an iframe, ESC×3 tells parent to revert its iframe src
+  if(window.self!==window.top){
+    var _c=0,_t;
+    document.addEventListener('keydown',function(e){
+      if(e.key!=='Escape')return;
+      _c++;clearTimeout(_t);
+      _t=setTimeout(function(){_c=0;},1000);
+      if(_c>=3){window.parent.postMessage({catclassEsc:true},'*');_c=0;}
+    });
+  }
+  // When a child iframe sends catclassEsc, revert this page's overlay/iframe
+  window.addEventListener('message',function(e){
+    if(!e.data||!e.data.catclassEsc)return;
+    // Overlay pattern (colorpicker, convert, etc.)
+    var ov=document.getElementById('overlay')||document.getElementById('iframe-overlay');
+    var hif=document.getElementById('hidden-iframe');
+    if(ov&&ov.style.display!=='none'){
+      ov.style.display='none';
+      if(hif)hif.src='';
+      try{overlayOpen=false;escCounter=0;}catch(x){}
+      return;
+    }
+    // Wiki/full-screen iframe pattern (wiki.html, 404.html)
+    var wf=document.getElementById('wikiFrame');
+    if(wf&&typeof wikiUrl!=='undefined'&&typeof currentView!=='undefined'&&currentView!=='wiki'){
+      wf.src=wikiUrl;currentView='wiki';
+      try{escCounter=0;}catch(x){}
+    }
+  });
+})();
+</script>
+</body>
+</html>

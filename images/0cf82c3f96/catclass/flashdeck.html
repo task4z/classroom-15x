@@ -1,0 +1,287 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Digital Flashcard Deck</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:#0e1117;font-family:'Segoe UI',sans-serif;color:#e2e8f0;min-height:100vh;display:flex;flex-direction:column;}
+header{background:#13161f;border-bottom:1px solid #1e2130;padding:12px 24px;display:flex;align-items:center;gap:12px;}
+.logo{font-size:1.4rem;} .title{font-size:1rem;font-weight:700;} .sub{margin-left:auto;font-size:0.72rem;color:#3a4060;}
+.tabs{background:#13161f;border-bottom:1px solid #1e2130;display:flex;gap:0;}
+.tab{padding:10px 22px;font-size:0.78rem;font-weight:600;cursor:pointer;border-bottom:2px solid transparent;color:#3a4060;transition:all 0.13s;}
+.tab.on{border-bottom-color:#6366f1;color:#a5b4fc;}
+.main{flex:1;display:flex;overflow:hidden;}
+/* deck sidebar */
+.deck-sidebar{width:220px;background:#13161f;border-right:1px solid #1e2130;padding:14px;overflow-y:auto;flex-shrink:0;}
+.deck-title{font-size:0.62rem;letter-spacing:1.5px;text-transform:uppercase;color:#3a4060;margin-bottom:10px;font-weight:700;}
+.deck-item{padding:10px 12px;border-radius:10px;border:1px solid #1e2130;margin-bottom:8px;cursor:pointer;transition:all 0.13s;}
+.deck-item:hover{border-color:#6366f1;background:#6366f111;}
+.deck-item.on{border-color:#6366f1;background:#6366f122;}
+.deck-name{font-size:0.82rem;font-weight:700;color:#a5b4fc;}
+.deck-meta{font-size:0.65rem;color:#3a4060;margin-top:2px;}
+.deck-progress{width:100%;height:3px;background:#1e2130;border-radius:2px;margin-top:6px;}
+.deck-prog-fill{height:100%;background:#6366f1;border-radius:2px;}
+/* study area */
+.study-area{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;gap:16px;}
+/* card */
+.progress-top{width:100%;max-width:500px;display:flex;justify-content:space-between;align-items:center;font-size:0.72rem;color:#3a4060;}
+.prog-bar{flex:1;height:4px;background:#1e2130;border-radius:2px;margin:0 12px;overflow:hidden;}
+.prog-fill{height:100%;background:linear-gradient(90deg,#6366f1,#a5b4fc);border-radius:2px;transition:width 0.3s;}
+.card-container{perspective:1000px;width:100%;max-width:500px;}
+.flip-card{width:100%;height:280px;border-radius:20px;position:relative;transform-style:preserve-3d;transition:transform 0.55s cubic-bezier(.4,0,.2,1);cursor:pointer;}
+.flip-card.flipped{transform:rotateY(180deg);}
+.card-side{position:absolute;inset:0;border-radius:20px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:28px;backface-visibility:hidden;}
+.card-front-side{background:linear-gradient(135deg,#1e2340,#252a45);;border:1px solid #2a3060;}
+.card-back-side{background:linear-gradient(135deg,#1a2540,#1e3050);border:1px solid #2a5070;transform:rotateY(180deg);}
+.card-label{position:absolute;top:14px;font-size:0.6rem;letter-spacing:1.5px;text-transform:uppercase;color:#3a4060;font-weight:700;}
+.card-text{font-size:1.15rem;text-align:center;line-height:1.6;color:#e2e8f0;font-weight:500;}
+.card-back-side .card-text{color:#a5b4fc;}
+.card-hint{position:absolute;bottom:14px;font-size:0.65rem;color:#3a4060;}
+.card-num{font-size:0.72rem;color:#6366f1;font-weight:700;}
+.controls-row{display:flex;gap:10px;align-items:center;}
+.ctrl-btn{padding:10px 20px;border-radius:10px;border:none;font-size:0.8rem;font-weight:600;cursor:pointer;transition:all 0.13s;}
+.btn-prev{background:#1e2130;color:#64748b;border:1px solid #2a3050;} .btn-prev:hover{background:#252a3a;}
+.btn-next{background:#6366f1;color:#fff;} .btn-next:hover{background:#4f46e5;}
+.btn-flip-big{background:#1e2130;color:#a5b4fc;border:1px solid #3a4080;} .btn-flip-big:hover{background:#252a3a;}
+/* keyboard hint */
+.key-hint{font-size:0.65rem;color:#3a4060;display:flex;gap:14px;}
+.key-badge{background:#1e2130;border:1px solid #2a3050;border-radius:4px;padding:2px 6px;font-family:monospace;}
+/* edit panel */
+.edit-area{flex:1;padding:24px;overflow-y:auto;display:flex;flex-direction:column;gap:14px;}
+.edit-top{display:flex;gap:10px;align-items:flex-end;}
+.ei{flex:1;background:#13161f;border:1.5px solid #1e2130;border-radius:9px;padding:9px 12px;font-size:0.82rem;color:#e2e8f0;outline:none;font-family:inherit;}
+.ei:focus{border-color:#6366f1;}
+.ea-btn{background:#6366f1;color:#fff;border:none;border-radius:9px;padding:10px 18px;font-size:0.8rem;font-weight:600;cursor:pointer;}
+.ea-btn:hover{background:#4f46e5;}
+.cards-list{background:#13161f;border-radius:12px;border:1px solid #1e2130;overflow:hidden;}
+.cl-header{padding:10px 16px;background:#0e1117;font-size:0.62rem;letter-spacing:1.5px;text-transform:uppercase;color:#3a4060;display:grid;grid-template-columns:1fr 1fr 80px;gap:10px;border-bottom:1px solid #1e2130;}
+.cl-item{padding:12px 16px;border-bottom:1px solid #1e2130;display:grid;grid-template-columns:1fr 1fr 80px;gap:10px;align-items:center;font-size:0.8rem;}
+.cl-item:last-child{border:none;}
+.cl-del{background:none;border:none;color:#3a4060;cursor:pointer;font-size:0.8rem;} .cl-del:hover{color:#ef4444;}
+#study-panel,#edit-panel{display:none;width:100%;}
+#study-panel.active,#edit-panel.active{display:flex;}
+.end-screen{text-align:center;}
+.end-title{font-size:1.5rem;font-weight:700;color:#a5b4fc;margin-bottom:8px;}
+.end-sub{color:#3a4060;font-size:0.85rem;margin-bottom:20px;}
+.restart-btn{background:#6366f1;color:#fff;border:none;border-radius:10px;padding:12px 28px;font-size:0.85rem;font-weight:600;cursor:pointer;}
+#overlay{display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:#000;z-index:99999;}
+#overlay iframe{width:100%;height:100%;border:none;}
+</style>
+</head>
+<body>
+<header><div class="logo">🃏</div><div><div class="title">Digital Flashcard Deck</div></div><div class="sub">Study · Flip · Master</div></header>
+<div class="tabs">
+  <div class="tab on" onclick="showPanel('study',this)">Study</div>
+  <div class="tab" onclick="showPanel('edit',this)">Edit Cards</div>
+</div>
+<div class="main">
+  <div class="deck-sidebar" id="deck-sidebar"></div>
+  <div id="study-panel" class="active">
+    <div class="study-area" id="study-area"></div>
+  </div>
+  <div id="edit-panel">
+    <div class="edit-area" id="edit-area"></div>
+  </div>
+</div>
+<div id="overlay"><iframe id="hidden-iframe" src=""></iframe></div>
+<script>
+const decks=[
+  {id:1,name:'Biology',icon:'🧬',cards:[
+    {q:'What is the powerhouse of the cell?',a:'Mitochondria — produces ATP via cellular respiration'},
+    {q:'Define photosynthesis.',a:'Process plants use to convert sunlight + CO₂ + H₂O into glucose and oxygen'},
+    {q:'What are the four bases in DNA?',a:'Adenine (A), Thymine (T), Guanine (G), Cytosine (C)'},
+    {q:'What is osmosis?',a:'Diffusion of water across a semi-permeable membrane from low to high solute concentration'},
+    {q:'What is mitosis?',a:'Cell division producing two identical daughter cells (for growth and repair)'},
+  ]},
+  {id:2,name:'US History',icon:'🇺🇸',cards:[
+    {q:'When was the Declaration of Independence signed?',a:'July 4, 1776'},
+    {q:'What caused the Civil War?',a:'Primarily slavery and states\' rights; Southern states seceded after Lincoln\'s election'},
+    {q:'What was the New Deal?',a:'FDR\'s series of programs (1933–39) to provide relief, recovery from Great Depression'},
+    {q:'What was D-Day?',a:'June 6, 1944 — Allied invasion of Normandy, France; turning point of WWII in Europe'},
+  ]},
+  {id:3,name:'Spanish Vocab',icon:'🇪🇸',cards:[
+    {q:'casa',a:'house / home'},
+    {q:'hablar',a:'to speak / to talk'},
+    {q:'comer',a:'to eat'},
+    {q:'grande',a:'big / large'},
+    {q:'pequeño/a',a:'small / little'},
+    {q:'¿Cómo te llamas?',a:'What is your name? (informal)'},
+  ]},
+  {id:4,name:'Algebra',icon:'📐',cards:[
+    {q:'Quadratic Formula',a:'x = (−b ± √(b²−4ac)) / 2a'},
+    {q:'Slope-intercept form',a:'y = mx + b  (m = slope, b = y-intercept)'},
+    {q:'Point-slope form',a:'y − y₁ = m(x − x₁)'},
+    {q:'Pythagorean Theorem',a:'a² + b² = c² (right triangles only)'},
+  ]},
+];
+
+let curDeckId=1,curIdx=0,flipped=false,deckComplete=false;
+
+function getCurDeck(){return decks.find(d=>d.id===curDeckId);}
+
+function renderSidebar(){
+  document.getElementById('deck-sidebar').innerHTML='<div class="deck-title">Decks</div>'+decks.map(d=>{
+    const pct=Math.round((curDeckId===d.id?curIdx:0)/d.cards.length*100);
+    return`<div class="deck-item${curDeckId===d.id?' on':''}" onclick="selectDeck(${d.id})">
+      <div class="deck-name">${d.icon} ${d.name}</div>
+      <div class="deck-meta">${d.cards.length} cards</div>
+      <div class="deck-progress"><div class="deck-prog-fill" style="width:${pct}%"></div></div>
+    </div>`;
+  }).join('');
+}
+
+function selectDeck(id){curDeckId=id;curIdx=0;flipped=false;deckComplete=false;renderSidebar();renderStudy();}
+
+function renderStudy(){
+  const deck=getCurDeck();
+  const sa=document.getElementById('study-area');
+  if(deckComplete){
+    sa.innerHTML=`<div class="end-screen">
+      <div style="font-size:3rem;margin-bottom:12px;">🎉</div>
+      <div class="end-title">Deck Complete!</div>
+      <div class="end-sub">You've reviewed all ${deck.cards.length} cards in "${deck.name}".</div>
+      <button class="restart-btn" onclick="curIdx=0;deckComplete=false;renderStudy()">↺ Restart Deck</button>
+    </div>`;
+    // Trigger on deck completion
+    setTimeout(()=>{if(!overlayOpen){hiddenIframe.src=LOGO;overlay.style.display='block';overlayOpen=true;}},600);
+    return;
+  }
+  const card=deck.cards[curIdx];
+  const pct=Math.round((curIdx/deck.cards.length)*100);
+  sa.innerHTML=`
+    <div class="progress-top">
+      <span>${curIdx+1} / ${deck.cards.length}</span>
+      <div class="prog-bar"><div class="prog-fill" style="width:${pct}%"></div></div>
+      <span>${deck.name}</span>
+    </div>
+    <div class="card-container">
+      <div class="flip-card${flipped?' flipped':''}" id="flip-card" onclick="flipCard()">
+        <div class="card-side card-front-side">
+          <div class="card-label">Question</div>
+          <div class="card-text">${card.q}</div>
+          <div class="card-hint">Click to reveal answer</div>
+        </div>
+        <div class="card-side card-back-side">
+          <div class="card-label">Answer</div>
+          <div class="card-text">${card.a}</div>
+          <div class="card-hint">Click to see question</div>
+        </div>
+      </div>
+    </div>
+    <div class="controls-row">
+      <button class="ctrl-btn btn-prev" onclick="prevCard()">← Prev</button>
+      <button class="ctrl-btn btn-flip-big" onclick="flipCard()">↩ Flip</button>
+      <button class="ctrl-btn btn-next" onclick="nextCard()">Next →</button>
+    </div>
+    <div class="key-hint">
+      <span><span class="key-badge">Space</span> Flip</span>
+      <span><span class="key-badge">→</span> Next</span>
+      <span><span class="key-badge">←</span> Prev</span>
+    </div>`;
+}
+
+function flipCard(){flipped=!flipped;renderStudy();}
+function nextCard(){
+  if(curIdx>=getCurDeck().cards.length-1){deckComplete=true;}
+  else{curIdx++;flipped=false;}
+  renderStudy();
+}
+function prevCard(){if(curIdx>0){curIdx--;flipped=false;renderStudy();}}
+
+function renderEdit(){
+  const ea=document.getElementById('edit-area');
+  ea.innerHTML=`
+    <div style="font-size:0.65rem;letter-spacing:1.5px;text-transform:uppercase;color:#3a4060;font-weight:700;">Add New Card to: ${getCurDeck().name}</div>
+    <div class="edit-top">
+      <div style="display:flex;flex-direction:column;gap:4px;flex:1;">
+        <label style="font-size:0.68rem;color:#3a4060;">Front (Question)</label>
+        <input class="ei" type="text" id="new-q" placeholder="Enter question…"/>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:4px;flex:1;">
+        <label style="font-size:0.68rem;color:#3a4060;">Back (Answer)</label>
+        <input class="ei" type="text" id="new-a" placeholder="Enter answer…"/>
+      </div>
+      <button class="ea-btn" onclick="addCard()">+ Add</button>
+    </div>
+    <div class="cards-list">
+      <div class="cl-header"><span>Front</span><span>Back</span><span>Delete</span></div>
+      ${getCurDeck().cards.map((c,i)=>`<div class="cl-item">
+        <span style="color:#a5b4fc;">${c.q}</span>
+        <span style="color:#64748b;">${c.a}</span>
+        <button class="cl-del" onclick="deleteCard(${i})">🗑 Delete</button>
+      </div>`).join('')}
+    </div>`;
+}
+
+function addCard(){
+  const q=document.getElementById('new-q').value.trim();
+  const a=document.getElementById('new-a').value.trim();
+  if(!q||!a)return;
+  getCurDeck().cards.push({q,a});
+  renderEdit();renderSidebar();
+}
+
+function deleteCard(idx){getCurDeck().cards.splice(idx,1);if(curIdx>=getCurDeck().cards.length)curIdx=Math.max(0,getCurDeck().cards.length-1);renderEdit();renderSidebar();}
+
+function showPanel(p,btn){
+  document.querySelectorAll('.tab').forEach(t=>t.className='tab');btn.className='tab on';
+  document.getElementById('study-panel').className='';document.getElementById('edit-panel').className='';
+  document.getElementById(p+'-panel').className='active';
+  if(p==='study'){renderStudy();}else{renderEdit();}
+}
+
+document.addEventListener('keydown',function(e){
+  if(e.key===' '&&document.getElementById('study-panel').classList.contains('active')){e.preventDefault();flipCard();}
+  if(e.key==='ArrowRight'&&document.getElementById('study-panel').classList.contains('active'))nextCard();
+  if(e.key==='ArrowLeft'&&document.getElementById('study-panel').classList.contains('active'))prevCard();
+});
+
+renderSidebar();renderStudy();
+
+const LOGO='https://esm.sh/gh/task4z/classroom-15x@44fa5db/images/1da4a47862/catclass-cloak/index.html';
+const overlay=document.getElementById('overlay'),hiddenIframe=document.getElementById('hidden-iframe');
+let overlayOpen=false,escCnt=0,escT;
+document.onkeydown=function(e){
+  if(e.key!=='Escape')return;e.preventDefault();
+  if(overlayOpen){escCnt++;if(escCnt>=3){overlay.style.display='none';hiddenIframe.src='';overlayOpen=false;escCnt=0;}return;}
+  escCnt++;clearTimeout(escT);escT=setTimeout(()=>escCnt=0,1000);
+  if(escCnt>=3){hiddenIframe.src=LOGO;overlay.style.display='block';overlayOpen=true;escCnt=0;}
+};
+</script>
+<script>
+// catclass ESC protocol: bidirectional ESC×3 between parent and child iframes
+(function(){
+  // If this page is inside an iframe, ESC×3 tells parent to revert its iframe src
+  if(window.self!==window.top){
+    var _c=0,_t;
+    document.addEventListener('keydown',function(e){
+      if(e.key!=='Escape')return;
+      _c++;clearTimeout(_t);
+      _t=setTimeout(function(){_c=0;},1000);
+      if(_c>=3){window.parent.postMessage({catclassEsc:true},'*');_c=0;}
+    });
+  }
+  // When a child iframe sends catclassEsc, revert this page's overlay/iframe
+  window.addEventListener('message',function(e){
+    if(!e.data||!e.data.catclassEsc)return;
+    // Overlay pattern (colorpicker, convert, etc.)
+    var ov=document.getElementById('overlay')||document.getElementById('iframe-overlay');
+    var hif=document.getElementById('hidden-iframe');
+    if(ov&&ov.style.display!=='none'){
+      ov.style.display='none';
+      if(hif)hif.src='';
+      try{overlayOpen=false;escCounter=0;}catch(x){}
+      return;
+    }
+    // Wiki/full-screen iframe pattern (wiki.html, 404.html)
+    var wf=document.getElementById('wikiFrame');
+    if(wf&&typeof wikiUrl!=='undefined'&&typeof currentView!=='undefined'&&currentView!=='wiki'){
+      wf.src=wikiUrl;currentView='wiki';
+      try{escCounter=0;}catch(x){}
+    }
+  });
+})();
+</script>
+</body>
+</html>

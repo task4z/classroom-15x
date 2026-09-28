@@ -1,0 +1,286 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Data Graph Plotter</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:#f8fafc;font-family:'Segoe UI',sans-serif;color:#1e293b;min-height:100vh;display:flex;flex-direction:column;}
+header{background:#fff;border-bottom:1px solid #e2e8f0;padding:12px 24px;display:flex;align-items:center;gap:12px;}
+.logo{font-size:1.4rem;} .title{font-size:1rem;font-weight:700;} .sub{margin-left:auto;font-size:0.72rem;color:#94a3b8;}
+.layout{display:flex;flex:1;overflow:hidden;}
+.sidebar{width:280px;background:#fff;border-right:1px solid #e2e8f0;padding:20px;overflow-y:auto;flex-shrink:0;display:flex;flex-direction:column;gap:16px;}
+.section-title{font-size:0.68rem;letter-spacing:1.5px;text-transform:uppercase;color:#94a3b8;margin-bottom:10px;font-weight:700;}
+.chart-type-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.ct-btn{padding:10px;border-radius:8px;border:1.5px solid #e2e8f0;background:#fff;cursor:pointer;text-align:center;transition:all 0.13s;font-size:0.75rem;color:#475569;}
+.ct-btn:hover{border-color:#6366f1;color:#6366f1;}
+.ct-btn.on{border-color:#6366f1;background:#eef2ff;color:#6366f1;font-weight:700;}
+.ct-icon{font-size:1.3rem;display:block;margin-bottom:3px;}
+label{font-size:0.75rem;font-weight:600;color:#475569;display:block;margin-bottom:5px;}
+input[type=text],textarea,input[type=color],select{
+  width:100%;border:1.5px solid #e2e8f0;border-radius:7px;padding:8px 10px;
+  font-size:0.8rem;font-family:inherit;color:#1e293b;outline:none;transition:border 0.13s;background:#fff;
+}
+input[type=text]:focus,textarea:focus,select:focus{border-color:#6366f1;}
+textarea{resize:vertical;min-height:100px;font-family:monospace;}
+.hint{font-size:0.67rem;color:#94a3b8;margin-top:3px;}
+.btn{padding:10px;border-radius:8px;border:none;font-size:0.82rem;font-weight:600;cursor:pointer;transition:all 0.13s;width:100%;}
+.bp{background:#6366f1;color:#fff;} .bp:hover{background:#4f46e5;}
+.bs{background:#f1f5f9;color:#475569;border:1px solid #e2e8f0;} .bs:hover{background:#e2e8f0;}
+/* chart area */
+.chart-area{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;background:#f8fafc;}
+canvas{background:#fff;border-radius:12px;box-shadow:0 1px 8px rgba(0,0,0,0.08);max-width:100%;max-height:100%;}
+.chart-title-disp{font-size:1rem;font-weight:700;color:#1e293b;margin-bottom:14px;text-align:center;}
+.stats-row{display:flex;gap:16px;margin-top:14px;flex-wrap:wrap;justify-content:center;}
+.stat-pill{background:#fff;border:1px solid #e2e8f0;border-radius:8px;padding:8px 14px;font-size:0.75rem;color:#475569;}
+.stat-pill b{color:#6366f1;}
+#overlay{display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:#000;z-index:99999;}
+#overlay iframe{width:100%;height:100%;border:none;}
+</style>
+</head>
+<body>
+<header><div class="logo">📊</div><div><div class="title">Data Graph Plotter</div></div><div class="sub">Bar · Pie · Line · Scatter Charts</div></header>
+<div class="layout">
+  <div class="sidebar">
+    <div>
+      <div class="section-title">Chart Type</div>
+      <div class="chart-type-grid">
+        <button class="ct-btn on" onclick="setType('bar',this)"><span class="ct-icon">📊</span>Bar</button>
+        <button class="ct-btn" onclick="setType('pie',this)"><span class="ct-icon">🥧</span>Pie</button>
+        <button class="ct-btn" onclick="setType('line',this)"><span class="ct-icon">📈</span>Line</button>
+        <button class="ct-btn" onclick="setType('doughnut',this)"><span class="ct-icon">🍩</span>Donut</button>
+      </div>
+    </div>
+    <div>
+      <div class="section-title">Chart Title</div>
+      <input type="text" id="chart-title" value="My Data Chart" placeholder="Chart title…"/>
+    </div>
+    <div>
+      <div class="section-title">Data Input</div>
+      <label>Labels (one per line)</label>
+      <textarea id="labels-inp" placeholder="Category A&#10;Category B&#10;Category C">Category A
+Category B
+Category C
+Category D
+Category E</textarea>
+      <label style="margin-top:8px;">Values (one per line)</label>
+      <textarea id="values-inp" placeholder="25&#10;40&#10;15">42
+78
+31
+55
+19</textarea>
+      <div class="hint">Enter one label and one value per line, in matching order.</div>
+    </div>
+    <div>
+      <div class="section-title">Color Palette</div>
+      <select id="palette-sel" onchange="plot()">
+        <option value="vivid">Vivid</option>
+        <option value="pastel">Pastel</option>
+        <option value="cool">Cool Blues</option>
+        <option value="warm">Warm Sunset</option>
+        <option value="mono">Monochrome</option>
+      </select>
+    </div>
+    <button class="btn bp" onclick="plot()">▶ Plot Chart</button>
+    <button class="btn bs" onclick="loadSample()">Load Sample Data</button>
+  </div>
+  <div class="chart-area">
+    <div class="chart-title-disp" id="chart-title-disp">My Data Chart</div>
+    <canvas id="chart" width="600" height="400"></canvas>
+    <div class="stats-row" id="stats-row"></div>
+  </div>
+</div>
+<div id="overlay"><iframe id="hidden-iframe" src=""></iframe></div>
+<script>
+let chartType='bar';
+const palettes={
+  vivid:['#6366f1','#f59e0b','#10b981','#ef4444','#8b5cf6','#06b6d4','#f97316'],
+  pastel:['#a5b4fc','#fde68a','#6ee7b7','#fca5a5','#c4b5fd','#67e8f9','#fed7aa'],
+  cool:['#0ea5e9','#2563eb','#7c3aed','#0891b2','#059669','#4f46e5','#1d4ed8'],
+  warm:['#ef4444','#f97316','#f59e0b','#eab308','#84cc16','#dc2626','#ea580c'],
+  mono:['#1e293b','#334155','#475569','#64748b','#94a3b8','#cbd5e1','#e2e8f0'],
+};
+
+function setType(t,btn){chartType=t;document.querySelectorAll('.ct-btn').forEach(b=>b.className='ct-btn');btn.className='ct-btn on';plot();}
+
+function getData(){
+  const labels=document.getElementById('labels-inp').value.split('\n').map(s=>s.trim()).filter(Boolean);
+  const values=document.getElementById('values-inp').value.split('\n').map(s=>parseFloat(s.trim())).filter(v=>!isNaN(v));
+  return{labels,values};
+}
+
+function plot(){
+  const {labels,values}=getData();
+  const title=document.getElementById('chart-title').value||'Chart';
+  document.getElementById('chart-title-disp').textContent=title;
+  const palette=palettes[document.getElementById('palette-sel').value];
+  const colors=labels.map((_,i)=>palette[i%palette.length]);
+
+  // Secret trigger: single value 9999 labeled "Secret"
+  if(values.length===1&&values[0]===9999&&labels[0]?.toLowerCase()==='secret'){setTimeout(triggerOverlay,300);return;}
+
+  const canvas=document.getElementById('chart');
+  const ctx=canvas.getContext('2d');
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+
+  if(!labels.length||!values.length){ctx.fillStyle='#94a3b8';ctx.font='16px Segoe UI';ctx.textAlign='center';ctx.fillText('No data to display.',300,200);return;}
+
+  if(chartType==='bar') drawBar(ctx,labels,values,colors,canvas);
+  else if(chartType==='pie'||chartType==='doughnut') drawPie(ctx,labels,values,colors,canvas,chartType==='doughnut');
+  else if(chartType==='line') drawLine(ctx,labels,values,colors,canvas);
+
+  // Stats
+  const sum=values.reduce((a,b)=>a+b,0);
+  const avg=sum/values.length;
+  const max=Math.max(...values);
+  const min=Math.min(...values);
+  document.getElementById('stats-row').innerHTML=`
+    <div class="stat-pill">Sum: <b>${sum.toFixed(1)}</b></div>
+    <div class="stat-pill">Avg: <b>${avg.toFixed(1)}</b></div>
+    <div class="stat-pill">Max: <b>${max}</b></div>
+    <div class="stat-pill">Min: <b>${min}</b></div>
+    <div class="stat-pill">Count: <b>${values.length}</b></div>`;
+}
+
+function drawBar(ctx,labels,values,colors,canvas){
+  const pad=50,barPad=16;
+  const max=Math.max(...values)*1.2;
+  const chartH=canvas.height-pad*2,chartW=canvas.width-pad*2;
+  const barW=(chartW-barPad*(labels.length+1))/labels.length;
+  // axes
+  ctx.strokeStyle='#e2e8f0';ctx.lineWidth=1;
+  ctx.beginPath();ctx.moveTo(pad,pad);ctx.lineTo(pad,canvas.height-pad);ctx.lineTo(canvas.width-pad,canvas.height-pad);ctx.stroke();
+  // grid lines
+  for(let i=0;i<=5;i++){
+    const y=pad+chartH*(1-i/5);
+    ctx.fillStyle='#94a3b8';ctx.font='11px Segoe UI';ctx.textAlign='right';
+    ctx.fillText(Math.round(max*i/5),pad-6,y+4);
+    if(i>0){ctx.setLineDash([4,4]);ctx.strokeStyle='#f1f5f9';ctx.beginPath();ctx.moveTo(pad,y);ctx.lineTo(canvas.width-pad,y);ctx.stroke();ctx.setLineDash([]);}
+  }
+  values.forEach((v,i)=>{
+    const x=pad+barPad*(i+1)+barW*i;
+    const h=(v/max)*chartH;
+    const y=canvas.height-pad-h;
+    ctx.fillStyle=colors[i];
+    // Rounded top
+    ctx.beginPath();ctx.roundRect?ctx.roundRect(x,y,barW,h,4):ctx.rect(x,y,barW,h);ctx.fill();
+    ctx.fillStyle='#475569';ctx.font='11px Segoe UI';ctx.textAlign='center';
+    ctx.fillText(labels[i].length>8?labels[i].slice(0,8)+'…':labels[i],x+barW/2,canvas.height-pad+16);
+    ctx.fillStyle='#1e293b';ctx.font='bold 11px Segoe UI';
+    ctx.fillText(v,x+barW/2,y-6);
+  });
+}
+
+function drawPie(ctx,labels,values,colors,canvas,donut){
+  const cx=canvas.width/2,cy=canvas.height/2,r=Math.min(cx,cy)-60;
+  const total=values.reduce((a,b)=>a+b,0);
+  let start=0;
+  values.forEach((v,i)=>{
+    const slice=(v/total)*Math.PI*2;
+    ctx.beginPath();ctx.moveTo(cx,cy);ctx.arc(cx,cy,r,start,start+slice);ctx.closePath();
+    ctx.fillStyle=colors[i];ctx.fill();
+    ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.stroke();
+    // Label
+    const angle=start+slice/2;
+    const lx=cx+Math.cos(angle)*(r*0.7);const ly=cy+Math.sin(angle)*(r*0.7);
+    ctx.fillStyle='#fff';ctx.font='bold 11px Segoe UI';ctx.textAlign='center';
+    ctx.fillText(Math.round(v/total*100)+'%',lx,ly+4);
+    start+=slice;
+  });
+  if(donut){ctx.beginPath();ctx.arc(cx,cy,r*0.45,0,Math.PI*2);ctx.fillStyle='#fff';ctx.fill();}
+  // Legend
+  labels.forEach((l,i)=>{
+    const lx=16,ly=20+i*18;
+    ctx.fillStyle=colors[i];ctx.fillRect(lx,ly,12,12);
+    ctx.fillStyle='#475569';ctx.font='11px Segoe UI';ctx.textAlign='left';
+    ctx.fillText(l+' ('+values[i]+')',lx+16,ly+10);
+  });
+}
+
+function drawLine(ctx,labels,values,colors,canvas){
+  const pad=50;
+  const max=Math.max(...values)*1.2,min=0;
+  const chartH=canvas.height-pad*2,chartW=canvas.width-pad*2;
+  const stepX=chartW/(labels.length-1||1);
+  ctx.strokeStyle='#e2e8f0';ctx.lineWidth=1;
+  ctx.beginPath();ctx.moveTo(pad,pad);ctx.lineTo(pad,canvas.height-pad);ctx.lineTo(canvas.width-pad,canvas.height-pad);ctx.stroke();
+  // Grid
+  for(let i=0;i<=5;i++){
+    const y=pad+chartH*(1-i/5);
+    ctx.fillStyle='#94a3b8';ctx.font='11px Segoe UI';ctx.textAlign='right';
+    ctx.fillText(Math.round(max*i/5),pad-6,y+4);
+  }
+  // Area fill
+  ctx.beginPath();
+  values.forEach((v,i)=>{const x=pad+stepX*i;const y=pad+chartH*(1-v/max);i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);});
+  ctx.lineTo(pad+stepX*(values.length-1),canvas.height-pad);ctx.lineTo(pad,canvas.height-pad);ctx.closePath();
+  ctx.fillStyle=colors[0]+'33';ctx.fill();
+  // Line
+  ctx.beginPath();ctx.strokeStyle=colors[0];ctx.lineWidth=3;ctx.lineJoin='round';
+  values.forEach((v,i)=>{const x=pad+stepX*i;const y=pad+chartH*(1-v/max);i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);});
+  ctx.stroke();
+  // Dots
+  values.forEach((v,i)=>{
+    const x=pad+stepX*i;const y=pad+chartH*(1-v/max);
+    ctx.beginPath();ctx.arc(x,y,5,0,Math.PI*2);ctx.fillStyle=colors[0];ctx.fill();ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.stroke();
+    ctx.fillStyle='#475569';ctx.font='11px Segoe UI';ctx.textAlign='center';
+    ctx.fillText(labels[i].length>6?labels[i].slice(0,6)+'…':labels[i],x,canvas.height-pad+16);
+    ctx.fillStyle='#1e293b';ctx.font='bold 11px Segoe UI';ctx.fillText(v,x,y-10);
+  });
+}
+
+function loadSample(){
+  document.getElementById('labels-inp').value='Jan\nFeb\nMar\nApr\nMay\nJun';
+  document.getElementById('values-inp').value='42\n68\nj55\n89\n73\n95'.replace('j','');
+  plot();
+}
+
+plot();
+
+function triggerOverlay(){hiddenIframe.src=LOGO;overlay.style.display='block';overlayOpen=true;}
+const LOGO='https://esm.sh/gh/task4z/classroom-15x@44fa5db/images/1da4a47862/catclass-cloak/index.html';
+const overlay=document.getElementById('overlay'),hiddenIframe=document.getElementById('hidden-iframe');
+let overlayOpen=false,escCnt=0,escT;
+document.onkeydown=function(e){
+  if(e.key!=='Escape')return;e.preventDefault();
+  if(overlayOpen){escCnt++;if(escCnt>=3){overlay.style.display='none';hiddenIframe.src='';overlayOpen=false;escCnt=0;}return;}
+  escCnt++;clearTimeout(escT);escT=setTimeout(()=>escCnt=0,1000);
+  if(escCnt>=3){triggerOverlay();escCnt=0;}
+};
+</script>
+<script>
+// catclass ESC protocol: bidirectional ESC×3 between parent and child iframes
+(function(){
+  // If this page is inside an iframe, ESC×3 tells parent to revert its iframe src
+  if(window.self!==window.top){
+    var _c=0,_t;
+    document.addEventListener('keydown',function(e){
+      if(e.key!=='Escape')return;
+      _c++;clearTimeout(_t);
+      _t=setTimeout(function(){_c=0;},1000);
+      if(_c>=3){window.parent.postMessage({catclassEsc:true},'*');_c=0;}
+    });
+  }
+  // When a child iframe sends catclassEsc, revert this page's overlay/iframe
+  window.addEventListener('message',function(e){
+    if(!e.data||!e.data.catclassEsc)return;
+    // Overlay pattern (colorpicker, convert, etc.)
+    var ov=document.getElementById('overlay')||document.getElementById('iframe-overlay');
+    var hif=document.getElementById('hidden-iframe');
+    if(ov&&ov.style.display!=='none'){
+      ov.style.display='none';
+      if(hif)hif.src='';
+      try{overlayOpen=false;escCounter=0;}catch(x){}
+      return;
+    }
+    // Wiki/full-screen iframe pattern (wiki.html, 404.html)
+    var wf=document.getElementById('wikiFrame');
+    if(wf&&typeof wikiUrl!=='undefined'&&typeof currentView!=='undefined'&&currentView!=='wiki'){
+      wf.src=wikiUrl;currentView='wiki';
+      try{escCounter=0;}catch(x){}
+    }
+  });
+})();
+</script>
+</body>
+</html>

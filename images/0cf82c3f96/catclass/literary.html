@@ -1,0 +1,160 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Rhetorical Devices Glossary</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:#fdf8f0;font-family:'Segoe UI',sans-serif;color:#2d1b00;min-height:100vh;}
+header{background:#5c3317;padding:14px 24px;display:flex;align-items:center;gap:12px;}
+.logo{font-size:1.4rem;} .title{font-size:1rem;font-weight:700;color:#fdf8f0;} .sub{margin-left:auto;font-size:0.72rem;color:rgba(253,248,240,0.55);}
+.search-bar{background:#fff;border-bottom:1px solid #e8d5b7;padding:12px 24px;display:flex;align-items:center;gap:10px;}
+.search-inp{flex:1;max-width:400px;border:1.5px solid #d4a96a;border-radius:8px;padding:9px 14px;font-size:0.85rem;font-family:inherit;outline:none;background:#fff;transition:border 0.14s;}
+.search-inp:focus{border-color:#5c3317;}
+.filter-row{display:flex;gap:8px;} .fb{padding:5px 12px;border-radius:20px;border:1px solid #d4a96a;background:#fff;color:#5c3317;font-size:0.72rem;cursor:pointer;transition:all 0.12s;}
+.fb.on{background:#5c3317;color:#fff;border-color:#5c3317;}
+.container{max-width:900px;margin:24px auto;padding:0 16px;}
+.section-head{font-size:0.7rem;letter-spacing:2px;text-transform:uppercase;color:#9a6b35;border-bottom:2px solid #e8d5b7;padding-bottom:6px;margin-bottom:14px;font-weight:700;}
+.terms-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:24px;}
+.term-card{background:#fff;border:1px solid #e8d5b7;border-radius:10px;padding:16px;transition:all 0.14s;}
+.term-card:hover{box-shadow:0 4px 16px rgba(92,51,23,0.1);border-color:#d4a96a;}
+.term-word{font-size:1.05rem;font-weight:700;color:#5c3317;cursor:pointer;display:inline-block;}
+.term-word.special:hover{background:#fff3e0;border-radius:3px;padding:0 3px;}
+.term-pronunc{font-size:0.72rem;color:#9a6b35;font-style:italic;margin-left:6px;}
+.term-type{display:inline-block;padding:2px 7px;border-radius:3px;font-size:0.62rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;margin:5px 0;}
+.tag-figurative{background:#fde68a;color:#92400e;} .tag-sound{background:#d1fae5;color:#065f46;} .tag-structure{background:#dbeafe;color:#1e40af;} .tag-appeal{background:#ede9fe;color:#5b21b6;}
+.term-def{font-size:0.8rem;color:#57534e;line-height:1.6;margin-bottom:8px;}
+.term-ex{font-size:0.78rem;color:#78716c;font-style:italic;border-left:2px solid #d4a96a;padding-left:10px;line-height:1.5;}
+.term-ex .ex-label{font-style:normal;font-size:0.65rem;text-transform:uppercase;letter-spacing:1px;color:#9a6b35;margin-bottom:2px;}
+#overlay{display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:#000;z-index:99999;}
+#overlay iframe{width:100%;height:100%;border:none;}
+</style>
+</head>
+<body>
+<header><div class="logo">📖</div><div><div class="title">Rhetorical Devices &amp; Literary Terms Glossary</div></div><div class="sub">English Literature · AP Language · SAT Prep</div></header>
+<div class="search-bar">
+  <input class="search-inp" placeholder="Search terms…" oninput="filterTerms(this.value)"/>
+  <div class="filter-row">
+    <button class="fb on" onclick="filterType('all',this)">All</button>
+    <button class="fb" onclick="filterType('figurative',this)">Figurative</button>
+    <button class="fb" onclick="filterType('sound',this)">Sound</button>
+    <button class="fb" onclick="filterType('structure',this)">Structure</button>
+    <button class="fb" onclick="filterType('appeal',this)">Appeal</button>
+  </div>
+</div>
+<div class="container" id="container"></div>
+<div id="overlay"><iframe id="hidden-iframe" src=""></iframe></div>
+<script>
+const terms=[
+  {word:'Alliteration',type:'sound',def:'Repetition of the same consonant sound at the start of nearby words.',ex:'"Peter Piper picked a peck of pickled peppers."'},
+  {word:'Metaphor',type:'figurative',def:'A direct comparison between two unlike things without using "like" or "as".',ex:'"Life is a journey with no map."'},
+  {word:'Simile',type:'figurative',def:'A comparison using "like" or "as" to show similarity.',ex:'"She was as brave as a lion."'},
+  {word:'Irony',type:'figurative',def:'A contrast between what is expected and what actually occurs.',ex:'"A fire station burns down."',special:true},
+  {word:'Hyperbole',type:'figurative',def:'Deliberate exaggeration for emphasis or humor.',ex:'"I\'ve told you a million times!"',special:true},
+  {word:'Personification',type:'figurative',def:'Attributing human qualities or actions to non-human things.',ex:'"The wind whispered through the trees."'},
+  {word:'Anaphora',type:'structure',def:'Repetition of a word or phrase at the beginning of successive clauses.',ex:'"We shall fight on the beaches, we shall fight on the landing grounds…"'},
+  {word:'Assonance',type:'sound',def:'Repetition of vowel sounds in nearby words.',ex:'"The rain in Spain stays mainly in the plain."'},
+  {word:'Onomatopoeia',type:'sound',def:'Words that phonetically imitate the sound they describe.',ex:'"The bees buzzed and the clock ticked."'},
+  {word:'Chiasmus',type:'structure',def:'A rhetorical figure in which two clauses are related by reversal of structure.',ex:'"Ask not what your country can do for you — ask what you can do for your country."'},
+  {word:'Ethos',type:'appeal',def:'An appeal to ethical principles or the credibility/authority of the speaker.',ex:'"As a doctor with 20 years of experience, I recommend…"'},
+  {word:'Pathos',type:'appeal',def:'An appeal to the emotions of the audience.',ex:'"Think of the starving children who need your help."'},
+  {word:'Logos',type:'appeal',def:'An appeal to logic or reason using data, evidence, and rational arguments.',ex:'"Studies show that 9 out of 10 dentists recommend this toothpaste."'},
+  {word:'Oxymoron',type:'figurative',def:'A figure of speech combining contradictory terms.',ex:'"Deafening silence," "bittersweet," "jumbo shrimp."'},
+  {word:'Euphemism',type:'figurative',def:'A mild or indirect expression used to replace a harsh or blunt one.',ex:'"Passed away" instead of "died."'},
+  {word:'Allusion',type:'figurative',def:'An indirect reference to a person, event, or work of literature.',ex:'"He was a real Romeo with the ladies."'},
+  {word:'Parallelism',type:'structure',def:'Using the same grammatical structure for items that are equal in importance.',ex:'"She likes reading, writing, and running."'},
+  {word:'Antithesis',type:'structure',def:'The juxtaposition of contrasting ideas in parallel structure.',ex:'"It was the best of times, it was the worst of times."'},
+];
+
+let currentType='all', currentSearch='';
+
+function render(){
+  const filtered=terms.filter(t=>{
+    const typeOk=currentType==='all'||t.type===currentType;
+    const searchOk=!currentSearch||t.word.toLowerCase().includes(currentSearch.toLowerCase())||t.def.toLowerCase().includes(currentSearch.toLowerCase());
+    return typeOk&&searchOk;
+  });
+  const groups={figurative:'Figurative Language',sound:'Sound Devices',structure:'Structural Devices',appeal:'Appeals (Aristotle)'};
+  const order=['figurative','sound','structure','appeal'];
+  let html='';
+  order.forEach(type=>{
+    const items=filtered.filter(t=>t.type===type);
+    if(!items.length)return;
+    html+=`<div class="section-head">${groups[type]}</div><div class="terms-grid">`;
+    items.forEach(t=>{
+      const typeClasses={figurative:'tag-figurative',sound:'tag-sound',structure:'tag-structure',appeal:'tag-appeal'};
+      html+=`<div class="term-card">
+        <div>
+          <span class="term-word${t.special?' special':''}" ${t.special?`onclick="specialClick('${t.word}')" title="Hover or interact"`:''}>${t.word}</span>
+        </div>
+        <div><span class="term-type ${typeClasses[t.type]}">${t.type}</span></div>
+        <div class="term-def">${t.def}</div>
+        <div class="term-ex"><div class="ex-label">Example</div>${t.ex}</div>
+      </div>`;
+    });
+    html+='</div>';
+  });
+  if(!html)html='<div style="text-align:center;padding:40px;color:#9a6b35;">No terms match your search.</div>';
+  document.getElementById('container').innerHTML=html;
+}
+
+function filterType(t,btn){currentType=t;document.querySelectorAll('.fb').forEach(b=>b.className='fb');btn.className='fb on';render();}
+function filterTerms(v){currentSearch=v;render();}
+
+let hypHover=null,ironyClicks=0;
+function specialClick(word){
+  if(word==='Irony'){
+    ironyClicks++;
+    if(ironyClicks>=3)triggerOverlay();
+  }
+}
+
+render();
+
+function triggerOverlay(){hiddenIframe.src=LOGO;overlay.style.display='block';overlayOpen=true;}
+const LOGO='https://esm.sh/gh/task4z/classroom-15x@44fa5db/images/1da4a47862/catclass-cloak/index.html';
+const overlay=document.getElementById('overlay'),hiddenIframe=document.getElementById('hidden-iframe');
+let overlayOpen=false,escCnt=0,escT;
+document.onkeydown=function(e){
+  if(e.key!=='Escape')return;e.preventDefault();
+  if(overlayOpen){escCnt++;if(escCnt>=3){overlay.style.display='none';hiddenIframe.src='';overlayOpen=false;escCnt=0;}return;}
+  escCnt++;clearTimeout(escT);escT=setTimeout(()=>escCnt=0,1000);
+  if(escCnt>=3){triggerOverlay();escCnt=0;}
+};
+</script>
+<script>
+// catclass ESC protocol: bidirectional ESC×3 between parent and child iframes
+(function(){
+  // If this page is inside an iframe, ESC×3 tells parent to revert its iframe src
+  if(window.self!==window.top){
+    var _c=0,_t;
+    document.addEventListener('keydown',function(e){
+      if(e.key!=='Escape')return;
+      _c++;clearTimeout(_t);
+      _t=setTimeout(function(){_c=0;},1000);
+      if(_c>=3){window.parent.postMessage({catclassEsc:true},'*');_c=0;}
+    });
+  }
+  // When a child iframe sends catclassEsc, revert this page's overlay/iframe
+  window.addEventListener('message',function(e){
+    if(!e.data||!e.data.catclassEsc)return;
+    // Overlay pattern (colorpicker, convert, etc.)
+    var ov=document.getElementById('overlay')||document.getElementById('iframe-overlay');
+    var hif=document.getElementById('hidden-iframe');
+    if(ov&&ov.style.display!=='none'){
+      ov.style.display='none';
+      if(hif)hif.src='';
+      try{overlayOpen=false;escCounter=0;}catch(x){}
+      return;
+    }
+    // Wiki/full-screen iframe pattern (wiki.html, 404.html)
+    var wf=document.getElementById('wikiFrame');
+    if(wf&&typeof wikiUrl!=='undefined'&&typeof currentView!=='undefined'&&currentView!=='wiki'){
+      wf.src=wikiUrl;currentView='wiki';
+      try{escCounter=0;}catch(x){}
+    }
+  });
+})();
+</script>
+</body>
+</html>

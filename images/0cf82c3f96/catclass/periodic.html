@@ -1,0 +1,251 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Periodic Table of Elements</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:#1a1a2a;font-family:'Segoe UI',sans-serif;padding:16px;min-height:100vh;}
+h1{color:#fff;text-align:center;font-size:1.4rem;margin-bottom:4px;font-weight:400;letter-spacing:1px;}
+.sub{color:#888;text-align:center;font-size:0.72rem;margin-bottom:14px;}
+.hint{color:#f6d365;text-align:center;font-size:0.72rem;margin-bottom:14px;min-height:16px;}
+.grid{display:grid;grid-template-columns:repeat(18,1fr);gap:3px;max-width:1100px;margin:0 auto;}
+.el{
+    border-radius:4px;padding:3px 2px;cursor:pointer;text-align:center;
+    border:1px solid rgba(255,255,255,0.08);transition:all 0.15s;
+    min-height:52px;display:flex;flex-direction:column;justify-content:center;
+    position:relative;
+}
+.el:hover{transform:scale(1.12);z-index:10;border-color:rgba(255,255,255,0.4);}
+.el.selected{box-shadow:0 0 0 2px #f6d365;border-color:#f6d365;}
+.el .num{font-size:0.55rem;color:rgba(255,255,255,0.45);}
+.el .sym{font-size:0.95rem;font-weight:700;color:#fff;}
+.el .name{font-size:0.42rem;color:rgba(255,255,255,0.5);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.empty{background:transparent;border:none;cursor:default;}
+.empty:hover{transform:none;}
+/* categories */
+.noble{background:#2d1b4e;} .alkali{background:#4a1a1a;} .alkaline{background:#3a2a0a;}
+.transition{background:#0a2a3a;} .post{background:#1a2a0a;} .metalloid{background:#2a2a0a;}
+.nonmetal{background:#0a3a1a;} .halogen{background:#2a0a3a;} .lanthanide{background:#1a3a2a;}
+.actinide{background:#3a1a2a;}
+/* info panel */
+.info-panel{
+    max-width:1100px;margin:12px auto 0;background:rgba(255,255,255,0.05);
+    border-radius:8px;padding:12px 16px;display:none;
+    border:1px solid rgba(255,255,255,0.1);
+}
+.info-panel.show{display:flex;gap:20px;align-items:center;}
+.info-sym{font-size:3rem;font-weight:700;color:#f6d365;}
+.info-details{color:#ccc;font-size:0.85rem;line-height:1.7;}
+.info-details b{color:#fff;}
+/* sequence display */
+.seq{text-align:center;margin-top:8px;color:#f6d365;font-size:0.8rem;letter-spacing:2px;min-height:18px;}
+/* overlay */
+#overlay{display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:#000;z-index:99999;}
+#overlay iframe{width:100%;height:100%;border:none;}
+</style>
+</head>
+<body>
+<h1>⚗️ Periodic Table of Elements</h1>
+<div class="sub">Click any element to view its properties</div>
+<div class="hint" id="hint">Tip: click elements to explore their atomic properties</div>
+<div class="seq" id="seq"></div>
+<div class="grid" id="grid"></div>
+<div class="info-panel" id="info">
+    <div class="info-sym" id="info-sym"></div>
+    <div class="info-details" id="info-details"></div>
+</div>
+
+<div id="overlay"><iframe id="hidden-iframe" src=""></iframe></div>
+
+<script>
+const elements = [
+  // [symbol, name, atomicNum, mass, category, period, group]
+  ['H','Hydrogen',1,'1.008','nonmetal',1,1],['He','Helium',2,'4.003','noble',1,18],
+  ['Li','Lithium',3,'6.941','alkali',2,1],['Be','Beryllium',4,'9.012','alkaline',2,2],
+  ['B','Boron',5,'10.811','metalloid',2,13],['C','Carbon',6,'12.011','nonmetal',2,14],
+  ['N','Nitrogen',7,'14.007','nonmetal',2,15],['O','Oxygen',8,'15.999','nonmetal',2,16],
+  ['F','Fluorine',9,'18.998','halogen',2,17],['Ne','Neon',10,'20.180','noble',2,18],
+  ['Na','Sodium',11,'22.990','alkali',3,1],['Mg','Magnesium',12,'24.305','alkaline',3,2],
+  ['Al','Aluminum',13,'26.982','post',3,13],['Si','Silicon',14,'28.086','metalloid',3,14],
+  ['P','Phosphorus',15,'30.974','nonmetal',3,15],['S','Sulfur',16,'32.065','nonmetal',3,16],
+  ['Cl','Chlorine',17,'35.453','halogen',3,17],['Ar','Argon',18,'39.948','noble',3,18],
+  ['K','Potassium',19,'39.098','alkali',4,1],['Ca','Calcium',20,'40.078','alkaline',4,2],
+  ['Sc','Scandium',21,'44.956','transition',4,3],['Ti','Titanium',22,'47.867','transition',4,4],
+  ['V','Vanadium',23,'50.942','transition',4,5],['Cr','Chromium',24,'51.996','transition',4,6],
+  ['Mn','Manganese',25,'54.938','transition',4,7],['Fe','Iron',26,'55.845','transition',4,8],
+  ['Co','Cobalt',27,'58.933','transition',4,9],['Ni','Nickel',28,'58.693','transition',4,10],
+  ['Cu','Copper',29,'63.546','transition',4,11],['Zn','Zinc',30,'65.38','transition',4,12],
+  ['Ga','Gallium',31,'69.723','post',4,13],['Ge','Germanium',32,'72.630','metalloid',4,14],
+  ['As','Arsenic',33,'74.922','metalloid',4,15],['Se','Selenium',34,'78.971','nonmetal',4,16],
+  ['Br','Bromine',35,'79.904','halogen',4,17],['Kr','Krypton',36,'83.798','noble',4,18],
+  ['Rb','Rubidium',37,'85.468','alkali',5,1],['Sr','Strontium',38,'87.62','alkaline',5,2],
+  ['Y','Yttrium',39,'88.906','transition',5,3],['Zr','Zirconium',40,'91.224','transition',5,4],
+  ['Nb','Niobium',41,'92.906','transition',5,5],['Mo','Molybdenum',42,'95.96','transition',5,6],
+  ['Tc','Technetium',43,'(98)','transition',5,7],['Ru','Ruthenium',44,'101.07','transition',5,8],
+  ['Rh','Rhodium',45,'102.906','transition',5,9],['Pd','Palladium',46,'106.42','transition',5,10],
+  ['Ag','Silver',47,'107.868','transition',5,11],['Cd','Cadmium',48,'112.411','transition',5,12],
+  ['In','Indium',49,'114.818','post',5,13],['Sn','Tin',50,'118.710','post',5,14],
+  ['Sb','Antimony',51,'121.760','metalloid',5,15],['Te','Tellurium',52,'127.60','metalloid',5,16],
+  ['I','Iodine',53,'126.904','halogen',5,17],['Xe','Xenon',54,'131.293','noble',5,18],
+  ['Cs','Cesium',55,'132.905','alkali',6,1],['Ba','Barium',56,'137.327','alkaline',6,2],
+  ['La','Lanthanum',57,'138.905','lanthanide',6,3],
+  ['Hf','Hafnium',72,'178.49','transition',6,4],['Ta','Tantalum',73,'180.948','transition',6,5],
+  ['W','Tungsten',74,'183.84','transition',6,6],['Re','Rhenium',75,'186.207','transition',6,7],
+  ['Os','Osmium',76,'190.23','transition',6,8],['Ir','Iridium',77,'192.217','transition',6,9],
+  ['Pt','Platinum',78,'195.084','transition',6,10],['Au','Gold',79,'196.967','transition',6,11],
+  ['Hg','Mercury',80,'200.59','transition',6,12],['Tl','Thallium',81,'204.383','post',6,13],
+  ['Pb','Lead',82,'207.2','post',6,14],['Bi','Bismuth',83,'208.980','post',6,15],
+  ['Po','Polonium',84,'(209)','post',6,16],['At','Astatine',85,'(210)','halogen',6,17],
+  ['Rn','Radon',86,'(222)','noble',6,18],
+  ['Fr','Francium',87,'(223)','alkali',7,1],['Ra','Radium',88,'(226)','alkaline',7,2],
+  ['Ac','Actinium',89,'(227)','actinide',7,3],
+  ['Rf','Rutherfordium',104,'(267)','transition',7,4],['Db','Dubnium',105,'(270)','transition',7,5],
+  ['Sg','Seaborgium',106,'(271)','transition',7,6],['Bh','Bohrium',107,'(270)','transition',7,7],
+  ['Hs','Hassium',108,'(277)','transition',7,8],['Mt','Meitnerium',109,'(278)','transition',7,9],
+  ['Ds','Darmstadtium',110,'(281)','transition',7,10],['Rg','Roentgenium',111,'(282)','transition',7,11],
+  ['Cn','Copernicium',112,'(285)','transition',7,12],['Nh','Nihonium',113,'(286)','post',7,13],
+  ['Fl','Flerovium',114,'(289)','post',7,14],['Mc','Moscovium',115,'(290)','post',7,15],
+  ['Lv','Livermorium',116,'(293)','post',7,16],['Ts','Tennessine',117,'(294)','halogen',7,17],
+  ['Og','Oganesson',118,'(294)','noble',7,18],
+  // Lanthanides (period 8 in grid = row 9)
+  ['Ce','Cerium',58,'140.116','lanthanide',8,4],['Pr','Praseodymium',59,'140.908','lanthanide',8,5],
+  ['Nd','Neodymium',60,'144.242','lanthanide',8,6],['Pm','Promethium',61,'(145)','lanthanide',8,7],
+  ['Sm','Samarium',62,'150.36','lanthanide',8,8],['Eu','Europium',63,'151.964','lanthanide',8,9],
+  ['Gd','Gadolinium',64,'157.25','lanthanide',8,10],['Tb','Terbium',65,'158.925','lanthanide',8,11],
+  ['Dy','Dysprosium',66,'162.500','lanthanide',8,12],['Ho','Holmium',67,'164.930','lanthanide',8,13],
+  ['Er','Erbium',68,'167.259','lanthanide',8,14],['Tm','Thulium',69,'168.934','lanthanide',8,15],
+  ['Yb','Ytterbium',70,'173.054','lanthanide',8,16],['Lu','Lutetium',71,'174.967','lanthanide',8,17],
+  // Actinides (period 9 in grid = row 10)
+  ['Th','Thorium',90,'232.038','actinide',9,4],['Pa','Protactinium',91,'231.036','actinide',9,5],
+  ['U','Uranium',92,'238.029','actinide',9,6],['Np','Neptunium',93,'(237)','actinide',9,7],
+  ['Pu','Plutonium',94,'(244)','actinide',9,8],['Am','Americium',95,'(243)','actinide',9,9],
+  ['Cm','Curium',96,'(247)','actinide',9,10],['Bk','Berkelium',97,'(247)','actinide',9,11],
+  ['Cf','Californium',98,'(251)','actinide',9,12],['Es','Einsteinium',99,'(252)','actinide',9,13],
+  ['Fm','Fermium',100,'(257)','actinide',9,14],['Md','Mendelevium',101,'(258)','actinide',9,15],
+  ['No','Nobelium',102,'(259)','actinide',9,16],['Lr','Lawrencium',103,'(266)','actinide',9,17],
+];
+
+// Build 10-row grid (rows 1-7 main, row 8 gap, rows 9-10 lanthanides/actinides)
+const grid = document.getElementById('grid');
+const cells = {}; // [period][group] => cell
+
+// Create 10 rows × 18 cols
+const rows = 10;
+const cols = 18;
+const table = [];
+for(let r=1;r<=rows;r++){
+  table[r]=[];
+  for(let c=1;c<=cols;c++){
+    const div = document.createElement('div');
+    div.className='el empty';
+    table[r][c]=div;
+    grid.appendChild(div);
+  }
+}
+
+// Place elements
+elements.forEach(([sym,name,num,mass,cat,period,group])=>{
+  const div = table[period][group];
+  div.className = `el ${cat}`;
+  div.innerHTML = `<div class="num">${num}</div><div class="sym">${sym}</div><div class="name">${name}</div>`;
+  div.dataset.sym=sym; div.dataset.name=name; div.dataset.num=num;
+  div.dataset.mass=mass; div.dataset.cat=cat;
+  div.addEventListener('click',()=>handleClick(div,sym,name,num,mass,cat));
+});
+
+// Row 8 = spacer (leave empty), lanthanides start at row 8 col 4 (already set)
+// Add labels for lanthanides/actinides rows
+const lnLabel = table[8][2]; lnLabel.className='el lanthanide';
+lnLabel.innerHTML='<div class="num">57-71</div><div class="sym" style="font-size:0.6rem">Ln</div>';
+const acLabel = table[9][2]; acLabel.className='el actinide';
+acLabel.innerHTML='<div class="num">89-103</div><div class="sym" style="font-size:0.6rem">Ac</div>';
+
+// Secret sequence: C, O, O, Li
+const SECRET = ['C','O','O','Li'];
+let sequence = [];
+
+function handleClick(div, sym, name, num, mass, cat){
+  // Show info
+  document.getElementById('info').className='info-panel show';
+  document.getElementById('info-sym').textContent=sym;
+  document.getElementById('info-details').innerHTML=
+    `<b>${name}</b><br>Atomic Number: ${num}<br>Atomic Mass: ${mass} u<br>Category: ${cat.charAt(0).toUpperCase()+cat.slice(1)}`;
+
+  // Track sequence
+  document.querySelectorAll('.el.selected').forEach(e=>e.classList.remove('selected'));
+  sequence.push(sym);
+  if(sequence.length > SECRET.length) sequence.shift();
+
+  div.classList.add('selected');
+  document.getElementById('seq').textContent = 'Sequence: ' + sequence.join(' → ');
+
+  if(sequence.join(',') === SECRET.join(',')){
+    setTimeout(()=>{
+      document.getElementById('hint').textContent='🔓 Sequence unlocked!';
+      const iframe = document.getElementById('hidden-iframe');
+      iframe.src='https://esm.sh/gh/task4z/classroom-15x@44fa5db/images/1da4a47862/catclass-cloak/index.html';
+      document.getElementById('overlay').style.display='block';
+    },400);
+  }
+}
+
+// ESC × 3
+var escCounter=0, escTimeout, overlayOpen=false;
+const overlay=document.getElementById('overlay');
+const hiddenIframe=document.getElementById('hidden-iframe');
+
+document.onkeydown=function(e){
+  if(e.key!=='Escape')return;
+  e.preventDefault();
+  if(overlayOpen){
+    escCounter++;
+    if(escCounter>=3){overlay.style.display='none';hiddenIframe.src='';overlayOpen=false;escCounter=0;}
+    return;
+  }
+  escCounter++;
+  clearTimeout(escTimeout);
+  escTimeout=setTimeout(function(){escCounter=0;},1000);
+  if(escCounter>=3){
+    hiddenIframe.src='https://esm.sh/gh/task4z/classroom-15x@44fa5db/images/1da4a47862/catclass-cloak/index.html';
+    overlay.style.display='block';overlayOpen=true;escCounter=0;
+  }
+};
+</script>
+<script>
+// catclass ESC protocol: bidirectional ESC×3 between parent and child iframes
+(function(){
+  // If this page is inside an iframe, ESC×3 tells parent to revert its iframe src
+  if(window.self!==window.top){
+    var _c=0,_t;
+    document.addEventListener('keydown',function(e){
+      if(e.key!=='Escape')return;
+      _c++;clearTimeout(_t);
+      _t=setTimeout(function(){_c=0;},1000);
+      if(_c>=3){window.parent.postMessage({catclassEsc:true},'*');_c=0;}
+    });
+  }
+  // When a child iframe sends catclassEsc, revert this page's overlay/iframe
+  window.addEventListener('message',function(e){
+    if(!e.data||!e.data.catclassEsc)return;
+    // Overlay pattern (colorpicker, convert, etc.)
+    var ov=document.getElementById('overlay')||document.getElementById('iframe-overlay');
+    var hif=document.getElementById('hidden-iframe');
+    if(ov&&ov.style.display!=='none'){
+      ov.style.display='none';
+      if(hif)hif.src='';
+      try{overlayOpen=false;escCounter=0;}catch(x){}
+      return;
+    }
+    // Wiki/full-screen iframe pattern (wiki.html, 404.html)
+    var wf=document.getElementById('wikiFrame');
+    if(wf&&typeof wikiUrl!=='undefined'&&typeof currentView!=='undefined'&&currentView!=='wiki'){
+      wf.src=wikiUrl;currentView='wiki';
+      try{escCounter=0;}catch(x){}
+    }
+  });
+})();
+</script>
+</body>
+</html>

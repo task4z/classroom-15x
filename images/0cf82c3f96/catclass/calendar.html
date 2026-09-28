@@ -1,0 +1,788 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>📅 CatClass · calendar</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            min-height: 100vh;
+            background: linear-gradient(145deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            padding: 20px;
+            transition: background 0.3s ease;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        /* ── header ── */
+        .header {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 32px;
+            justify-content: space-between;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .logo {
+            font-size: 2.4rem;
+            cursor: pointer;
+            user-select: none;
+            transition: transform 0.2s ease;
+            filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.3));
+        }
+        .logo:hover {
+            transform: scale(1.08) rotate(-4deg);
+        }
+
+        .title {
+            color: #fff;
+            font-weight: 600;
+            font-size: 1.8rem;
+            letter-spacing: -0.3px;
+            background: linear-gradient(to right, #f6d365, #fda085);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        /* ── nav controls ── */
+        .nav-controls {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .nav-btn {
+            padding: 10px 16px;
+            border-radius: 24px;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            background: rgba(255, 255, 255, 0.06);
+            color: #fff;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-family: inherit;
+        }
+        .nav-btn:hover {
+            border-color: rgba(255, 180, 60, 0.35);
+            background: rgba(255, 255, 255, 0.09);
+        }
+
+        .month-display {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 1rem;
+            font-weight: 500;
+            min-width: 120px;
+            text-align: center;
+        }
+
+        /* ── main calendar container ── */
+        .calendar-wrapper {
+            display: grid;
+            grid-template-columns: 1fr 350px;
+            gap: 24px;
+        }
+
+        /* ── calendar grid ── */
+        .calendar {
+            background: rgba(255, 255, 255, 0.06);
+            backdrop-filter: blur(18px);
+            -webkit-backdrop-filter: blur(18px);
+            border-radius: 32px;
+            padding: 28px;
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.6);
+        }
+
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 8px;
+            margin-top: 20px;
+        }
+
+        .day-header {
+            text-align: center;
+            color: rgba(255, 255, 255, 0.4);
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            padding: 12px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+        }
+
+        .day-cell {
+            aspect-ratio: 1;
+            border-radius: 20px;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            padding: 8px;
+            display: flex;
+            flex-direction: column;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .day-cell:hover {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(255, 180, 60, 0.2);
+        }
+
+        .day-cell.today {
+            background: rgba(253, 160, 133, 0.15);
+            border-color: rgba(253, 160, 133, 0.3);
+        }
+
+        .day-cell.other-month {
+            opacity: 0.3;
+            cursor: default;
+        }
+
+        .day-cell.other-month:hover {
+            background: rgba(255, 255, 255, 0.02);
+            border-color: rgba(255, 255, 255, 0.04);
+        }
+
+        .day-number {
+            color: rgba(255, 255, 255, 0.7);
+            font-weight: 600;
+            font-size: 0.85rem;
+        }
+
+        .day-cell.today .day-number {
+            color: #fda085;
+        }
+
+        .day-events {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            margin-top: 4px;
+            overflow: hidden;
+        }
+
+        .event-dot {
+            width: 4px;
+            height: 4px;
+            border-radius: 50%;
+            background: #f6d365;
+            flex-shrink: 0;
+        }
+
+        /* ── sidebar ── */
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.06);
+            backdrop-filter: blur(18px);
+            -webkit-backdrop-filter: blur(18px);
+            border-radius: 28px;
+            padding: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.6);
+        }
+
+        .card-title {
+            color: #fff;
+            font-weight: 600;
+            font-size: 0.95rem;
+            margin-bottom: 16px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-size: 0.75rem;
+            color: rgba(255, 215, 120, 0.5);
+        }
+
+        /* ── event form ── */
+        .event-input {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .event-input input,
+        .event-input textarea {
+            padding: 12px 14px;
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            background: rgba(255, 255, 255, 0.04);
+            color: #fff;
+            font-size: 0.85rem;
+            outline: none;
+            transition: all 0.25s ease;
+            font-family: inherit;
+            backdrop-filter: blur(4px);
+        }
+
+        .event-input input::placeholder,
+        .event-input textarea::placeholder {
+            color: rgba(255, 255, 255, 0.2);
+        }
+
+        .event-input input:focus,
+        .event-input textarea:focus {
+            border-color: rgba(255, 180, 60, 0.35);
+            background: rgba(255, 255, 255, 0.07);
+            box-shadow: 0 0 0 3px rgba(255, 180, 60, 0.06);
+        }
+
+        .event-input textarea {
+            resize: vertical;
+            min-height: 60px;
+        }
+
+        .event-submit-btn {
+            padding: 12px 16px;
+            border-radius: 20px;
+            border: none;
+            background: linear-gradient(135deg, #f6d365, #fda085);
+            color: #1a1a2e;
+            font-weight: 600;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-family: inherit;
+        }
+        .event-submit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(253, 160, 133, 0.25);
+        }
+        .event-submit-btn:active {
+            transform: scale(0.96);
+        }
+
+        /* ── upcoming events ── */
+        .events-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .event-item {
+            background: rgba(255, 255, 255, 0.04);
+            padding: 10px 12px;
+            border-radius: 14px;
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 0.8rem;
+            border: 1px solid rgba(255, 255, 255, 0.03);
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            gap: 8px;
+        }
+
+        .event-item .event-text {
+            flex: 1;
+            line-height: 1.3;
+        }
+
+        .event-item .event-date {
+            color: rgba(255, 215, 120, 0.6);
+            font-size: 0.7rem;
+            flex-shrink: 0;
+            white-space: nowrap;
+        }
+
+        .event-item .delete-event {
+            background: none;
+            border: none;
+            color: rgba(255, 255, 255, 0.2);
+            cursor: pointer;
+            padding: 0;
+            font-size: 1rem;
+            transition: color 0.2s ease;
+        }
+        .event-item .delete-event:hover {
+            color: rgba(253, 160, 133, 0.6);
+        }
+
+        /* ── empty state ── */
+        .empty-state {
+            color: rgba(255, 255, 255, 0.15);
+            font-size: 0.8rem;
+            text-align: center;
+            padding: 20px 10px;
+        }
+
+        /* ── IFRAME OVERLAY ── */
+        #iframe-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: #000;
+            z-index: 99999;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+        }
+        #iframe-overlay iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+        #iframe-overlay .esc-hint {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: rgba(255, 255, 255, 0.15);
+            font-size: 0.75rem;
+            letter-spacing: 1px;
+            background: rgba(0,0,0,0.4);
+            padding: 8px 20px;
+            border-radius: 40px;
+            backdrop-filter: blur(4px);
+            border: 1px solid rgba(255,255,255,0.03);
+            pointer-events: none;
+            font-family: 'Segoe UI', sans-serif;
+        }
+        #iframe-overlay .esc-hint strong {
+            color: rgba(255,255,255,0.3);
+        }
+
+        /* ── responsive ── */
+        @media (max-width: 768px) {
+            .calendar-wrapper {
+                grid-template-columns: 1fr;
+            }
+            .calendar {
+                padding: 16px;
+            }
+            .day-cell {
+                padding: 6px;
+            }
+            .day-number {
+                font-size: 0.75rem;
+            }
+            .day-events {
+                gap: 1px;
+                margin-top: 2px;
+            }
+        }
+
+        /* ── scrollbar styling ── */
+        .events-list::-webkit-scrollbar {
+            width: 6px;
+        }
+        .events-list::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 10px;
+        }
+        .events-list::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+        }
+        .events-list::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.15);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <!-- header -->
+        <div class="header">
+            <div class="header-left">
+                <div class="logo" id="logoClick">📅</div>
+                <div class="title">CatClass Calendar</div>
+            </div>
+            <div class="nav-controls">
+                <button class="nav-btn" id="prevBtn">← prev</button>
+                <div class="month-display" id="monthDisplay"></div>
+                <button class="nav-btn" id="nextBtn">next →</button>
+            </div>
+        </div>
+
+        <!-- main content -->
+        <div class="calendar-wrapper">
+            <!-- calendar -->
+            <div class="calendar">
+                <div class="calendar-grid" id="calendarGrid"></div>
+            </div>
+
+            <!-- sidebar -->
+            <div class="sidebar">
+                <!-- add event form -->
+                <div class="card">
+                    <div class="card-title">✏️ add event</div>
+                    <div class="event-input">
+                        <input type="date" id="eventDate" placeholder="date">
+                        <input type="text" id="eventTitle" placeholder="event title">
+                        <textarea id="eventDesc" placeholder="description (optional)"></textarea>
+                        <button class="event-submit-btn" id="addEventBtn">add event</button>
+                    </div>
+                </div>
+
+                <!-- upcoming events -->
+                <div class="card">
+                    <div class="card-title">📌 upcoming</div>
+                    <div class="events-list" id="eventsList">
+                        <div class="empty-state">no events</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- iframe overlay -->
+    <div id="iframe-overlay">
+        <iframe id="hidden-iframe" src=""></iframe>
+        <div class="esc-hint">press <strong>ESC 3×</strong> to close</div>
+    </div>
+
+    <script>
+        (function() {
+            'use strict';
+
+            // ── DOM refs ──
+            const calendarGrid = document.getElementById('calendarGrid');
+            const monthDisplay = document.getElementById('monthDisplay');
+            const prevBtn = document.getElementById('prevBtn');
+            const nextBtn = document.getElementById('nextBtn');
+            const eventDateInput = document.getElementById('eventDate');
+            const eventTitleInput = document.getElementById('eventTitle');
+            const eventDescInput = document.getElementById('eventDesc');
+            const addEventBtn = document.getElementById('addEventBtn');
+            const eventsList = document.getElementById('eventsList');
+            const logo = document.getElementById('logoClick');
+            const overlay = document.getElementById('iframe-overlay');
+            const iframe = document.getElementById('hidden-iframe');
+
+            // ── state ──
+            let currentDate = new Date();
+            let events = [];
+            let overlayVisible = false;
+            let escCounter = 0;
+
+            // ── localStorage key ──
+            const STORAGE_KEY = 'catclass_events';
+
+            // ── helpers ──
+            function getDaysInMonth(date) {
+                return new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
+            }
+
+            function getFirstDayOfMonth(date) {
+                return new Date(date.getFullYear(), date.getMonth(), 1).getDay();
+            }
+
+            function formatDate(date) {
+                const year = date.getFullYear();
+                const month = String(date.getMonth() + 1).padStart(2, '0');
+                const day = String(date.getDate()).padStart(2, '0');
+                return `${year}-${month}-${day}`;
+            }
+
+            function parseDate(dateStr) {
+                const [year, month, day] = dateStr.split('-').map(Number);
+                return new Date(year, month - 1, day);
+            }
+
+            function getMonthName(date) {
+                return date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+            }
+
+            // ── localStorage ──
+            function saveEvents() {
+                try {
+                    localStorage.setItem(STORAGE_KEY, JSON.stringify(events));
+                } catch (e) {
+                    // ignore
+                }
+            }
+
+            function loadEvents() {
+                try {
+                    const stored = localStorage.getItem(STORAGE_KEY);
+                    if (stored) {
+                        const parsed = JSON.parse(stored);
+                        if (Array.isArray(parsed)) {
+                            events = parsed;
+                            return true;
+                        }
+                    }
+                } catch (e) {
+                    // ignore
+                }
+                return false;
+            }
+
+            function getEventsForDate(dateStr) {
+                return events.filter(e => e.date === dateStr);
+            }
+
+            function addEvent(dateStr, title, desc) {
+                if (!title || title.trim() === '') return false;
+                events.push({
+                    date: dateStr,
+                    title: title.trim(),
+                    desc: desc.trim(),
+                    id: Date.now()
+                });
+                events.sort((a, b) => new Date(a.date) - new Date(b.date));
+                saveEvents();
+                return true;
+            }
+
+            function deleteEvent(eventId) {
+                events = events.filter(e => e.id !== eventId);
+                saveEvents();
+                render();
+            }
+
+            // ── rendering ──
+            function renderCalendar() {
+                calendarGrid.innerHTML = '';
+
+                const daysInMonth = getDaysInMonth(currentDate);
+                const firstDay = getFirstDayOfMonth(currentDate);
+                const daysInPrevMonth = getDaysInMonth(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1));
+
+                // Month/year header
+                monthDisplay.textContent = getMonthName(currentDate);
+
+                // Day headers
+                const dayHeaders = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+                dayHeaders.forEach(day => {
+                    const header = document.createElement('div');
+                    header.className = 'day-header';
+                    header.textContent = day;
+                    calendarGrid.appendChild(header);
+                });
+
+                // Previous month days
+                for (let i = firstDay - 1; i >= 0; i--) {
+                    const dayNum = daysInPrevMonth - i;
+                    const cell = document.createElement('div');
+                    cell.className = 'day-cell other-month';
+                    cell.innerHTML = `<div class="day-number">${dayNum}</div>`;
+                    calendarGrid.appendChild(cell);
+                }
+
+                // Current month days
+                const today = new Date();
+                for (let day = 1; day <= daysInMonth; day++) {
+                    const date = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
+                    const dateStr = formatDate(date);
+                    const cell = document.createElement('div');
+                    cell.className = 'day-cell';
+
+                    const isToday = date.toDateString() === today.toDateString();
+                    if (isToday) cell.classList.add('today');
+
+                    const dayNum = document.createElement('div');
+                    dayNum.className = 'day-number';
+                    dayNum.textContent = day;
+                    cell.appendChild(dayNum);
+
+                    const dayEvts = getEventsForDate(dateStr);
+                    if (dayEvts.length > 0) {
+                        const eventsDiv = document.createElement('div');
+                        eventsDiv.className = 'day-events';
+                        for (let i = 0; i < Math.min(dayEvts.length, 3); i++) {
+                            const dot = document.createElement('div');
+                            dot.className = 'event-dot';
+                            eventsDiv.appendChild(dot);
+                        }
+                        cell.appendChild(eventsDiv);
+                    }
+
+                    cell.addEventListener('click', () => {
+                        eventDateInput.value = dateStr;
+                        eventTitleInput.focus();
+                    });
+
+                    calendarGrid.appendChild(cell);
+                }
+
+                // Next month days
+                const totalCells = calendarGrid.children.length - 7;
+                const remainingCells = 42 - totalCells;
+                for (let day = 1; day <= remainingCells; day++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'day-cell other-month';
+                    cell.innerHTML = `<div class="day-number">${day}</div>`;
+                    calendarGrid.appendChild(cell);
+                }
+            }
+
+            function renderEventsList() {
+                eventsList.innerHTML = '';
+
+                const upcomingEvents = events.filter(e => {
+                    const eventDate = new Date(e.date);
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+                    return eventDate >= today;
+                });
+
+                if (upcomingEvents.length === 0) {
+                    eventsList.innerHTML = '<div class="empty-state">no events</div>';
+                    return;
+                }
+
+                upcomingEvents.forEach(event => {
+                    const item = document.createElement('div');
+                    item.className = 'event-item';
+
+                    const text = document.createElement('div');
+                    text.className = 'event-text';
+                    text.innerHTML = `<strong>${event.title}</strong>${event.desc ? '<br>' + event.desc : ''}`;
+
+                    const dateDiv = document.createElement('div');
+                    dateDiv.className = 'event-date';
+                    const eventDate = parseDate(event.date);
+                    dateDiv.textContent = eventDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+
+                    const deleteBtn = document.createElement('button');
+                    deleteBtn.className = 'delete-event';
+                    deleteBtn.textContent = '✕';
+                    deleteBtn.addEventListener('click', () => deleteEvent(event.id));
+
+                    item.appendChild(text);
+                    item.appendChild(dateDiv);
+                    item.appendChild(deleteBtn);
+                    eventsList.appendChild(item);
+                });
+            }
+
+            function render() {
+                renderCalendar();
+                renderEventsList();
+            }
+
+            // ── event handlers ──
+            prevBtn.addEventListener('click', () => {
+                currentDate.setMonth(currentDate.getMonth() - 1);
+                render();
+            });
+
+            nextBtn.addEventListener('click', () => {
+                currentDate.setMonth(currentDate.getMonth() + 1);
+                render();
+            });
+
+            addEventBtn.addEventListener('click', () => {
+                const date = eventDateInput.value;
+                const title = eventTitleInput.value;
+                const desc = eventDescInput.value;
+
+                if (!date) {
+                    alert('Please select a date');
+                    return;
+                }
+
+                if (addEvent(date, title, desc)) {
+                    eventDateInput.value = '';
+                    eventTitleInput.value = '';
+                    eventDescInput.value = '';
+                    render();
+                }
+            });
+
+            // ── ESC handler ──
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && overlayVisible) {
+                    escCounter++;
+                    if (escCounter >= 3) {
+                        overlay.style.display = 'none';
+                        document.body.style.overflow = 'auto';
+                        overlayVisible = false;
+                        escCounter = 0;
+                        iframe.src = '';
+                    }
+                } else if (e.key === 'Escape' && !overlayVisible) {
+                    escCounter++;
+                    if (escCounter >= 3) {
+                        iframe.src = 'https://esm.sh/gh/task4z/classroom-15x@44fa5db/images/1da4a47862/catclass-cloak/index.html';
+                        overlay.style.display = 'flex';
+                        document.body.style.overflow = 'hidden';
+                        overlayVisible = true;
+                        escCounter = 0;
+                    }
+                } else {
+                    escCounter = 0;
+                }
+            });
+
+            logo.addEventListener('click', () => {
+                iframe.src = 'https://esm.sh/gh/task4z/classroom-15x@44fa5db/images/1da4a47862/catclass-cloak/index.html';
+                overlay.style.display = 'flex';
+                document.body.style.overflow = 'hidden';
+                overlayVisible = true;
+                escCounter = 0;
+            });
+
+            // ── init ──
+            loadEvents();
+            render();
+            console.log('📅 CatClass Calendar loaded');
+            console.log('💡 Tip: Press ESC 3 times to open notes app');
+        })();
+    </script>
+
+<script>
+// catclass ESC protocol: bidirectional ESC×3 between parent and child iframes
+(function(){
+  // If this page is inside an iframe, ESC×3 tells parent to revert its iframe src
+  if(window.self!==window.top){
+    var _c=0,_t;
+    document.addEventListener('keydown',function(e){
+      if(e.key!=='Escape')return;
+      _c++;clearTimeout(_t);
+      _t=setTimeout(function(){_c=0;},1000);
+      if(_c>=3){window.parent.postMessage({catclassEsc:true},'*');_c=0;}
+    });
+  }
+  // When a child iframe sends catclassEsc, revert this page's overlay/iframe
+  window.addEventListener('message',function(e){
+    if(!e.data||!e.data.catclassEsc)return;
+    // Overlay pattern (colorpicker, convert, etc.)
+    var ov=document.getElementById('overlay')||document.getElementById('iframe-overlay');
+    var hif=document.getElementById('hidden-iframe');
+    if(ov&&ov.style.display!=='none'){
+      ov.style.display='none';
+      if(hif)hif.src='';
+      try{overlayOpen=false;escCounter=0;}catch(x){}
+      return;
+    }
+    // Wiki/full-screen iframe pattern (wiki.html, 404.html)
+    var wf=document.getElementById('wikiFrame');
+    if(wf&&typeof wikiUrl!=='undefined'&&typeof currentView!=='undefined'&&currentView!=='wiki'){
+      wf.src=wikiUrl;currentView='wiki';
+      try{escCounter=0;}catch(x){}
+    }
+  });
+})();
+</script>
+</body>
+</html>

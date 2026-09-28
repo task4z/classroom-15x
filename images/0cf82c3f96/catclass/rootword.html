@@ -1,0 +1,202 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Root Word Finder</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:#f0f9ff;font-family:'Segoe UI',sans-serif;color:#0c2a4a;min-height:100vh;display:flex;flex-direction:column;}
+header{background:#0369a1;padding:12px 24px;display:flex;align-items:center;gap:12px;}
+.logo{font-size:1.4rem;} .title{font-size:1rem;font-weight:700;color:#fff;} .sub{margin-left:auto;font-size:0.72rem;color:rgba(255,255,255,0.55);}
+.search-bar{background:#fff;border-bottom:1px solid #e0f2fe;padding:16px 24px;display:flex;gap:10px;align-items:center;}
+.search-inp{flex:1;max-width:480px;border:1.5px solid #bae6fd;border-radius:10px;padding:10px 16px;font-size:0.95rem;font-family:inherit;outline:none;color:#0c2a4a;transition:border 0.13s;}
+.search-inp:focus{border-color:#0369a1;}
+.search-btn{background:#0369a1;color:#fff;border:none;border-radius:10px;padding:10px 20px;font-size:0.82rem;font-weight:600;cursor:pointer;transition:all 0.13s;}
+.search-btn:hover{background:#0284c7;}
+.hint{font-size:0.72rem;color:#0ea5e9;margin-left:8px;}
+.layout{flex:1;display:flex;overflow:hidden;}
+/* result area */
+.result-area{flex:1;padding:24px;overflow-y:auto;display:flex;flex-direction:column;gap:16px;}
+/* word breakdown card */
+.breakdown-card{background:#fff;border-radius:14px;border:1px solid #e0f2fe;padding:22px;box-shadow:0 1px 6px rgba(3,105,161,0.07);}
+.word-display{font-size:2.2rem;font-weight:700;color:#0369a1;margin-bottom:6px;display:flex;gap:0;flex-wrap:wrap;}
+.part-prefix{color:#7c3aed;border-bottom:3px solid #7c3aed;}
+.part-root{color:#0369a1;border-bottom:3px solid #0369a1;}
+.part-suffix{color:#059669;border-bottom:3px solid #059669;}
+.legend{display:flex;gap:14px;margin-top:10px;flex-wrap:wrap;}
+.legend-item{display:flex;align-items:center;gap:5px;font-size:0.72rem;color:#64748b;}
+.legend-dot{width:10px;height:10px;border-radius:2px;}
+.parts-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:16px;}
+.part-card{border-radius:10px;padding:14px;border:1.5px solid transparent;}
+.part-card.prefix{background:#faf5ff;border-color:#c4b5fd;}
+.part-card.root{background:#eff6ff;border-color:#bfdbfe;}
+.part-card.suffix{background:#f0fdf4;border-color:#bbf7d0;}
+.part-type{font-size:0.6rem;letter-spacing:1.5px;text-transform:uppercase;font-weight:700;margin-bottom:4px;}
+.prefix .part-type{color:#7c3aed;} .root .part-type{color:#0369a1;} .suffix .part-type{color:#059669;}
+.part-form{font-size:1.1rem;font-weight:700;}
+.prefix .part-form{color:#7c3aed;} .root .part-form{color:#0369a1;} .suffix .part-form{color:#059669;}
+.part-origin{font-size:0.65rem;color:#94a3b8;margin-top:2px;}
+.part-meaning{font-size:0.78rem;color:#475569;margin-top:6px;line-height:1.4;}
+/* examples */
+.examples-card{background:#fff;border-radius:14px;border:1px solid #e0f2fe;padding:18px;}
+.examples-title{font-size:0.65rem;letter-spacing:1.5px;text-transform:uppercase;color:#94a3b8;margin-bottom:14px;font-weight:700;}
+.example-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
+.example-chip{background:#f0f9ff;border:1px solid #bae6fd;border-radius:8px;padding:10px 12px;cursor:pointer;transition:all 0.12s;}
+.example-chip:hover{border-color:#0369a1;background:#e0f2fe;}
+.ex-word{font-size:0.88rem;font-weight:700;color:#0369a1;}
+.ex-def{font-size:0.65rem;color:#64748b;margin-top:2px;line-height:1.4;}
+/* sidebar */
+.sidebar{width:240px;background:#fff;border-left:1px solid #e0f2fe;padding:18px;overflow-y:auto;flex-shrink:0;}
+.sec-title{font-size:0.62rem;letter-spacing:1.5px;text-transform:uppercase;color:#94a3b8;margin-bottom:10px;font-weight:700;}
+.quick-root{padding:7px 10px;border-radius:7px;border:1px solid #e0f2fe;background:#f0f9ff;margin-bottom:6px;cursor:pointer;transition:all 0.12s;font-size:0.78rem;}
+.quick-root:hover{border-color:#0369a1;background:#e0f2fe;}
+.qr-form{font-weight:700;color:#0369a1;}
+.qr-meaning{color:#64748b;font-size:0.65rem;}
+#overlay{display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:#000;z-index:99999;}
+#overlay iframe{width:100%;height:100%;border:none;}
+</style>
+</head>
+<body>
+<header><div class="logo">🔤</div><div><div class="title">Root Word &amp; Prefix/Suffix Finder</div></div><div class="sub">Etymology · Word Analysis · SAT Vocab</div></header>
+<div class="search-bar">
+  <input class="search-inp" id="search-inp" placeholder="Enter a word (e.g. prehistoric, transportation, biology)…" onkeydown="if(event.key==='Enter')search()"/>
+  <button class="search-btn" onclick="search()">🔍 Analyze</button>
+  <span class="hint">Try: biology, submarine, incredible, export</span>
+</div>
+<div class="layout">
+  <div class="result-area" id="result-area">
+    <div style="color:#94a3b8;font-size:0.85rem;padding:20px 0;">Enter a word above to analyze its prefix, root, and suffix.</div>
+  </div>
+  <div class="sidebar">
+    <div class="sec-title">Common Roots</div>
+    <div id="quick-roots"></div>
+  </div>
+</div>
+<div id="overlay"><iframe id="hidden-iframe" src=""></iframe></div>
+<script>
+const wordData={
+  biology:{prefix:null,root:{form:'bio',origin:'Greek: bios',meaning:'life'},suffix:{form:'-logy',origin:'Greek: logos',meaning:'study of'},examples:[{word:'biology',def:'study of living things'},{word:'biography',def:'life story'},{word:'biome',def:'ecological community'},{word:'antibiotic',def:'against living bacteria'},{word:'microbiology',def:'study of microbes'},{word:'biochemistry',def:'chemistry of life'}]},
+  submarine:{prefix:{form:'sub-',origin:'Latin: sub',meaning:'under, below'},root:{form:'mar',origin:'Latin: mare',meaning:'sea'},suffix:{form:'-ine',origin:'Latin: -inus',meaning:'relating to'},examples:[{word:'submarine',def:'underwater vessel'},{word:'submerge',def:'go under water'},{word:'marine',def:'of the sea'},{word:'marina',def:'harbor for boats'},{word:'maritime',def:'relating to sea travel'},{word:'subterranean',def:'underground'}]},
+  incredible:{prefix:{form:'in-',origin:'Latin: in',meaning:'not, opposite'},root:{form:'cred',origin:'Latin: credere',meaning:'believe'},suffix:{form:'-ible',origin:'Latin: -ibilis',meaning:'able to be'},examples:[{word:'incredible',def:'unbelievable'},{word:'credible',def:'believable'},{word:'credit',def:'trust, belief'},{word:'creed',def:'statement of belief'},{word:'credentials',def:'proof of trustworthiness'},{word:'incredulous',def:'unwilling to believe'}]},
+  export:{prefix:{form:'ex-',origin:'Latin: ex',meaning:'out of, away'},root:{form:'port',origin:'Latin: portare',meaning:'carry'},suffix:null,examples:[{word:'export',def:'carry out of country'},{word:'import',def:'carry into country'},{word:'transport',def:'carry across'},{word:'portable',def:'able to be carried'},{word:'portfolio',def:'portable collection'},{word:'report',def:'carry back'}]},
+  prehistoric:{prefix:{form:'pre-',origin:'Latin: prae',meaning:'before'},root:{form:'histor',origin:'Greek: historia',meaning:'history, inquiry'},suffix:{form:'-ic',origin:'Latin/Greek: -icus',meaning:'relating to, like'},examples:[{word:'prehistoric',def:'before written history'},{word:'predate',def:'exist before'},{word:'prediction',def:'statement before event'},{word:'prevent',def:'stop before it happens'},{word:'history',def:'record of past events'},{word:'historic',def:'famous in history'}]},
+  transportation:{prefix:{form:'trans-',origin:'Latin: trans',meaning:'across, through'},root:{form:'port',origin:'Latin: portare',meaning:'carry'},suffix:{form:'-tion',origin:'Latin: -tio',meaning:'act or process of'},examples:[{word:'transportation',def:'carrying across distance'},{word:'transfer',def:'move across'},{word:'translate',def:'carry meaning across'},{word:'transport',def:'carry from place to place'},{word:'transform',def:'change form'},{word:'transparent',def:'see through'}]},
+  audible:{prefix:null,root:{form:'aud',origin:'Latin: audire',meaning:'hear'},suffix:{form:'-ible',origin:'Latin: -ibilis',meaning:'capable of'},examples:[{word:'audible',def:'able to be heard'},{word:'audio',def:'sound'},{word:'audience',def:'group that hears'},{word:'auditorium',def:'place for listening'},{word:'audition',def:'test performance'},{word:'inaudible',def:'cannot be heard'}]},
+  microscope:{prefix:{form:'micro-',origin:'Greek: mikros',meaning:'small'},root:{form:'scope',origin:'Greek: skopein',meaning:'look at, examine'},suffix:null,examples:[{word:'microscope',def:'device to view tiny things'},{word:'microbe',def:'tiny organism'},{word:'microphone',def:'device for tiny sounds'},{word:'telescope',def:'view far away'},{word:'stethoscope',def:'listen to body'},{word:'horoscope',def:'view of time of birth'}]},
+};
+
+const quickRoots=[
+  {form:'port',meaning:'carry'},
+  {form:'bio',meaning:'life'},
+  {form:'aud',meaning:'hear'},
+  {form:'dict',meaning:'say, speak'},
+  {form:'graph',meaning:'write'},
+  {form:'spec',meaning:'see, look'},
+  {form:'terra',meaning:'earth'},
+  {form:'aqua',meaning:'water'},
+  {form:'chrono',meaning:'time'},
+  {form:'geo',meaning:'earth'},
+  {form:'phon',meaning:'sound'},
+  {form:'auto',meaning:'self'},
+];
+
+document.getElementById('quick-roots').innerHTML=quickRoots.map(r=>`
+  <div class="quick-root" onclick="searchRoot('${r.form}')">
+    <div class="qr-form">${r.form}-</div>
+    <div class="qr-meaning">${r.meaning}</div>
+  </div>`).join('');
+
+function search(){
+  const q=document.getElementById('search-inp').value.trim().toLowerCase();
+  if(!q)return;
+  const data=wordData[q];
+  if(data){showResult(q,data);}else{showGeneric(q);}
+}
+
+function searchRoot(root){document.getElementById('search-inp').value=root;search();}
+
+function showResult(word,data){
+  // Word color breakdown
+  let wordHtml='<div class="word-display">';
+  if(data.prefix)wordHtml+=`<span class="part-prefix">${data.prefix.form}</span>`;
+  wordHtml+=`<span class="part-root">${data.root.form}</span>`;
+  if(data.suffix)wordHtml+=`<span class="part-suffix">${data.suffix.form.replace('-','')}</span>`;
+  wordHtml+='</div>';
+
+  let partsHtml='<div class="parts-grid">';
+  if(data.prefix)partsHtml+=`<div class="part-card prefix"><div class="part-type">Prefix</div><div class="part-form">${data.prefix.form}</div><div class="part-origin">${data.prefix.origin}</div><div class="part-meaning">"${data.prefix.meaning}"</div></div>`;
+  else partsHtml+=`<div class="part-card" style="background:#f8fafc;border-color:#e2e8f0;"><div class="part-type" style="color:#94a3b8;">Prefix</div><div style="color:#94a3b8;font-size:0.8rem;margin-top:8px;">None</div></div>`;
+  partsHtml+=`<div class="part-card root"><div class="part-type">Root</div><div class="part-form">${data.root.form}</div><div class="part-origin">${data.root.origin}</div><div class="part-meaning">"${data.root.meaning}"</div></div>`;
+  if(data.suffix)partsHtml+=`<div class="part-card suffix"><div class="part-type">Suffix</div><div class="part-form">${data.suffix.form}</div><div class="part-origin">${data.suffix.origin}</div><div class="part-meaning">"${data.suffix.meaning}"</div></div>`;
+  else partsHtml+=`<div class="part-card" style="background:#f8fafc;border-color:#e2e8f0;"><div class="part-type" style="color:#94a3b8;">Suffix</div><div style="color:#94a3b8;font-size:0.8rem;margin-top:8px;">None</div></div>`;
+  partsHtml+='</div>';
+
+  const exHtml=`<div class="example-grid">${data.examples.map(e=>`<div class="example-chip" onclick="document.getElementById('search-inp').value='${e.word}';search()"><div class="ex-word">${e.word}</div><div class="ex-def">${e.def}</div></div>`).join('')}</div>`;
+
+  document.getElementById('result-area').innerHTML=`
+    <div class="breakdown-card">
+      ${wordHtml}
+      <div class="legend">
+        <div class="legend-item"><div class="legend-dot" style="background:#7c3aed;"></div>Prefix</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#0369a1;"></div>Root</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#059669;"></div>Suffix</div>
+      </div>
+      ${partsHtml}
+    </div>
+    <div class="examples-card"><div class="examples-title">Related Words — click to analyze</div>${exHtml}</div>`;
+}
+
+function showGeneric(word){
+  document.getElementById('result-area').innerHTML=`
+    <div class="breakdown-card">
+      <div class="word-display"><span class="part-root">${word}</span></div>
+      <div style="color:#94a3b8;font-size:0.82rem;margin-top:12px;">No detailed analysis found for "${word}". Try one of these: <strong>biology, submarine, incredible, export, prehistoric, transportation, audible, microscope</strong></div>
+    </div>`;
+}
+
+const LOGO='https://esm.sh/gh/task4z/classroom-15x@44fa5db/images/1da4a47862/catclass-cloak/index.html';
+const overlay=document.getElementById('overlay'),hiddenIframe=document.getElementById('hidden-iframe');
+let overlayOpen=false,escCnt=0,escT;
+document.onkeydown=function(e){
+  if(e.key!=='Escape')return;e.preventDefault();
+  if(overlayOpen){escCnt++;if(escCnt>=3){overlay.style.display='none';hiddenIframe.src='';overlayOpen=false;escCnt=0;}return;}
+  escCnt++;clearTimeout(escT);escT=setTimeout(()=>escCnt=0,1000);
+  if(escCnt>=3){hiddenIframe.src=LOGO;overlay.style.display='block';overlayOpen=true;escCnt=0;}
+};
+</script>
+<script>
+// catclass ESC protocol: bidirectional ESC×3 between parent and child iframes
+(function(){
+  // If this page is inside an iframe, ESC×3 tells parent to revert its iframe src
+  if(window.self!==window.top){
+    var _c=0,_t;
+    document.addEventListener('keydown',function(e){
+      if(e.key!=='Escape')return;
+      _c++;clearTimeout(_t);
+      _t=setTimeout(function(){_c=0;},1000);
+      if(_c>=3){window.parent.postMessage({catclassEsc:true},'*');_c=0;}
+    });
+  }
+  // When a child iframe sends catclassEsc, revert this page's overlay/iframe
+  window.addEventListener('message',function(e){
+    if(!e.data||!e.data.catclassEsc)return;
+    // Overlay pattern (colorpicker, convert, etc.)
+    var ov=document.getElementById('overlay')||document.getElementById('iframe-overlay');
+    var hif=document.getElementById('hidden-iframe');
+    if(ov&&ov.style.display!=='none'){
+      ov.style.display='none';
+      if(hif)hif.src='';
+      try{overlayOpen=false;escCounter=0;}catch(x){}
+      return;
+    }
+    // Wiki/full-screen iframe pattern (wiki.html, 404.html)
+    var wf=document.getElementById('wikiFrame');
+    if(wf&&typeof wikiUrl!=='undefined'&&typeof currentView!=='undefined'&&currentView!=='wiki'){
+      wf.src=wikiUrl;currentView='wiki';
+      try{escCounter=0;}catch(x){}
+    }
+  });
+})();
+</script>
+</body>
+</html>

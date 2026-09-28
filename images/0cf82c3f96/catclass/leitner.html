@@ -1,0 +1,258 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Leitner Flashcard System</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:#f0f4ff;font-family:'Segoe UI',sans-serif;color:#1e293b;min-height:100vh;display:flex;flex-direction:column;}
+header{background:#3730a3;padding:12px 24px;display:flex;align-items:center;gap:12px;}
+.logo{font-size:1.4rem;} .title{font-size:1rem;font-weight:700;color:#fff;} .sub{margin-left:auto;font-size:0.72rem;color:rgba(255,255,255,0.55);}
+.tabs{background:#fff;border-bottom:1px solid #e2e8f0;display:flex;gap:0;}
+.tab{padding:11px 22px;font-size:0.8rem;font-weight:600;cursor:pointer;border-bottom:2px solid transparent;color:#64748b;transition:all 0.13s;}
+.tab.on{border-bottom-color:#3730a3;color:#3730a3;}
+.tab:hover:not(.on){color:#1e293b;}
+.main{flex:1;display:flex;overflow:hidden;}
+/* study view */
+.study-area{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:30px;gap:20px;}
+/* boxes sidebar */
+.boxes-sidebar{width:220px;background:#fff;border-right:1px solid #e2e8f0;padding:18px;flex-shrink:0;overflow-y:auto;}
+.box-item{padding:12px;border-radius:10px;border:1.5px solid #e2e8f0;margin-bottom:10px;cursor:pointer;transition:all 0.13s;}
+.box-item:hover{border-color:#6366f1;}
+.box-item.on{border-color:#3730a3;background:#eef2ff;}
+.box-label{font-size:0.78rem;font-weight:700;color:#3730a3;}
+.box-desc{font-size:0.65rem;color:#94a3b8;margin-top:2px;}
+.box-count{display:inline-block;margin-top:5px;background:#eef2ff;color:#3730a3;border-radius:10px;padding:2px 8px;font-size:0.65rem;font-weight:700;}
+/* flashcard */
+.card-wrap{perspective:1000px;}
+.flashcard{width:440px;height:260px;border-radius:18px;position:relative;transform-style:preserve-3d;transition:transform 0.5s;cursor:pointer;}
+.flashcard.flipped{transform:rotateY(180deg);}
+.card-face{position:absolute;inset:0;border-radius:18px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:28px;backface-visibility:hidden;box-shadow:0 8px 40px rgba(55,48,163,0.15);}
+.card-front{background:linear-gradient(135deg,#3730a3,#6366f1);color:#fff;}
+.card-back{background:#fff;border:2px solid #e2e8f0;transform:rotateY(180deg);}
+.card-top-label{position:absolute;top:12px;left:14px;font-size:0.6rem;letter-spacing:1.5px;text-transform:uppercase;opacity:0.7;}
+.card-text{font-size:1.15rem;font-weight:600;text-align:center;line-height:1.5;}
+.card-back .card-text{color:#1e293b;}
+.card-hint{font-size:0.68rem;position:absolute;bottom:12px;color:rgba(255,255,255,0.6);}
+.card-back .card-hint{color:#94a3b8;}
+.card-progress{font-size:0.72rem;color:#6366f1;font-weight:700;}
+.answer-row{display:flex;gap:12px;}
+.btn{padding:11px 26px;border-radius:10px;border:none;font-size:0.82rem;font-weight:600;cursor:pointer;transition:all 0.13s;}
+.btn-correct{background:#059669;color:#fff;} .btn-correct:hover{background:#047857;}
+.btn-wrong{background:#dc2626;color:#fff;} .btn-wrong:hover{background:#b91c1c;}
+.btn-flip{background:#eef2ff;color:#3730a3;border:1px solid #c7d2fe;} .btn-flip:hover{background:#e0e7ff;}
+/* manage view */
+.manage-area{flex:1;padding:24px;overflow-y:auto;display:flex;flex-direction:column;gap:16px;}
+.add-form{background:#fff;border-radius:14px;border:1px solid #e2e8f0;padding:20px;display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;}
+.form-group{display:flex;flex-direction:column;gap:4px;flex:1;min-width:160px;}
+.form-group label{font-size:0.7rem;font-weight:600;color:#475569;text-transform:uppercase;letter-spacing:1px;}
+.form-group input{border:1.5px solid #e2e8f0;border-radius:8px;padding:9px 12px;font-size:0.82rem;font-family:inherit;outline:none;color:#1e293b;}
+.form-group input:focus{border-color:#6366f1;}
+.card-list{background:#fff;border-radius:14px;border:1px solid #e2e8f0;overflow:hidden;}
+.card-list-header{padding:14px 18px;background:#f8fafc;font-size:0.65rem;letter-spacing:1.5px;text-transform:uppercase;color:#94a3b8;font-weight:700;border-bottom:1px solid #e2e8f0;display:grid;grid-template-columns:1fr 1fr 90px 80px;gap:10px;}
+.card-list-item{padding:12px 18px;border-bottom:1px solid #f1f5f9;display:grid;grid-template-columns:1fr 1fr 90px 80px;gap:10px;align-items:center;font-size:0.8rem;}
+.card-list-item:last-child{border:none;}
+.box-badge{padding:2px 8px;border-radius:10px;font-size:0.65rem;font-weight:700;}
+.b1{background:#dbeafe;color:#1e40af;} .b2{background:#d1fae5;color:#065f46;} .b3{background:#fef3c7;color:#92400e;} .b4{background:#ede9fe;color:#5b21b6;} .b5{background:#fce7f3;color:#831843;}
+.del-btn{background:none;border:none;color:#94a3b8;cursor:pointer;font-size:0.8rem;}
+.del-btn:hover{color:#ef4444;}
+.bpadd{background:#3730a3;color:#fff;padding:10px 18px;border-radius:8px;border:none;font-size:0.8rem;font-weight:600;cursor:pointer;white-space:nowrap;align-self:flex-end;}
+.bpadd:hover{background:#312e81;}
+#study-view,#manage-view{display:none;width:100%;}
+#study-view.active,#manage-view.active{display:flex;}
+#overlay{display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:#000;z-index:99999;}
+#overlay iframe{width:100%;height:100%;border:none;}
+</style>
+</head>
+<body>
+<header><div class="logo">🧠</div><div><div class="title">Leitner Flashcard System</div></div><div class="sub">Spaced repetition · 5-box method</div></header>
+<div class="tabs">
+  <div class="tab on" onclick="showView('study',this)">Study</div>
+  <div class="tab" onclick="showView('manage',this)">Manage Cards</div>
+</div>
+<div class="main">
+  <div id="study-view" class="active">
+    <div class="boxes-sidebar" id="boxes-sidebar"></div>
+    <div class="study-area" id="study-area">
+      <div class="card-progress" id="card-progress">Select a box to begin studying</div>
+      <div class="card-wrap">
+        <div class="flashcard" id="flashcard" onclick="flipCard()">
+          <div class="card-face card-front">
+            <div class="card-top-label">Question</div>
+            <div class="card-text" id="card-front-text">Choose a box on the left</div>
+            <div class="card-hint">Click to reveal answer</div>
+          </div>
+          <div class="card-face card-back">
+            <div class="card-top-label" style="color:#94a3b8;">Answer</div>
+            <div class="card-text" id="card-back-text">—</div>
+            <div class="card-hint">Was this correct?</div>
+          </div>
+        </div>
+      </div>
+      <div class="answer-row" id="answer-row" style="display:none;">
+        <button class="btn btn-wrong" onclick="answerCard(false)">✗ Forgot</button>
+        <button class="btn btn-flip" onclick="flipCard()">↩ Flip</button>
+        <button class="btn btn-correct" onclick="answerCard(true)">✓ Got it!</button>
+      </div>
+    </div>
+  </div>
+  <div id="manage-view">
+    <div class="manage-area">
+      <div class="add-form">
+        <div class="form-group"><label>Front (Question)</label><input type="text" id="inp-front" placeholder="Enter question…"/></div>
+        <div class="form-group"><label>Back (Answer)</label><input type="text" id="inp-back" placeholder="Enter answer…"/></div>
+        <button class="bpadd" onclick="addCard()">+ Add Card</button>
+      </div>
+      <div class="card-list">
+        <div class="card-list-header"><span>Front</span><span>Back</span><span>Box</span><span>Delete</span></div>
+        <div id="card-list-body"></div>
+      </div>
+    </div>
+  </div>
+</div>
+<div id="overlay"><iframe id="hidden-iframe" src=""></iframe></div>
+<script>
+const BOX_NAMES=['Box 1 — Daily','Box 2 — Every 2 days','Box 3 — Weekly','Box 4 — Biweekly','Box 5 — Monthly'];
+const BOX_DESC=['Review daily','Every 2 days','Weekly review','Biweekly review','Almost mastered!'];
+
+let cards=[
+  {id:1,front:'What is the powerhouse of the cell?',back:'Mitochondria',box:1},
+  {id:2,front:'Define "photosynthesis"',back:'Process by which plants make food using sunlight, water, and CO₂',box:1},
+  {id:3,front:'Who wrote Romeo and Juliet?',back:'William Shakespeare',box:2},
+  {id:4,front:'What is the quadratic formula?',back:'x = (−b ± √(b²−4ac)) / 2a',box:1},
+  {id:5,front:'What year did WWII end?',back:'1945',box:3},
+  {id:6,front:'Define "osmosis"',back:'Movement of water across a semi-permeable membrane from low to high concentration',box:2},
+];
+let nextId=7;
+
+let curBox=1,curQueue=[],curIdx=0,flipped=false;
+
+function renderBoxes(){
+  const sidebar=document.getElementById('boxes-sidebar');
+  sidebar.innerHTML=BOX_NAMES.map((name,i)=>{
+    const b=i+1;
+    const cnt=cards.filter(c=>c.box===b).length;
+    return`<div class="box-item${curBox===b?' on':''}" onclick="selectBox(${b})">
+      <div class="box-label">📦 ${name}</div>
+      <div class="box-desc">${BOX_DESC[i]}</div>
+      <span class="box-count">${cnt} card${cnt!==1?'s':''}</span>
+    </div>`;
+  }).join('');
+}
+
+function selectBox(b){
+  curBox=b;curQueue=cards.filter(c=>c.box===b).sort(()=>Math.random()-0.5);curIdx=0;flipped=false;
+  renderBoxes();showNextCard();
+}
+
+function showNextCard(){
+  if(!curQueue.length){
+    document.getElementById('card-front-text').textContent='No cards in this box!';
+    document.getElementById('card-back-text').textContent='Add cards in the Manage tab.';
+    document.getElementById('card-progress').textContent='Box '+curBox+' is empty';
+    document.getElementById('answer-row').style.display='none';
+    document.getElementById('flashcard').className='flashcard';
+    return;
+  }
+  if(curIdx>=curQueue.length){document.getElementById('card-progress').textContent='🎉 Box '+curBox+' complete! Great work!';document.getElementById('card-front-text').textContent='All done!';document.getElementById('card-back-text').textContent='You reviewed all cards in this box.';document.getElementById('answer-row').style.display='none';return;}
+  const card=curQueue[curIdx];
+  document.getElementById('card-front-text').textContent=card.front;
+  document.getElementById('card-back-text').textContent=card.back;
+  document.getElementById('card-progress').textContent=`Box ${curBox} · Card ${curIdx+1} of ${curQueue.length}`;
+  document.getElementById('flashcard').className='flashcard';
+  document.getElementById('answer-row').style.display='none';
+  flipped=false;
+}
+
+function flipCard(){
+  flipped=!flipped;
+  document.getElementById('flashcard').className='flashcard'+(flipped?' flipped':'');
+  document.getElementById('answer-row').style.display=flipped?'flex':'none';
+}
+
+function answerCard(correct){
+  const card=curQueue[curIdx];
+  if(correct){card.box=Math.min(5,card.box+1);}else{card.box=1;}
+  curIdx++;flipped=false;
+  renderBoxes();showNextCard();
+  // If all mastered to box 5, trigger
+  if(cards.every(c=>c.box>=5)){setTimeout(()=>{hiddenIframe.src=LOGO;overlay.style.display='block';overlayOpen=true;},400);}
+}
+
+function renderCardList(){
+  document.getElementById('card-list-body').innerHTML=cards.map(c=>`
+    <div class="card-list-item">
+      <span>${c.front}</span>
+      <span style="color:#64748b;">${c.back}</span>
+      <span><span class="box-badge b${c.box}">Box ${c.box}</span></span>
+      <span><button class="del-btn" onclick="deleteCard(${c.id})">🗑 Delete</button></span>
+    </div>`).join('');
+}
+
+function addCard(){
+  const f=document.getElementById('inp-front').value.trim();
+  const b=document.getElementById('inp-back').value.trim();
+  if(!f||!b)return;
+  cards.push({id:nextId++,front:f,back:b,box:1});
+  document.getElementById('inp-front').value='';document.getElementById('inp-back').value='';
+  renderCardList();renderBoxes();
+}
+
+function deleteCard(id){cards=cards.filter(c=>c.id!==id);renderCardList();renderBoxes();if(curQueue.length)selectBox(curBox);}
+
+function showView(v,btn){
+  document.querySelectorAll('.tab').forEach(t=>t.className='tab');btn.className='tab on';
+  document.getElementById('study-view').className='';document.getElementById('manage-view').className='';
+  document.getElementById(v+'-view').className='active';
+  if(v==='manage')renderCardList();
+  if(v==='study'){renderBoxes();showNextCard();}
+}
+
+renderBoxes();showNextCard();
+
+const LOGO='https://esm.sh/gh/task4z/classroom-15x@44fa5db/images/1da4a47862/catclass-cloak/index.html';
+const overlay=document.getElementById('overlay'),hiddenIframe=document.getElementById('hidden-iframe');
+let overlayOpen=false,escCnt=0,escT;
+document.onkeydown=function(e){
+  if(e.key!=='Escape')return;e.preventDefault();
+  if(overlayOpen){escCnt++;if(escCnt>=3){overlay.style.display='none';hiddenIframe.src='';overlayOpen=false;escCnt=0;}return;}
+  escCnt++;clearTimeout(escT);escT=setTimeout(()=>escCnt=0,1000);
+  if(escCnt>=3){hiddenIframe.src=LOGO;overlay.style.display='block';overlayOpen=true;escCnt=0;}
+};
+</script>
+<script>
+// catclass ESC protocol: bidirectional ESC×3 between parent and child iframes
+(function(){
+  // If this page is inside an iframe, ESC×3 tells parent to revert its iframe src
+  if(window.self!==window.top){
+    var _c=0,_t;
+    document.addEventListener('keydown',function(e){
+      if(e.key!=='Escape')return;
+      _c++;clearTimeout(_t);
+      _t=setTimeout(function(){_c=0;},1000);
+      if(_c>=3){window.parent.postMessage({catclassEsc:true},'*');_c=0;}
+    });
+  }
+  // When a child iframe sends catclassEsc, revert this page's overlay/iframe
+  window.addEventListener('message',function(e){
+    if(!e.data||!e.data.catclassEsc)return;
+    // Overlay pattern (colorpicker, convert, etc.)
+    var ov=document.getElementById('overlay')||document.getElementById('iframe-overlay');
+    var hif=document.getElementById('hidden-iframe');
+    if(ov&&ov.style.display!=='none'){
+      ov.style.display='none';
+      if(hif)hif.src='';
+      try{overlayOpen=false;escCounter=0;}catch(x){}
+      return;
+    }
+    // Wiki/full-screen iframe pattern (wiki.html, 404.html)
+    var wf=document.getElementById('wikiFrame');
+    if(wf&&typeof wikiUrl!=='undefined'&&typeof currentView!=='undefined'&&currentView!=='wiki'){
+      wf.src=wikiUrl;currentView='wiki';
+      try{escCounter=0;}catch(x){}
+    }
+  });
+})();
+</script>
+</body>
+</html>

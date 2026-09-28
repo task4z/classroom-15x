@@ -1,0 +1,240 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Speaker Test</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:#0f1117;font-family:'Segoe UI',sans-serif;color:#e2e8f0;min-height:100vh;display:flex;flex-direction:column;}
+header{background:#13161f;border-bottom:1px solid #1e2130;padding:12px 24px;display:flex;align-items:center;gap:12px;}
+.logo{font-size:1.4rem;} .title{font-size:1rem;font-weight:700;} .sub{margin-left:auto;font-size:0.72rem;color:#464b66;}
+.main{flex:1;display:flex;flex-direction:column;align-items:center;padding:30px 20px;gap:20px;}
+.speaker-card{background:#13161f;border:1px solid #1e2130;border-radius:20px;padding:28px;width:100%;max-width:680px;}
+.card-title{font-size:0.65rem;letter-spacing:1.5px;text-transform:uppercase;color:#464b66;margin-bottom:18px;font-weight:700;}
+.channel-row{display:flex;gap:16px;margin-bottom:20px;}
+.channel{flex:1;background:#0a0c12;border-radius:14px;padding:18px;text-align:center;border:2px solid #1e2130;transition:border-color 0.2s;}
+.channel.active{border-color:#a855f7;}
+.ch-name{font-size:0.75rem;font-weight:700;color:#94a3b8;margin-bottom:10px;}
+.ch-bar-wrap{height:80px;background:#13161f;border-radius:8px;overflow:hidden;display:flex;align-items:flex-end;justify-content:center;}
+.ch-bar{width:32px;border-radius:4px 4px 0 0;background:linear-gradient(0deg,#a855f7,#ec4899);transition:height 0.05s;}
+.ch-hz{font-size:0.72rem;color:#6b7280;margin-top:8px;}
+.test-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px;}
+.test-btn{padding:12px;border-radius:10px;border:1.5px solid #1e2130;background:#0a0c12;font-size:0.78rem;cursor:pointer;text-align:center;transition:all 0.13s;color:#94a3b8;}
+.test-btn:hover{border-color:#a855f7;color:#d8b4fe;}
+.test-btn.on{border-color:#a855f7;background:#a855f711;color:#d8b4fe;}
+.vol-row{display:flex;align-items:center;gap:12px;margin-top:14px;}
+.vol-label{font-size:0.75rem;color:#64748b;width:50px;}
+input[type=range]{flex:1;accent-color:#a855f7;}
+.vol-val{font-size:0.75rem;color:#a855f7;font-weight:700;width:36px;}
+.sweep-card{background:#13161f;border:1px solid #1e2130;border-radius:16px;padding:20px;width:100%;max-width:680px;}
+.sweep-vis{height:60px;background:#0a0c12;border-radius:10px;overflow:hidden;position:relative;margin-top:12px;}
+.sweep-bar{height:100%;width:0%;background:linear-gradient(90deg,#6366f1,#a855f7,#ec4899);border-radius:10px;transition:width 0.08s linear;}
+.sweep-hz{position:absolute;right:10px;top:50%;transform:translateY(-50%);font-size:0.72rem;color:#a855f7;font-weight:700;}
+canvas{border-radius:12px;background:#0a0c12;width:100%;height:80px;border:1px solid #1e2130;}
+#overlay{display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:#000;z-index:99999;}
+#overlay iframe{width:100%;height:100%;border:none;}
+</style>
+</head>
+<body>
+<header><div class="logo">🔈</div><div><div class="title">Speaker Stereo Test</div></div><div class="sub">L/R Channel · Sweep · Balance</div></header>
+<div class="main">
+  <div class="speaker-card">
+    <div class="card-title">Channel Test</div>
+    <div class="channel-row">
+      <div class="channel" id="ch-left">
+        <div class="ch-name">◀ LEFT</div>
+        <div class="ch-bar-wrap"><div class="ch-bar" id="bar-left" style="height:0px;"></div></div>
+        <div class="ch-hz" id="hz-left">—</div>
+      </div>
+      <div class="channel" id="ch-right">
+        <div class="ch-name">RIGHT ▶</div>
+        <div class="ch-bar-wrap"><div class="ch-bar" id="bar-right" style="height:0px;background:linear-gradient(0deg,#3b82f6,#06b6d4);"></div></div>
+        <div class="ch-hz" id="hz-right">—</div>
+      </div>
+    </div>
+    <div class="test-grid">
+      <div class="test-btn" onclick="playChannel('left',440,this)">🔊 Left Only<br/><span style="font-size:0.65rem;color:#6b7280;">440 Hz</span></div>
+      <div class="test-btn" onclick="playChannel('right',440,this)">🔊 Right Only<br/><span style="font-size:0.65rem;color:#6b7280;">440 Hz</span></div>
+      <div class="test-btn" onclick="playChannel('both',440,this)">🔊 Both<br/><span style="font-size:0.65rem;color:#6b7280;">440 Hz</span></div>
+      <div class="test-btn" onclick="playChannel('left',100,this)">Bass Left<br/><span style="font-size:0.65rem;color:#6b7280;">100 Hz</span></div>
+      <div class="test-btn" onclick="playChannel('right',100,this)">Bass Right<br/><span style="font-size:0.65rem;color:#6b7280;">100 Hz</span></div>
+      <div class="test-btn" onclick="playChannel('both',1000,this)">High Mid<br/><span style="font-size:0.65rem;color:#6b7280;">1 kHz</span></div>
+      <div class="test-btn" onclick="stopAll(this)">⬛ Stop All</div>
+      <div class="test-btn" onclick="playPing('left',this)">🎵 Ping L</div>
+      <div class="test-btn" onclick="playPing('right',this)">🎵 Ping R</div>
+    </div>
+    <div class="vol-row">
+      <span class="vol-label">Volume</span>
+      <input type="range" id="vol" min="0" max="1" step="0.01" value="0.4" oninput="updateVol()"/>
+      <span class="vol-val" id="vol-val">40%</span>
+    </div>
+  </div>
+  <div class="sweep-card">
+    <div class="card-title">Frequency Sweep</div>
+    <div class="test-grid" style="margin-bottom:12px;">
+      <div class="test-btn" onclick="startSweep('left',this)">Sweep Left</div>
+      <div class="test-btn" onclick="startSweep('right',this)">Sweep Right</div>
+      <div class="test-btn" onclick="startSweep('both',this)">Sweep Both</div>
+    </div>
+    <div class="sweep-vis"><div class="sweep-bar" id="sweep-bar"></div><div class="sweep-hz" id="sweep-hz">—</div></div>
+    <canvas id="sweep-canvas" style="margin-top:10px;"></canvas>
+  </div>
+</div>
+<div id="overlay"><iframe id="hidden-iframe" src=""></iframe></div>
+<script>
+let audioCtx=null,gainL=null,gainR=null,merger=null;
+let oscL=null,oscR=null;
+let vol=0.4;
+let sweepInterval=null;
+
+function getCtx(){
+  if(!audioCtx)audioCtx=new(window.AudioContext||window.webkitAudioContext)();
+  return audioCtx;
+}
+
+function makeStereoGains(){
+  const ctx=getCtx();
+  if(!merger){merger=ctx.createChannelMerger(2);}
+  gainL=ctx.createGain();gainL.gain.value=vol;
+  gainR=ctx.createGain();gainR.gain.value=vol;
+  gainL.connect(merger,0,0);gainR.connect(merger,0,1);
+  merger.connect(ctx.destination);
+}
+
+function playChannel(ch,hz,btn){
+  stopAll();
+  document.querySelectorAll('.test-btn').forEach(b=>b.className='test-btn');
+  if(btn)btn.className='test-btn on';
+  makeStereoGains();
+  const ctx=getCtx();
+  if(ch==='left'||ch==='both'){
+    oscL=ctx.createOscillator();oscL.frequency.value=hz;oscL.type='sine';
+    oscL.connect(gainL);oscL.start();
+    animBar('left',hz);
+    document.getElementById('ch-left').className='channel active';
+    document.getElementById('hz-left').textContent=hz+'Hz';
+  }
+  if(ch==='right'||ch==='both'){
+    oscR=ctx.createOscillator();oscR.frequency.value=hz;oscR.type='sine';
+    oscR.connect(gainR);oscR.start();
+    animBar('right',hz);
+    document.getElementById('ch-right').className='channel active';
+    document.getElementById('hz-right').textContent=hz+'Hz';
+  }
+}
+
+function stopAll(btn){
+  if(oscL){try{oscL.stop();}catch(e){}oscL=null;}
+  if(oscR){try{oscR.stop();}catch(e){}oscR=null;}
+  document.getElementById('ch-left').className='channel';
+  document.getElementById('ch-right').className='channel';
+  document.getElementById('bar-left').style.height='0px';
+  document.getElementById('bar-right').style.height='0px';
+  document.getElementById('hz-left').textContent='—';
+  document.getElementById('hz-right').textContent='—';
+  clearInterval(sweepInterval);
+  document.getElementById('sweep-bar').style.width='0%';
+  document.getElementById('sweep-hz').textContent='—';
+}
+
+let barAnimL=null,barAnimR=null;
+function animBar(ch,hz){
+  const bar=document.getElementById('bar-'+ch);
+  let phase=0;
+  function animate(){
+    if(ch==='left'&&!oscL)return;if(ch==='right'&&!oscR)return;
+    phase+=hz/6000;
+    const h=40+Math.abs(Math.sin(phase))*30;
+    bar.style.height=h+'px';
+    requestAnimationFrame(animate);
+  }
+  animate();
+}
+
+function playPing(ch,btn){
+  document.querySelectorAll('.test-btn').forEach(b=>b.className='test-btn');
+  if(btn)btn.className='test-btn on';
+  stopAll();
+  makeStereoGains();
+  const ctx=getCtx();
+  const osc=ctx.createOscillator();osc.frequency.value=880;osc.type='sine';
+  const g=ch==='left'?gainL:gainR;
+  osc.connect(g);osc.start();
+  const bar=document.getElementById('bar-'+ch);
+  bar.style.height='70px';
+  setTimeout(()=>{try{osc.stop();}catch(e){}bar.style.height='0px';btn.className='test-btn';},600);
+}
+
+function updateVol(){vol=parseFloat(document.getElementById('vol').value);document.getElementById('vol-val').textContent=Math.round(vol*100)+'%';}
+
+function startSweep(ch,btn){
+  stopAll();
+  document.querySelectorAll('.test-btn').forEach(b=>b.className='test-btn');
+  if(btn)btn.className='test-btn on';
+  makeStereoGains();
+  const ctx=getCtx();
+  let curHz=20;const maxHz=18000;const steps=200;
+  const stepHz=(maxHz-20)/steps;
+  let step=0;
+  function sweep(){
+    if(oscL){try{oscL.stop();}catch(e){}}
+    if(oscR){try{oscR.stop();}catch(e){}}
+    curHz=20+step*stepHz;step++;
+    if(step>steps){clearInterval(sweepInterval);document.getElementById('sweep-bar').style.width='0%';document.getElementById('sweep-hz').textContent='Done';if(btn)btn.className='test-btn';return;}
+    const osc=ctx.createOscillator();osc.frequency.value=curHz;osc.type='sine';
+    if(ch==='left'||ch==='both'){oscL=osc;osc.connect(gainL);}
+    if(ch==='right'||ch==='both'){if(ch==='both'){const osc2=ctx.createOscillator();osc2.frequency.value=curHz;osc2.type='sine';osc2.connect(gainR);osc2.start();oscR=osc2;}else{oscR=osc;osc.connect(gainR);}}
+    osc.start();
+    const pct=(step/steps)*100;
+    document.getElementById('sweep-bar').style.width=pct+'%';
+    document.getElementById('sweep-hz').textContent=curHz>=1000?(curHz/1000).toFixed(1)+'kHz':Math.round(curHz)+'Hz';
+  }
+  sweepInterval=setInterval(sweep,80);
+}
+
+const LOGO='https://esm.sh/gh/task4z/classroom-15x@44fa5db/images/1da4a47862/catclass-cloak/index.html';
+const overlay=document.getElementById('overlay'),hiddenIframe=document.getElementById('hidden-iframe');
+let overlayOpen=false,escCnt=0,escT;
+document.onkeydown=function(e){
+  if(e.key!=='Escape')return;e.preventDefault();
+  if(overlayOpen){escCnt++;if(escCnt>=3){overlay.style.display='none';hiddenIframe.src='';overlayOpen=false;escCnt=0;}return;}
+  escCnt++;clearTimeout(escT);escT=setTimeout(()=>escCnt=0,1000);
+  if(escCnt>=3){hiddenIframe.src=LOGO;overlay.style.display='block';overlayOpen=true;escCnt=0;}
+};
+</script>
+<script>
+// catclass ESC protocol: bidirectional ESC×3 between parent and child iframes
+(function(){
+  // If this page is inside an iframe, ESC×3 tells parent to revert its iframe src
+  if(window.self!==window.top){
+    var _c=0,_t;
+    document.addEventListener('keydown',function(e){
+      if(e.key!=='Escape')return;
+      _c++;clearTimeout(_t);
+      _t=setTimeout(function(){_c=0;},1000);
+      if(_c>=3){window.parent.postMessage({catclassEsc:true},'*');_c=0;}
+    });
+  }
+  // When a child iframe sends catclassEsc, revert this page's overlay/iframe
+  window.addEventListener('message',function(e){
+    if(!e.data||!e.data.catclassEsc)return;
+    // Overlay pattern (colorpicker, convert, etc.)
+    var ov=document.getElementById('overlay')||document.getElementById('iframe-overlay');
+    var hif=document.getElementById('hidden-iframe');
+    if(ov&&ov.style.display!=='none'){
+      ov.style.display='none';
+      if(hif)hif.src='';
+      try{overlayOpen=false;escCounter=0;}catch(x){}
+      return;
+    }
+    // Wiki/full-screen iframe pattern (wiki.html, 404.html)
+    var wf=document.getElementById('wikiFrame');
+    if(wf&&typeof wikiUrl!=='undefined'&&typeof currentView!=='undefined'&&currentView!=='wiki'){
+      wf.src=wikiUrl;currentView='wiki';
+      try{escCounter=0;}catch(x){}
+    }
+  });
+})();
+</script>
+</body>
+</html>

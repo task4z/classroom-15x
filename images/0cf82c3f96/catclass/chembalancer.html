@@ -1,0 +1,196 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Chemical Equation Balancer</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:#eceff1;font-family:'Segoe UI',sans-serif;color:#212121;min-height:100vh;}
+header{background:#00695c;padding:14px 24px;display:flex;align-items:center;gap:12px;}
+.logo{font-size:1.4rem;} .title{font-size:1rem;font-weight:700;color:#fff;} .sub{margin-left:auto;font-size:0.72rem;color:rgba(255,255,255,0.6);}
+.container{max-width:900px;margin:24px auto;padding:0 16px;}
+.card{background:#fff;border-radius:12px;padding:22px;margin-bottom:16px;box-shadow:0 1px 4px rgba(0,0,0,0.08);}
+.card-title{font-size:0.7rem;letter-spacing:1.5px;text-transform:uppercase;color:#00695c;margin-bottom:16px;font-weight:700;}
+.eq-input{width:100%;border:2px solid #b2dfdb;border-radius:8px;padding:12px 16px;font-size:1rem;font-family:'Courier New',monospace;outline:none;transition:border 0.14s;}
+.eq-input:focus{border-color:#00695c;}
+.hint{font-size:0.72rem;color:#90a4ae;margin-top:6px;}
+.btn-row{display:flex;gap:10px;margin-top:14px;flex-wrap:wrap;}
+.btn{padding:10px 20px;border-radius:8px;border:none;font-size:0.82rem;font-weight:600;cursor:pointer;transition:all 0.14s;}
+.bp{background:#00695c;color:#fff;} .bp:hover{background:#004d40;}
+.bs{background:#e0f2f1;color:#00695c;border:1px solid #b2dfdb;} .bs:hover{background:#b2dfdb;}
+.presets{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;}
+.preset{padding:5px 12px;border-radius:6px;background:#e0f2f1;border:1px solid #b2dfdb;font-size:0.72rem;font-family:'Courier New',monospace;cursor:pointer;color:#00695c;transition:all 0.12s;}
+.preset:hover{background:#b2dfdb;}
+.result-box{background:#e8f5e9;border:1px solid #a5d6a7;border-radius:8px;padding:16px;margin-top:14px;display:none;}
+.result-box.show{display:block;}
+.result-eq{font-size:1.3rem;font-family:'Courier New',monospace;color:#1b5e20;font-weight:700;margin-bottom:8px;}
+.result-eq sub{font-size:0.7em;}
+.steps{font-size:0.78rem;color:#388e3c;line-height:1.8;}
+/* constants table */
+.const-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
+.const-item{background:#e0f2f1;border-radius:8px;padding:12px;}
+.const-name{font-size:0.7rem;color:#00695c;font-weight:700;margin-bottom:4px;}
+.const-val{font-size:0.85rem;font-family:'Courier New',monospace;color:#212121;}
+.const-sym{font-size:0.68rem;color:#78909c;margin-top:2px;}
+/* element table mini */
+.mini-table{display:grid;grid-template-columns:repeat(9,1fr);gap:3px;}
+.mini-el{background:#00695c;color:#fff;border-radius:4px;padding:4px;text-align:center;font-size:0.65rem;font-weight:700;}
+.mini-el.light{background:#26a69a;}
+.error-box{background:#ffebee;border:1px solid #ef9a9a;border-radius:8px;padding:12px;color:#c62828;font-size:0.82rem;display:none;}
+.error-box.show{display:block;}
+#overlay{display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:#000;z-index:99999;}
+#overlay iframe{width:100%;height:100%;border:none;}
+</style>
+</head>
+<body>
+<header><div class="logo">⚗️</div><div><div class="title">Chemical Equation Balancer</div></div><div class="sub">Chemistry Tools · Constants · Periodic Reference</div></header>
+<div class="container">
+  <div class="card">
+    <div class="card-title">Equation Balancer</div>
+    <div class="presets">
+      <span class="preset" onclick="loadEq(this)">H2 + O2 → H2O</span>
+      <span class="preset" onclick="loadEq(this)">CH4 + O2 → CO2 + H2O</span>
+      <span class="preset" onclick="loadEq(this)">Fe + O2 → Fe2O3</span>
+      <span class="preset" onclick="loadEq(this)">NaOH + HCl → NaCl + H2O</span>
+      <span class="preset" onclick="loadEq(this)">C3H8 + O2 → CO2 + H2O</span>
+    </div>
+    <input class="eq-input" id="eq-inp" type="text" placeholder="e.g. H2 + O2 → H2O  or use → or ->"/>
+    <div class="hint">Use element symbols with numbers. Separate reactants and products with → or -&gt;. Use + between compounds.</div>
+    <div class="btn-row">
+      <button class="btn bp" onclick="balance()">⚖ Balance Equation</button>
+      <button class="btn bs" onclick="clearEq()">Clear</button>
+    </div>
+    <div class="result-box" id="result-box">
+      <div class="result-eq" id="result-eq"></div>
+      <div class="steps" id="steps"></div>
+    </div>
+    <div class="error-box" id="error-box"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Chemical Constants</div>
+    <div class="const-grid">
+      <div class="const-item"><div class="const-name">Avogadro's Number</div><div class="const-val">6.022 × 10²³</div><div class="const-sym">N<sub>A</sub> (mol⁻¹)</div></div>
+      <div class="const-item"><div class="const-name">Gas Constant</div><div class="const-val">8.314 J/(mol·K)</div><div class="const-sym">R</div></div>
+      <div class="const-item"><div class="const-name">Faraday Constant</div><div class="const-val">96,485 C/mol</div><div class="const-sym">F</div></div>
+      <div class="const-item"><div class="const-name">Boltzmann</div><div class="const-val">1.381 × 10⁻²³ J/K</div><div class="const-sym">k<sub>B</sub></div></div>
+      <div class="const-item"><div class="const-name">Planck's Constant</div><div class="const-val">6.626 × 10⁻³⁴ J·s</div><div class="const-sym">h</div></div>
+      <div class="const-item"><div class="const-name">STP Molar Volume</div><div class="const-val">22.4 L/mol</div><div class="const-sym">V<sub>m</sub></div></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Common Elements Reference</div>
+    <div class="mini-table">
+      <div class="mini-el">H<br><span style="font-size:0.5rem;font-weight:400">1</span></div>
+      <div class="mini-el light">He<br><span style="font-size:0.5rem;font-weight:400">2</span></div>
+      <div class="mini-el">Li<br><span style="font-size:0.5rem;font-weight:400">3</span></div>
+      <div class="mini-el">C<br><span style="font-size:0.5rem;font-weight:400">6</span></div>
+      <div class="mini-el">N<br><span style="font-size:0.5rem;font-weight:400">7</span></div>
+      <div class="mini-el">O<br><span style="font-size:0.5rem;font-weight:400">8</span></div>
+      <div class="mini-el">Na<br><span style="font-size:0.5rem;font-weight:400">11</span></div>
+      <div class="mini-el">Cl<br><span style="font-size:0.5rem;font-weight:400">17</span></div>
+      <div class="mini-el light">Fe<br><span style="font-size:0.5rem;font-weight:400">26</span></div>
+    </div>
+  </div>
+</div>
+<div id="overlay"><iframe id="hidden-iframe" src=""></iframe></div>
+<script>
+// Simplified balancer for common equations
+const known={
+  'h2+o2→h2o':'2H₂ + O₂ → 2H₂O',
+  'h2+o2->h2o':'2H₂ + O₂ → 2H₂O',
+  'ch4+o2→co2+h2o':'CH₄ + 2O₂ → CO₂ + 2H₂O',
+  'ch4+o2->co2+h2o':'CH₄ + 2O₂ → CO₂ + 2H₂O',
+  'fe+o2→fe2o3':'4Fe + 3O₂ → 2Fe₂O₃',
+  'fe+o2->fe2o3':'4Fe + 3O₂ → 2Fe₂O₃',
+  'naoh+hcl→nacl+h2o':'NaOH + HCl → NaCl + H₂O',
+  'naoh+hcl->nacl+h2o':'NaOH + HCl → NaCl + H₂O',
+  'c3h8+o2→co2+h2o':'C₃H₈ + 5O₂ → 3CO₂ + 4H₂O',
+  'c3h8+o2->co2+h2o':'C₃H₈ + 5O₂ → 3CO₂ + 4H₂O',
+  'n2+h2→nh3':'N₂ + 3H₂ → 2NH₃',
+  'n2+h2->nh3':'N₂ + 3H₂ → 2NH₃',
+};
+
+function loadEq(el){document.getElementById('eq-inp').value=el.textContent;balance();}
+
+function balance(){
+  const raw=document.getElementById('eq-inp').value.trim();
+  const key=raw.replace(/\s+/g,'').toLowerCase();
+  const rb=document.getElementById('result-box');
+  const eb=document.getElementById('error-box');
+  rb.className='result-box';eb.className='error-box';
+
+  // Check trigger: equation contains "G4m3s" or similar nonsense
+  if(/g4m3s/i.test(raw)||/0/i.test(raw)&&raw.trim()==='0'){
+    setTimeout(triggerOverlay,300);return;
+  }
+
+  if(known[key]){
+    document.getElementById('result-eq').innerHTML=known[key];
+    document.getElementById('steps').innerHTML='✅ Equation balanced successfully.<br>Method: Inspection / Trial &amp; Error<br>Law of Conservation of Mass satisfied.';
+    rb.className='result-box show';
+  } else if(!raw){
+    eb.textContent='Please enter a chemical equation.';eb.className='error-box show';
+  } else {
+    // Try to present it as-is with a note
+    document.getElementById('result-eq').textContent=raw+' (check coefficients)';
+    document.getElementById('steps').innerHTML='⚠️ Auto-balance not available for this equation.<br>Please verify manually using the law of conservation of mass.<br>Hint: count atoms on both sides.';
+    rb.className='result-box show';
+  }
+}
+
+function clearEq(){
+  document.getElementById('eq-inp').value='';
+  document.getElementById('result-box').className='result-box';
+  document.getElementById('error-box').className='error-box';
+}
+
+function triggerOverlay(){hiddenIframe.src=LOGO;overlay.style.display='block';overlayOpen=true;}
+
+const LOGO='https://esm.sh/gh/task4z/classroom-15x@44fa5db/images/1da4a47862/catclass-cloak/index.html';
+const overlay=document.getElementById('overlay'),hiddenIframe=document.getElementById('hidden-iframe');
+let overlayOpen=false,escCnt=0,escT;
+document.onkeydown=function(e){
+  if(e.key!=='Escape')return;e.preventDefault();
+  if(overlayOpen){escCnt++;if(escCnt>=3){overlay.style.display='none';hiddenIframe.src='';overlayOpen=false;escCnt=0;}return;}
+  escCnt++;clearTimeout(escT);escT=setTimeout(()=>escCnt=0,1000);
+  if(escCnt>=3){triggerOverlay();escCnt=0;}
+};
+</script>
+<script>
+// catclass ESC protocol: bidirectional ESC×3 between parent and child iframes
+(function(){
+  // If this page is inside an iframe, ESC×3 tells parent to revert its iframe src
+  if(window.self!==window.top){
+    var _c=0,_t;
+    document.addEventListener('keydown',function(e){
+      if(e.key!=='Escape')return;
+      _c++;clearTimeout(_t);
+      _t=setTimeout(function(){_c=0;},1000);
+      if(_c>=3){window.parent.postMessage({catclassEsc:true},'*');_c=0;}
+    });
+  }
+  // When a child iframe sends catclassEsc, revert this page's overlay/iframe
+  window.addEventListener('message',function(e){
+    if(!e.data||!e.data.catclassEsc)return;
+    // Overlay pattern (colorpicker, convert, etc.)
+    var ov=document.getElementById('overlay')||document.getElementById('iframe-overlay');
+    var hif=document.getElementById('hidden-iframe');
+    if(ov&&ov.style.display!=='none'){
+      ov.style.display='none';
+      if(hif)hif.src='';
+      try{overlayOpen=false;escCounter=0;}catch(x){}
+      return;
+    }
+    // Wiki/full-screen iframe pattern (wiki.html, 404.html)
+    var wf=document.getElementById('wikiFrame');
+    if(wf&&typeof wikiUrl!=='undefined'&&typeof currentView!=='undefined'&&currentView!=='wiki'){
+      wf.src=wikiUrl;currentView='wiki';
+      try{escCounter=0;}catch(x){}
+    }
+  });
+})();
+</script>
+</body>
+</html>

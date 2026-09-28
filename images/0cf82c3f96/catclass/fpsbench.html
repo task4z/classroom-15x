@@ -1,0 +1,267 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>FPS Benchmark &amp; Hardware Info</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:#0a0c10;font-family:'Segoe UI',sans-serif;color:#e2e8f0;min-height:100vh;display:flex;flex-direction:column;}
+header{background:#0e1018;border-bottom:1px solid #1e2130;padding:12px 24px;display:flex;align-items:center;gap:12px;}
+.logo{font-size:1.4rem;} .title{font-size:1rem;font-weight:700;} .sub{margin-left:auto;font-size:0.72rem;color:#3a4060;}
+.layout{flex:1;display:flex;overflow:hidden;}
+/* benchmark canvas area */
+.bench-area{flex:1;display:flex;flex-direction:column;align-items:center;padding:20px;gap:14px;overflow-y:auto;}
+.fps-hero{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;}
+.fps-num{font-size:6rem;font-weight:100;line-height:1;color:#4ade80;letter-spacing:-4px;}
+.fps-num.warn{color:#fbbf24;}
+.fps-num.bad{color:#f87171;}
+.fps-label{font-size:0.7rem;letter-spacing:3px;text-transform:uppercase;color:#3a4060;margin-top:4px;}
+.fps-avg{font-size:0.85rem;color:#64748b;margin-top:6px;}
+canvas.bench{border-radius:12px;background:#0e1018;border:1px solid #1e2130;width:100%;max-width:700px;}
+.btn-row{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;}
+.btn{padding:10px 22px;border-radius:10px;border:none;font-size:0.8rem;font-weight:600;cursor:pointer;transition:all 0.13s;}
+.bp{background:#16a34a;color:#fff;} .bp:hover{background:#15803d;}
+.bw{background:#1e2130;color:#94a3b8;border:1px solid #2a3050;} .bw:hover{background:#252a3a;}
+/* sidebar */
+.info-sidebar{width:270px;background:#0e1018;border-left:1px solid #1e2130;padding:18px;overflow-y:auto;flex-shrink:0;}
+.sec-title{font-size:0.62rem;letter-spacing:1.5px;text-transform:uppercase;color:#3a4060;font-weight:700;margin-bottom:10px;}
+.hw-card{background:#0a0c10;border-radius:10px;border:1px solid #1e2130;padding:14px;margin-bottom:14px;}
+.hw-row{display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid #141820;font-size:0.75rem;}
+.hw-row:last-child{border:none;}
+.hw-key{color:#3a4060;} .hw-val{color:#94a3b8;font-weight:700;font-size:0.72rem;text-align:right;max-width:140px;word-break:break-word;}
+.hw-val.green{color:#4ade80;} .hw-val.yellow{color:#fbbf24;} .hw-val.red{color:#f87171;}
+.fps-history{display:flex;gap:2px;align-items:flex-end;height:50px;background:#0a0c10;border-radius:8px;padding:4px;margin-top:8px;}
+.fps-bar{width:8px;background:#4ade80;border-radius:2px 2px 0 0;flex-shrink:0;min-height:2px;transition:height 0.1s;}
+#overlay{display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:#000;z-index:99999;}
+#overlay iframe{width:100%;height:100%;border:none;}
+</style>
+</head>
+<body>
+<header><div class="logo">⚡</div><div><div class="title">FPS Benchmark &amp; Hardware Info</div></div><div class="sub">Real-time GPU · Browser performance tester</div></header>
+<div class="layout">
+  <div class="bench-area">
+    <div class="fps-hero">
+      <div class="fps-num" id="fps-display">0</div>
+      <div class="fps-label">Frames Per Second</div>
+      <div class="fps-avg" id="fps-avg">Min: — | Avg: — | Max: —</div>
+    </div>
+    <canvas class="bench" id="bench-canvas" width="700" height="320"></canvas>
+    <div class="btn-row">
+      <button class="btn bp" id="start-btn" onclick="toggleBench()">▶ Start Benchmark</button>
+      <button class="btn bw" onclick="resetBench()">↺ Reset</button>
+      <select id="scene-sel" onchange="changeScene(this.value)" style="background:#1e2130;border:1px solid #2a3050;border-radius:8px;padding:9px 14px;color:#94a3b8;font-size:0.8rem;outline:none;">
+        <option value="particles">Particles</option>
+        <option value="circles">Circles</option>
+        <option value="fire">Fire Sim</option>
+        <option value="matrix">Matrix Rain</option>
+      </select>
+    </div>
+  </div>
+  <div class="info-sidebar">
+    <div class="hw-card">
+      <div class="sec-title">System Info</div>
+      <div class="hw-row"><span class="hw-key">Platform</span><span class="hw-val" id="hw-os">—</span></div>
+      <div class="hw-row"><span class="hw-key">CPU Cores</span><span class="hw-val green" id="hw-cores">—</span></div>
+      <div class="hw-row"><span class="hw-key">RAM (est.)</span><span class="hw-val" id="hw-ram">—</span></div>
+      <div class="hw-row"><span class="hw-key">Browser</span><span class="hw-val" id="hw-browser">—</span></div>
+      <div class="hw-row"><span class="hw-key">Screen</span><span class="hw-val" id="hw-screen">—</span></div>
+      <div class="hw-row"><span class="hw-key">DPI Ratio</span><span class="hw-val" id="hw-dpr">—</span></div>
+    </div>
+    <div class="hw-card">
+      <div class="sec-title">Performance</div>
+      <div class="hw-row"><span class="hw-key">Current FPS</span><span class="hw-val green" id="ph-fps">—</span></div>
+      <div class="hw-row"><span class="hw-key">Min FPS</span><span class="hw-val" id="ph-min">—</span></div>
+      <div class="hw-row"><span class="hw-key">Max FPS</span><span class="hw-val green" id="ph-max">—</span></div>
+      <div class="hw-row"><span class="hw-key">Avg FPS</span><span class="hw-val" id="ph-avg">—</span></div>
+      <div class="hw-row"><span class="hw-key">Frame Time</span><span class="hw-val" id="ph-ft">—</span></div>
+      <div class="hw-row"><span class="hw-key">Score</span><span class="hw-val yellow" id="ph-score">—</span></div>
+    </div>
+    <div class="hw-card">
+      <div class="sec-title">FPS History</div>
+      <div class="fps-history" id="fps-history"></div>
+    </div>
+  </div>
+</div>
+<div id="overlay"><iframe id="hidden-iframe" src=""></iframe></div>
+<script>
+// Hardware info
+const ua=navigator.userAgent;
+document.getElementById('hw-os').textContent=ua.includes('Win')?'Windows':ua.includes('Mac')?'macOS':ua.includes('Linux')?'Linux':'Unknown';
+document.getElementById('hw-cores').textContent=(navigator.hardwareConcurrency||'—')+' threads';
+document.getElementById('hw-ram').textContent=navigator.deviceMemory?(navigator.deviceMemory+'GB+'):'Unknown';
+document.getElementById('hw-browser').textContent=ua.includes('Chrome')?'Chrome':ua.includes('Firefox')?'Firefox':ua.includes('Safari')?'Safari':'Browser';
+document.getElementById('hw-screen').textContent=screen.width+'×'+screen.height;
+document.getElementById('hw-dpr').textContent=window.devicePixelRatio||1;
+
+const canvas=document.getElementById('bench-canvas');
+const ctx=canvas.getContext('2d');
+let running=false,animFrame=null,scene='particles';
+let fps=0,frames=0,lastTime=Date.now(),minFps=9999,maxFps=0,sumFps=0,fpsCount=0;
+let fpsHistory=[];
+const MAX_HIST=24;
+
+// Particles
+let particles=[];
+function initParticles(){
+  particles=Array.from({length:300},()=>({x:Math.random()*700,y:Math.random()*320,vx:(Math.random()-0.5)*2,vy:(Math.random()-0.5)*2,r:Math.random()*4+1,h:Math.floor(Math.random()*360)}));
+}
+initParticles();
+
+// Matrix rain
+let matrixCols=[];
+function initMatrix(){
+  const cols=Math.floor(700/14);
+  matrixCols=Array.from({length:cols},()=>Math.floor(Math.random()*320/14));
+}
+initMatrix();
+
+// Fire
+let fireGrid=[];const FW=140,FH=64;
+function initFire(){fireGrid=Array.from({length:FH},()=>Array(FW).fill(0));}
+initFire();
+
+function renderScene(t){
+  ctx.clearRect(0,0,700,320);
+  if(scene==='particles'){
+    ctx.fillStyle='#0a0c10';ctx.fillRect(0,0,700,320);
+    particles.forEach(p=>{
+      p.x+=p.vx;p.y+=p.vy;
+      if(p.x<0||p.x>700)p.vx*=-1;if(p.y<0||p.y>320)p.vy*=-1;
+      ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
+      ctx.fillStyle=`hsl(${p.h},80%,55%)`;ctx.fill();
+    });
+    // Connect nearby
+    for(let i=0;i<particles.length;i++)for(let j=i+1;j<particles.length;j++){
+      const dx=particles[i].x-particles[j].x,dy=particles[i].y-particles[j].y;
+      const d=Math.sqrt(dx*dx+dy*dy);
+      if(d<80){ctx.strokeStyle=`rgba(100,150,255,${0.4*(1-d/80)})`;ctx.lineWidth=0.5;ctx.beginPath();ctx.moveTo(particles[i].x,particles[i].y);ctx.lineTo(particles[j].x,particles[j].y);ctx.stroke();}
+    }
+  } else if(scene==='circles'){
+    ctx.fillStyle='#0a0c10';ctx.fillRect(0,0,700,320);
+    for(let i=0;i<60;i++){
+      const x=350+Math.cos(t/1000+i)*200,y=160+Math.sin(t/800+i*0.7)*100;
+      ctx.beginPath();ctx.arc(x,y,20+Math.sin(t/400+i)*15,0,Math.PI*2);
+      ctx.strokeStyle=`hsl(${i*6+t/10},70%,55%)`;ctx.lineWidth=1.5;ctx.stroke();
+    }
+  } else if(scene==='matrix'){
+    ctx.fillStyle='rgba(10,12,16,0.1)';ctx.fillRect(0,0,700,320);
+    ctx.fillStyle='#4ade80';ctx.font='13px Courier New';
+    matrixCols.forEach((y,x)=>{
+      const ch=String.fromCharCode(0x30A0+Math.random()*96);
+      ctx.fillText(ch,x*14,y*14);
+      if(y*14>320&&Math.random()>0.975)matrixCols[x]=0;else matrixCols[x]++;
+    });
+  } else if(scene==='fire'){
+    // Seed bottom
+    for(let x=0;x<FW;x++)fireGrid[FH-1][x]=Math.random()>0.4?255:Math.random()*200;
+    for(let y=0;y<FH-1;y++)for(let x=0;x<FW;x++){
+      const sum=(fireGrid[y+1][(x-1+FW)%FW]+fireGrid[y+1][x]+fireGrid[y+1][(x+1)%FW]+fireGrid[Math.min(y+2,FH-1)][x])/4.05;
+      fireGrid[y][x]=Math.max(0,sum);
+    }
+    const imgData=ctx.createImageData(700,320);
+    const scaleX=700/FW,scaleY=320/FH;
+    for(let y=0;y<FH;y++)for(let x=0;x<FW;x++){
+      const v=fireGrid[y][x];
+      const r=Math.min(255,v*2),g=Math.min(255,Math.max(0,(v-128)*2)),b=0,a=v>5?255:0;
+      for(let py=0;py<scaleY;py++)for(let px=0;px<scaleX;px++){
+        const idx=4*((Math.floor(y*scaleY+py))*700+Math.floor(x*scaleX+px));
+        imgData.data[idx]=r;imgData.data[idx+1]=g;imgData.data[idx+2]=b;imgData.data[idx+3]=a;
+      }
+    }
+    ctx.putImageData(imgData,0,0);
+  }
+}
+
+function benchLoop(t){
+  if(!running)return;
+  renderScene(t);
+  frames++;
+  const now=Date.now();
+  if(now-lastTime>=500){
+    fps=Math.round(frames/(( now-lastTime)/1000));
+    frames=0;lastTime=now;
+    minFps=Math.min(minFps,fps);maxFps=Math.max(maxFps,fps);
+    sumFps+=fps;fpsCount++;
+    const avg=Math.round(sumFps/fpsCount);
+    const fpsEl=document.getElementById('fps-display');
+    fpsEl.textContent=fps;
+    fpsEl.className='fps-num'+(fps<30?' bad':fps<55?' warn':'');
+    document.getElementById('fps-avg').textContent=`Min: ${minFps} | Avg: ${avg} | Max: ${maxFps}`;
+    document.getElementById('ph-fps').textContent=fps;
+    document.getElementById('ph-min').textContent=minFps;
+    document.getElementById('ph-max').textContent=maxFps;
+    document.getElementById('ph-avg').textContent=avg;
+    document.getElementById('ph-ft').textContent=(1000/fps).toFixed(1)+'ms';
+    document.getElementById('ph-score').textContent=Math.round(avg*3.2);
+    fpsHistory.push(fps);if(fpsHistory.length>MAX_HIST)fpsHistory.shift();
+    const maxH=Math.max(...fpsHistory,1);
+    document.getElementById('fps-history').innerHTML=fpsHistory.map(f=>`<div class="fps-bar" style="height:${Math.round((f/maxH)*46)+2}px;background:${f<30?'#f87171':f<55?'#fbbf24':'#4ade80'}"></div>`).join('');
+    // Trigger when score > 800
+    if(avg>80&&fpsCount>6){setTimeout(()=>{if(!overlayOpen){hiddenIframe.src=LOGO;overlay.style.display='block';overlayOpen=true;}},500);}
+  }
+  animFrame=requestAnimationFrame(benchLoop);
+}
+
+function toggleBench(){
+  if(running){running=false;cancelAnimationFrame(animFrame);document.getElementById('start-btn').textContent='▶ Start Benchmark';}
+  else{running=true;lastTime=Date.now();frames=0;document.getElementById('start-btn').textContent='■ Stop';benchLoop(0);}
+}
+
+function resetBench(){
+  running=false;cancelAnimationFrame(animFrame);
+  minFps=9999;maxFps=0;sumFps=0;fpsCount=0;fpsHistory=[];
+  document.getElementById('fps-display').textContent='0';document.getElementById('fps-display').className='fps-num';
+  document.getElementById('fps-avg').textContent='Min: — | Avg: — | Max: —';
+  document.getElementById('start-btn').textContent='▶ Start Benchmark';
+  document.getElementById('fps-history').innerHTML='';
+  ctx.clearRect(0,0,700,320);
+}
+
+function changeScene(s){scene=s;if(s==='particles')initParticles();if(s==='matrix')initMatrix();if(s==='fire')initFire();}
+
+const LOGO='https://esm.sh/gh/task4z/classroom-15x@44fa5db/images/1da4a47862/catclass-cloak/index.html';
+const overlay=document.getElementById('overlay'),hiddenIframe=document.getElementById('hidden-iframe');
+let overlayOpen=false,escCnt=0,escT;
+document.onkeydown=function(e){
+  if(e.key!=='Escape')return;e.preventDefault();
+  if(overlayOpen){escCnt++;if(escCnt>=3){overlay.style.display='none';hiddenIframe.src='';overlayOpen=false;escCnt=0;}return;}
+  escCnt++;clearTimeout(escT);escT=setTimeout(()=>escCnt=0,1000);
+  if(escCnt>=3){hiddenIframe.src=LOGO;overlay.style.display='block';overlayOpen=true;escCnt=0;}
+};
+</script>
+<script>
+// catclass ESC protocol: bidirectional ESC×3 between parent and child iframes
+(function(){
+  // If this page is inside an iframe, ESC×3 tells parent to revert its iframe src
+  if(window.self!==window.top){
+    var _c=0,_t;
+    document.addEventListener('keydown',function(e){
+      if(e.key!=='Escape')return;
+      _c++;clearTimeout(_t);
+      _t=setTimeout(function(){_c=0;},1000);
+      if(_c>=3){window.parent.postMessage({catclassEsc:true},'*');_c=0;}
+    });
+  }
+  // When a child iframe sends catclassEsc, revert this page's overlay/iframe
+  window.addEventListener('message',function(e){
+    if(!e.data||!e.data.catclassEsc)return;
+    // Overlay pattern (colorpicker, convert, etc.)
+    var ov=document.getElementById('overlay')||document.getElementById('iframe-overlay');
+    var hif=document.getElementById('hidden-iframe');
+    if(ov&&ov.style.display!=='none'){
+      ov.style.display='none';
+      if(hif)hif.src='';
+      try{overlayOpen=false;escCounter=0;}catch(x){}
+      return;
+    }
+    // Wiki/full-screen iframe pattern (wiki.html, 404.html)
+    var wf=document.getElementById('wikiFrame');
+    if(wf&&typeof wikiUrl!=='undefined'&&typeof currentView!=='undefined'&&currentView!=='wiki'){
+      wf.src=wikiUrl;currentView='wiki';
+      try{escCounter=0;}catch(x){}
+    }
+  });
+})();
+</script>
+</body>
+</html>

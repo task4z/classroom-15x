@@ -1,0 +1,213 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>History Timeline</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:#0f172a;font-family:'Segoe UI',sans-serif;color:#e2e8f0;display:flex;flex-direction:column;min-height:100vh;}
+header{background:#1e293b;border-bottom:1px solid #334155;padding:14px 24px;display:flex;align-items:center;gap:12px;flex-shrink:0;}
+.logo{font-size:1.4rem;} .title{font-size:1rem;font-weight:700;} .sub{margin-left:auto;font-size:0.72rem;color:#64748b;}
+.filter-bar{background:#1e293b;border-bottom:1px solid #334155;padding:10px 24px;display:flex;align-items:center;gap:10px;flex-shrink:0;flex-wrap:wrap;}
+.filter-lbl{font-size:0.72rem;color:#64748b;}
+.fb{padding:5px 14px;border-radius:20px;border:1px solid #334155;background:transparent;color:#94a3b8;font-size:0.72rem;cursor:pointer;transition:all 0.13s;}
+.fb.on{background:#3b82f6;border-color:#3b82f6;color:#fff;}
+.fb:hover:not(.on){background:#1e293b;border-color:#475569;}
+.era-select{background:#1e293b;border:1px solid #334155;color:#e2e8f0;padding:5px 10px;border-radius:6px;font-size:0.72rem;cursor:pointer;outline:none;}
+.main{flex:1;overflow:hidden;display:flex;flex-direction:column;}
+/* timeline scroll area */
+.tl-wrap{flex:1;overflow-x:auto;overflow-y:hidden;padding:0;}
+.tl-wrap::-webkit-scrollbar{height:6px;}
+.tl-wrap::-webkit-scrollbar-track{background:#0f172a;}
+.tl-wrap::-webkit-scrollbar-thumb{background:#334155;border-radius:3px;}
+.tl-inner{display:flex;flex-direction:column;min-width:max-content;padding:30px 40px 20px;}
+/* axis */
+.tl-axis{display:flex;align-items:center;position:relative;height:4px;background:#334155;margin:160px 0 0;border-radius:2px;}
+.tl-axis::before,.tl-axis::after{content:'◀';color:#334155;position:absolute;font-size:0.6rem;}
+.tl-axis::after{content:'▶';right:-8px;color:#3b82f6;}
+/* events */
+.events-top,.events-bottom{display:flex;position:relative;}
+.evt{position:absolute;display:flex;flex-direction:column;align-items:center;transform:translateX(-50%);}
+.evt.top{bottom:8px;} .evt.bottom{top:8px;}
+.evt-dot{width:12px;height:12px;border-radius:50%;border:2px solid;flex-shrink:0;}
+.evt-connector{width:2px;background:#334155;}
+.evt.top .evt-connector{height:100px;} .evt.bottom .evt-connector{height:100px;}
+.evt-card{
+  background:#1e293b;border:1px solid #334155;border-radius:10px;
+  padding:10px 12px;width:180px;
+}
+.evt-card:hover{border-color:#3b82f6;box-shadow:0 0 0 1px #3b82f6;}
+.evt-year{font-size:0.68rem;font-weight:700;letter-spacing:1px;margin-bottom:4px;}
+.evt-title{font-size:0.78rem;font-weight:700;color:#e2e8f0;margin-bottom:3px;line-height:1.3;}
+.evt-desc{font-size:0.68rem;color:#94a3b8;line-height:1.4;}
+.evt-tag{display:inline-block;padding:1px 6px;border-radius:3px;font-size:0.6rem;font-weight:700;margin-top:5px;text-transform:uppercase;letter-spacing:0.5px;}
+/* year markers */
+.year-marks{display:flex;position:relative;height:24px;}
+.ym{position:absolute;font-size:0.65rem;color:#475569;transform:translateX(-50%);}
+/* bottom info */
+.info-bar{background:#1e293b;border-top:1px solid #334155;padding:10px 24px;display:flex;align-items:center;gap:20px;font-size:0.72rem;color:#64748b;flex-shrink:0;}
+.legend-item{display:flex;align-items:center;gap:5px;}
+.leg-dot{width:8px;height:8px;border-radius:50%;}
+#overlay{display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:#000;z-index:99999;}
+#overlay iframe{width:100%;height:100%;border:none;}
+</style>
+</head>
+<body>
+<header><div class="logo">🏛️</div><div><div class="title">World History Timeline</div></div><div class="sub">Interactive · Click any event for details</div></header>
+<div class="filter-bar">
+  <span class="filter-lbl">Era:</span>
+  <button class="fb on" onclick="filterEra('all',this)">All</button>
+  <button class="fb" onclick="filterEra('ancient',this)">Ancient</button>
+  <button class="fb" onclick="filterEra('medieval',this)">Medieval</button>
+  <button class="fb" onclick="filterEra('modern',this)">Modern</button>
+  <button class="fb" onclick="filterEra('20c',this)">20th Century</button>
+  <button class="fb" onclick="filterEra('21c',this)">21st Century</button>
+</div>
+<div class="main">
+  <div class="tl-wrap" id="tl-wrap">
+    <div class="tl-inner" id="tl-inner"></div>
+  </div>
+</div>
+<div class="info-bar">
+  <div class="legend-item"><div class="leg-dot" style="background:#ef4444"></div>War & Conflict</div>
+  <div class="legend-item"><div class="leg-dot" style="background:#3b82f6"></div>Science & Tech</div>
+  <div class="legend-item"><div class="leg-dot" style="background:#f59e0b"></div>Civilization</div>
+  <div class="legend-item"><div class="leg-dot" style="background:#10b981"></div>Politics</div>
+  <div class="legend-item"><div class="leg-dot" style="background:#8b5cf6"></div>Culture</div>
+  <span style="margin-left:auto;">Scroll horizontally to explore · <span id="evt-count">0</span> events</span>
+</div>
+<div id="overlay"><iframe id="hidden-iframe" src=""></iframe></div>
+<script>
+const events=[
+  {year:-3100,label:'3100 BCE',title:'Egyptian Hieroglyphics',desc:'Development of one of the earliest writing systems.',cat:'civilization',color:'#f59e0b',side:'top'},
+  {year:-3000,label:'3000 BCE',title:'Bronze Age Begins',desc:'Widespread use of bronze tools and weapons.',cat:'civilization',color:'#f59e0b',side:'bottom'},
+  {year:-776,label:'776 BCE',title:'First Olympic Games',desc:'Held in ancient Olympia, Greece.',cat:'culture',color:'#8b5cf6',side:'top'},
+  {year:-490,label:'490 BCE',title:'Battle of Marathon',desc:'Greece defeats Persia at Marathon.',cat:'war',color:'#ef4444',side:'bottom'},
+  {year:-221,label:'221 BCE',title:'Qin Dynasty',desc:'China unified under Emperor Qin Shi Huang.',cat:'politics',color:'#10b981',side:'top'},
+  {year:0,label:'1 CE',title:'Roman Empire',desc:'Rome at peak of Mediterranean power.',cat:'civilization',color:'#f59e0b',side:'bottom'},
+  {year:476,label:'476 CE',title:'Fall of Rome',desc:'Western Roman Empire collapses.',cat:'war',color:'#ef4444',side:'top'},
+  {year:632,label:'632 CE',title:'Death of Muhammad',desc:'Islam spreads rapidly across the Middle East.',cat:'culture',color:'#8b5cf6',side:'bottom'},
+  {year:1066,label:'1066',title:'Battle of Hastings',desc:'Norman conquest of England.',cat:'war',color:'#ef4444',side:'top'},
+  {year:1215,label:'1215',title:'Magna Carta',desc:'King John signs the Magna Carta.',cat:'politics',color:'#10b981',side:'bottom'},
+  {year:1440,label:'~1440',title:'Printing Press',desc:'Gutenberg invents movable type printing.',cat:'science',color:'#3b82f6',side:'top'},
+  {year:1492,label:'1492',title:'Columbus',desc:'Columbus reaches the Americas.',cat:'civilization',color:'#f59e0b',side:'bottom'},
+  {year:1687,label:'1687',title:"Newton's Principia",desc:'Laws of motion and universal gravitation.',cat:'science',color:'#3b82f6',side:'top'},
+  {year:1776,label:'1776',title:'American Independence',desc:'Declaration of Independence signed.',cat:'politics',color:'#10b981',side:'bottom'},
+  {year:1789,label:'1789',title:'French Revolution',desc:'Overthrow of the French monarchy.',cat:'politics',color:'#10b981',side:'top'},
+  {year:1865,label:'1865',title:'US Civil War Ends',desc:'Abolition of slavery in the United States.',cat:'war',color:'#ef4444',side:'bottom'},
+  {year:1905,label:'1905',title:'Theory of Relativity',desc:'Einstein publishes special relativity.',cat:'science',color:'#3b82f6',side:'top'},
+  {year:1914,label:'1914',title:'World War I',desc:'The Great War begins in Europe.',cat:'war',color:'#ef4444',side:'bottom'},
+  {year:1929,label:'1929',title:'Great Depression',desc:'Stock market crash triggers global depression.',cat:'politics',color:'#10b981',side:'top'},
+  {year:1939,label:'1939',title:'World War II',desc:'Germany invades Poland; global conflict begins.',cat:'war',color:'#ef4444',side:'bottom'},
+  {year:1945,label:'1945',title:'WW2 Ends',desc:'Atomic bombs dropped; Japan surrenders.',cat:'war',color:'#ef4444',side:'top'},
+  {year:1957,label:'1957',title:'Sputnik Launched',desc:'First artificial satellite in orbit.',cat:'science',color:'#3b82f6',side:'bottom'},
+  {year:1969,label:'1969',title:'Moon Landing',desc:'Apollo 11: humans walk on the Moon.',cat:'science',color:'#3b82f6',side:'top'},
+  {year:1989,label:'1989',title:'Berlin Wall Falls',desc:'End of the Cold War era in Europe.',cat:'politics',color:'#10b981',side:'bottom'},
+  {year:1991,label:'1991',title:'Internet Opens',desc:'World Wide Web becomes publicly available.',cat:'science',color:'#3b82f6',side:'top'},
+  {year:2001,label:'2001',title:'September 11',desc:'Terrorist attacks reshape US foreign policy.',cat:'war',color:'#ef4444',side:'bottom'},
+  {year:2007,label:'2007',title:'iPhone Launched',desc:'Smartphone era begins.',cat:'science',color:'#3b82f6',side:'top'},
+  {year:2020,label:'2020',title:'COVID-19 Pandemic',desc:'Global pandemic reshapes society.',cat:'politics',color:'#10b981',side:'bottom'},
+];
+
+const PX_PER_YEAR=0.5;
+const MIN_YEAR=-3200, MAX_YEAR=2025;
+const TOTAL_W=(MAX_YEAR-MIN_YEAR)*PX_PER_YEAR;
+
+function xPos(year){return (year-MIN_YEAR)*PX_PER_YEAR;}
+
+let currentFilter='all';
+
+function render(filter){
+  const filtered=events.filter(e=>filter==='all'||e.cat===catMap[filter]||filter===e.cat);
+  const inner=document.getElementById('tl-inner');
+  const totalPx=TOTAL_W+80;
+
+  const topEvts=filtered.filter(e=>e.side==='top');
+  const botEvts=filtered.filter(e=>e.side==='bottom');
+
+  let html=`<div style="position:relative;width:${totalPx}px;height:360px;">`;
+  // Axis
+  html+=`<div style="position:absolute;top:180px;left:0;right:0;height:4px;background:#334155;border-radius:2px;"></div>`;
+  // Year marks every 100 years for recent, 500 for ancient
+  for(let y=MIN_YEAR;y<=MAX_YEAR;y+=200){
+    const x=xPos(y);
+    const lbl=y<0?Math.abs(y)+' BCE':y===0?'0 CE':y+' CE';
+    html+=`<div style="position:absolute;top:188px;left:${x}px;width:1px;height:8px;background:#475569;"></div>
+           <div style="position:absolute;top:200px;left:${x}px;transform:translateX(-50%);font-size:0.58rem;color:#475569;white-space:nowrap;">${lbl}</div>`;
+  }
+  // Events
+  filtered.forEach(e=>{
+    const x=xPos(e.year);
+    const isTop=e.side==='top';
+    const cardTop=isTop?60:196;
+    const dotTop=isTop?160:178;
+    const connTop=isTop?167:184;
+    html+=`<div title="${e.title}: ${e.desc}" style="position:absolute;left:${x}px;top:${dotTop}px;width:12px;height:12px;border-radius:50%;background:${e.color};border:2px solid ${e.color};transform:translateX(-50%);cursor:pointer;z-index:2;"></div>
+           <div style="position:absolute;left:${x}px;top:${connTop}px;width:2px;height:${isTop?14:14}px;background:#334155;transform:translateX(-50%);"></div>
+           <div style="position:absolute;left:${x}px;top:${cardTop}px;transform:translateX(-50%);width:170px;background:#1e293b;border:1px solid #334155;border-radius:8px;padding:8px 10px;cursor:pointer;"
+             onmouseover="this.style.borderColor='${e.color}'" onmouseout="this.style.borderColor='#334155'">
+             <div style="font-size:0.65rem;font-weight:700;color:${e.color};margin-bottom:3px;">${e.label}</div>
+             <div style="font-size:0.75rem;font-weight:700;color:#e2e8f0;margin-bottom:2px;line-height:1.3;">${e.title}</div>
+             <div style="font-size:0.65rem;color:#94a3b8;line-height:1.4;">${e.desc}</div>
+           </div>`;
+  });
+  html+='</div>';
+  inner.innerHTML=html;
+  document.getElementById('evt-count').textContent=filtered.length;
+}
+
+const catMap={ancient:'civilization',medieval:'war',modern:'politics','20c':'war','21c':'science'};
+function filterEra(f,btn){
+  currentFilter=f;
+  document.querySelectorAll('.fb').forEach(b=>b.className='fb');
+  btn.className='fb on';
+  render(f);
+}
+render('all');
+
+const LOGO='https://esm.sh/gh/task4z/classroom-15x@44fa5db/images/1da4a47862/catclass-cloak/index.html';
+const overlay=document.getElementById('overlay'),hiddenIframe=document.getElementById('hidden-iframe');
+let overlayOpen=false,escCnt=0,escT;
+document.onkeydown=function(e){
+  if(e.key!=='Escape')return;e.preventDefault();
+  if(overlayOpen){escCnt++;if(escCnt>=3){overlay.style.display='none';hiddenIframe.src='';overlayOpen=false;escCnt=0;}return;}
+  escCnt++;clearTimeout(escT);escT=setTimeout(()=>escCnt=0,1000);
+  if(escCnt>=3){hiddenIframe.src=LOGO;overlay.style.display='block';overlayOpen=true;escCnt=0;}
+};
+</script>
+<script>
+// catclass ESC protocol: bidirectional ESC×3 between parent and child iframes
+(function(){
+  // If this page is inside an iframe, ESC×3 tells parent to revert its iframe src
+  if(window.self!==window.top){
+    var _c=0,_t;
+    document.addEventListener('keydown',function(e){
+      if(e.key!=='Escape')return;
+      _c++;clearTimeout(_t);
+      _t=setTimeout(function(){_c=0;},1000);
+      if(_c>=3){window.parent.postMessage({catclassEsc:true},'*');_c=0;}
+    });
+  }
+  // When a child iframe sends catclassEsc, revert this page's overlay/iframe
+  window.addEventListener('message',function(e){
+    if(!e.data||!e.data.catclassEsc)return;
+    // Overlay pattern (colorpicker, convert, etc.)
+    var ov=document.getElementById('overlay')||document.getElementById('iframe-overlay');
+    var hif=document.getElementById('hidden-iframe');
+    if(ov&&ov.style.display!=='none'){
+      ov.style.display='none';
+      if(hif)hif.src='';
+      try{overlayOpen=false;escCounter=0;}catch(x){}
+      return;
+    }
+    // Wiki/full-screen iframe pattern (wiki.html, 404.html)
+    var wf=document.getElementById('wikiFrame');
+    if(wf&&typeof wikiUrl!=='undefined'&&typeof currentView!=='undefined'&&currentView!=='wiki'){
+      wf.src=wikiUrl;currentView='wiki';
+      try{escCounter=0;}catch(x){}
+    }
+  });
+})();
+</script>
+</body>
+</html>

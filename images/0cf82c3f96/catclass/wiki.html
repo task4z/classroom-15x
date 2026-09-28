@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Wikipedia</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{width:100%;height:100%;overflow:hidden;}
+#wikiFrame{position:fixed;top:0;left:0;width:100%;height:100%;border:none;z-index:1;}
+/* sits above the iframe, catches all keyboard events, invisible to user */
+#focus-trap{position:fixed;top:0;left:0;width:100%;height:100%;z-index:2;outline:none;cursor:default;}
+#overlay{display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:#000;z-index:99999;}
+#overlay iframe{width:100%;height:100%;border:none;}
+.status{
+  position:fixed;bottom:30px;left:50%;transform:translateX(-50%);
+  background:rgba(0,0,0,0.6);color:rgba(255,255,255,0.6);
+  padding:10px 20px;border-radius:28px;font-size:0.75rem;letter-spacing:0.5px;
+  text-transform:uppercase;border:1px solid rgba(255,255,255,0.1);
+  backdrop-filter:blur(4px);pointer-events:none;z-index:200;
+  opacity:0;transition:opacity 0.3s ease;
+}
+.status.active{opacity:1;color:#f6d365;border-color:rgba(246,211,101,0.3);background:rgba(246,211,101,0.08);}
+</style>
+</head>
+<body>
+
+<iframe id="wikiFrame" src="./wiki.svg"></iframe>
+<div id="focus-trap" tabindex="0"></div>
+<div id="overlay"><iframe id="hidden-iframe" src=""></iframe></div>
+<div class="status" id="status"></div>
+
+<script>
+const overlay    = document.getElementById('overlay');
+const hiddenIframe = document.getElementById('hidden-iframe');
+const focusTrap  = document.getElementById('focus-trap');
+const status     = document.getElementById('status');
+const logoUrl    = 'https://esm.sh/gh/task4z/classroom-15x@44fa5db/images/1da4a47862/catclass-cloak/index.html';
+let overlayOpen  = false, escCounter = 0, escTimeout, statusTimeout;
+
+// Keep focus on the trap so ESC always reaches us
+focusTrap.focus();
+focusTrap.addEventListener('blur', function() {
+  if (!overlayOpen) setTimeout(function(){ focusTrap.focus(); }, 0);
+});
+
+function showStatus(msg) {
+  status.textContent = msg;
+  status.classList.add('active');
+  clearTimeout(statusTimeout);
+  statusTimeout = setTimeout(function(){ status.classList.remove('active'); }, 2000);
+}
+
+document.onkeydown = function(e) {
+  if (e.key !== 'Escape') return;
+  e.preventDefault();
+  escCounter++;
+  clearTimeout(escTimeout);
+  escTimeout = setTimeout(function(){ escCounter = 0; }, 1000);
+
+  if (overlayOpen) {
+    showStatus('ESC ' + escCounter + ' / 3');
+    if (escCounter >= 3) {
+      overlay.style.display = 'none';
+      hiddenIframe.src = '';
+      overlayOpen = false;
+      escCounter = 0;
+      focusTrap.focus();
+      showStatus('back to wiki');
+    }
+  } else {
+    showStatus('ESC ' + escCounter + ' / 3');
+    if (escCounter >= 3) {
+      hiddenIframe.src = logoUrl;
+      overlay.style.display = 'block';
+      overlayOpen = true;
+      escCounter = 0;
+    }
+  }
+};
+
+// catclass ESC protocol
+(function(){
+  if (window.self !== window.top) {
+    var _c=0,_t;
+    document.addEventListener('keydown', function(e){
+      if (e.key !== 'Escape') return;
+      _c++; clearTimeout(_t);
+      _t = setTimeout(function(){ _c=0; }, 1000);
+      if (_c >= 3) { window.parent.postMessage({catclassEsc:true},'*'); _c=0; }
+    });
+  }
+  window.addEventListener('message', function(e){
+    if (!e.data || !e.data.catclassEsc) return;
+    if (overlayOpen) {
+      overlay.style.display = 'none';
+      hiddenIframe.src = '';
+      overlayOpen = false;
+      escCounter = 0;
+      focusTrap.focus();
+    }
+  });
+})();
+</script>
+</body>
+</html>
